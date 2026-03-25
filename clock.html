@@ -443,7 +443,6 @@ function renderToday() {
   if (todayRecord.clock_in) html += row('เข้างาน', todayRecord.clock_in);
   if (todayRecord.late_min > 0) html += row('สาย', `${todayRecord.late_min} นาที${todayRecord.late_min < 16 ? ' (ไม่หัก)' : ''}`, todayRecord.late_min >= 16 ? 'late' : '');
   if (todayRecord.clock_out) html += row('ออกงาน', todayRecord.clock_out);
-  if (todayRecord.hours_worked) html += row('ชั่วโมงทำงาน', `${parseFloat(todayRecord.hours_worked).toFixed(1)} ชม.`);
   if (parseFloat(todayRecord.ot_hours) > 0) html += row(todayRecord.ot_status === 'pending' ? 'OT (รออนุมัติ)' : 'OT', `${(parseFloat(todayRecord.ot_hours)*60).toFixed(0)} นาที`, todayRecord.ot_status === 'pending' ? 'pending' : 'ot');
   document.getElementById('today-rows').innerHTML = html;
 }
