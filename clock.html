@@ -558,7 +558,7 @@ async function doClockOut(otRequested, otReason) {
 function calcLateMin(s, now) { const [sh,sm]=s.split(':').map(Number); return Math.max(0,(now.getHours()*60+now.getMinutes())-(sh*60+sm)); }
 function calcOTMin(s, now) { const [eh,em]=s.split(':').map(Number); let n=now.getHours()*60+now.getMinutes(),e=eh*60+em; if(n<e-300)n+=1440; return Math.max(0,n-e); }
 function haversine(a,b,c,d){const R=6371000,dL=(c-a)*Math.PI/180,dN=(d-b)*Math.PI/180,x=Math.sin(dL/2)**2+Math.cos(a*Math.PI/180)*Math.cos(c*Math.PI/180)*Math.sin(dN/2)**2;return R*2*Math.atan2(Math.sqrt(x),Math.sqrt(1-x));}
-function getTimeStr(d=new Date(){return`${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;}
+function getTimeStr(d=new Date()){return`${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;}
 function getDateStr(d=new Date()){return`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;}
 async function apiGet(p){const r=await fetch(`${API_URL}?${p}`);return r.json();}
 async function apiPost(b){const r=await fetch(API_URL,{method:'POST',body:JSON.stringify(b)});return r.json();}
