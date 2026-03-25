@@ -920,11 +920,12 @@ async function renderPayrollList() {
     titleEl.style.display = 'flex';
 
     const payrolls = allStaff
-      .filter(s => {
-        if (selectedPeriod.cycle === 'bimonthly') return s.pay_cycle === 'bimonthly';
-        if (selectedPeriod.cycle === 'weekly') return s.pay_cycle === 'weekly';
-        return true;
-      })
+  .filter(s => s.role !== 'admin')
+  .filter(s => {
+    if (selectedPeriod.cycle === 'bimonthly') return s.pay_cycle === 'bimonthly';
+    if (selectedPeriod.cycle === 'weekly') return s.pay_cycle === 'weekly';
+    return true;
+  })
       .map(s => calcPayroll(s, allTimesheets));
 
     // Summary
