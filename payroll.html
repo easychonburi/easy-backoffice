@@ -1,0 +1,1228 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>EASY — Payroll</title>
+<link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --red: #E5232B;
+    --red-dark: #C81D24;
+    --yellow: #FFC928;
+    --bg: #F5F7FB;
+    --white: #FFFFFF;
+    --soft: #F9FAFB;
+    --border: #E5E7EB;
+    --text: #1F2937;
+    --text-secondary: #6B7280;
+    --green: #22C55E;
+    --green-bg: #DCFCE7;
+    --green-dark: #16A34A;
+    --danger: #FF5A4F;
+    --danger-bg: #FEE2E2;
+    --blue: #3B82F6;
+    --blue-bg: #EFF6FF;
+    --orange: #F97316;
+    --orange-bg: #FFF7ED;
+    --shadow: 0 2px 12px rgba(0,0,0,0.07);
+    --shadow-lg: 0 8px 32px rgba(0,0,0,0.1);
+    --radius: 16px;
+    --radius-sm: 10px;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+  body {
+    font-family: 'Prompt', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+  }
+
+  /* ─── HEADER ─── */
+  .app-header {
+    background: var(--red);
+    padding: 48px 20px 20px;
+    border-radius: 0 0 28px 28px;
+  }
+
+  .header-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 4px;
+  }
+
+  .header-logo {
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--yellow);
+  }
+
+  .header-title {
+    font-size: 22px;
+    font-weight: 600;
+    color: white;
+    margin-bottom: 2px;
+  }
+
+  .header-sub {
+    font-size: 13px;
+    color: rgba(255,255,255,0.7);
+    font-weight: 300;
+  }
+
+  .back-btn {
+    background: rgba(255,255,255,0.2);
+    border: none;
+    color: white;
+    font-family: 'Prompt', sans-serif;
+    font-size: 12px;
+    padding: 6px 12px;
+    border-radius: 20px;
+    cursor: pointer;
+  }
+
+  /* ─── BODY ─── */
+  .app-body {
+    padding: 20px 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+
+  /* ─── PERIOD SELECTOR ─── */
+  .period-card {
+    background: var(--white);
+    border-radius: var(--radius);
+    padding: 14px 16px;
+    box-shadow: var(--shadow);
+    border: 1px solid var(--border);
+  }
+
+  .period-label {
+    font-size: 11px;
+    color: var(--text-secondary);
+    font-weight: 400;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 10px;
+  }
+
+  .period-tabs {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+
+  .period-tab {
+    border: 1.5px solid var(--border);
+    background: var(--soft);
+    border-radius: 20px;
+    padding: 7px 14px;
+    font-family: 'Prompt', sans-serif;
+    font-size: 13px;
+    font-weight: 400;
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .period-tab.active {
+    background: var(--red);
+    border-color: var(--red);
+    color: white;
+    font-weight: 500;
+  }
+
+  /* ─── SUMMARY CARDS ─── */
+  .summary-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+
+  .summary-card {
+    background: var(--white);
+    border-radius: var(--radius);
+    padding: 14px;
+    box-shadow: var(--shadow);
+    border: 1px solid var(--border);
+  }
+
+  .summary-card-icon {
+    font-size: 20px;
+    margin-bottom: 6px;
+  }
+
+  .summary-card-value {
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--text);
+    line-height: 1;
+    margin-bottom: 3px;
+  }
+
+  .summary-card-value.red { color: var(--red); }
+  .summary-card-value.green { color: var(--green-dark); }
+
+  .summary-card-label {
+    font-size: 11px;
+    color: var(--text-secondary);
+    font-weight: 300;
+  }
+
+  /* ─── SECTION TITLE ─── */
+  .section-title {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text-secondary);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 0 2px;
+  }
+
+  /* ─── STAFF PAYROLL LIST ─── */
+  .staff-card {
+    background: var(--white);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    border: 1px solid var(--border);
+    overflow: hidden;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .staff-card:active { transform: scale(0.99); }
+
+  .staff-card-header {
+    padding: 14px 16px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .staff-avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: var(--red);
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 15px;
+    font-weight: 600;
+    flex-shrink: 0;
+  }
+
+  .staff-info { flex: 1; min-width: 0; }
+
+  .staff-name {
+    font-size: 15px;
+    font-weight: 500;
+    color: var(--text);
+    margin-bottom: 2px;
+  }
+
+  .staff-meta {
+    font-size: 11px;
+    color: var(--text-secondary);
+    font-weight: 300;
+  }
+
+  .staff-total {
+    text-align: right;
+    flex-shrink: 0;
+  }
+
+  .staff-total-amount {
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--text);
+  }
+
+  .staff-total-label {
+    font-size: 10px;
+    color: var(--text-secondary);
+    font-weight: 300;
+  }
+
+  .staff-status-bar {
+    padding: 8px 16px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-top: 1px solid var(--border);
+  }
+
+  .status-pill {
+    font-size: 11px;
+    font-weight: 500;
+    padding: 3px 10px;
+    border-radius: 20px;
+  }
+
+  .status-pill.pending { background: var(--orange-bg); color: var(--orange); }
+  .status-pill.ready { background: var(--blue-bg); color: var(--blue); }
+  .status-pill.paid { background: var(--green-bg); color: var(--green-dark); }
+  .status-pill.missing { background: var(--danger-bg); color: var(--danger); }
+
+  .staff-days {
+    font-size: 11px;
+    color: var(--text-secondary);
+    font-weight: 300;
+  }
+
+  /* ─── DETAIL PANEL ─── */
+  .detail-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.5);
+    z-index: 100;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.25s;
+  }
+
+  .detail-overlay.visible {
+    opacity: 1;
+    pointer-events: all;
+  }
+
+  .detail-sheet {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: var(--white);
+    border-radius: 24px 24px 0 0;
+    max-height: 90vh;
+    overflow-y: auto;
+    transform: translateY(100%);
+    transition: transform 0.3s cubic-bezier(0.32, 0.72, 0, 1);
+  }
+
+  .detail-overlay.visible .detail-sheet {
+    transform: translateY(0);
+  }
+
+  .detail-handle {
+    width: 36px;
+    height: 4px;
+    background: var(--border);
+    border-radius: 2px;
+    margin: 16px auto 0;
+  }
+
+  .detail-header {
+    padding: 16px 20px 14px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .detail-avatar {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    background: var(--red);
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 17px;
+    font-weight: 600;
+    flex-shrink: 0;
+  }
+
+  .detail-name {
+    font-size: 17px;
+    font-weight: 600;
+    color: var(--text);
+    margin-bottom: 2px;
+  }
+
+  .detail-meta {
+    font-size: 12px;
+    color: var(--text-secondary);
+    font-weight: 300;
+  }
+
+  .detail-body { padding: 16px 20px; }
+
+  /* TOTAL HIGHLIGHT */
+  .total-highlight {
+    background: var(--red);
+    border-radius: var(--radius);
+    padding: 18px 20px;
+    margin-bottom: 16px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .total-highlight-label {
+    font-size: 13px;
+    color: rgba(255,255,255,0.8);
+    font-weight: 300;
+  }
+
+  .total-highlight-amount {
+    font-size: 28px;
+    font-weight: 700;
+    color: white;
+  }
+
+  .total-highlight-period {
+    font-size: 11px;
+    color: rgba(255,255,255,0.7);
+    font-weight: 300;
+    margin-top: 2px;
+  }
+
+  /* BREAKDOWN */
+  .breakdown-card {
+    background: var(--soft);
+    border-radius: var(--radius-sm);
+    padding: 14px;
+    margin-bottom: 12px;
+    border: 1px solid var(--border);
+  }
+
+  .breakdown-title {
+    font-size: 11px;
+    color: var(--text-secondary);
+    font-weight: 400;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 10px;
+  }
+
+  .breakdown-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 5px 0;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .breakdown-row:last-child { border-bottom: none; padding-bottom: 0; }
+
+  .breakdown-label {
+    font-size: 13px;
+    color: var(--text-secondary);
+    font-weight: 300;
+  }
+
+  .breakdown-value {
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--text);
+  }
+
+  .breakdown-value.plus { color: var(--green-dark); }
+  .breakdown-value.minus { color: var(--danger); }
+
+  /* TIMESHEET TABLE */
+  .timesheet-list { margin-bottom: 12px; }
+
+  .timesheet-row {
+    background: var(--white);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 10px 12px;
+    margin-bottom: 8px;
+  }
+
+  .timesheet-row-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 4px;
+  }
+
+  .timesheet-date {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text);
+  }
+
+  .timesheet-hours {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--blue);
+  }
+
+  .timesheet-row-bottom {
+    display: flex;
+    gap: 10px;
+  }
+
+  .timesheet-chip {
+    font-size: 11px;
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-weight: 400;
+  }
+
+  .chip-time { background: var(--soft); color: var(--text-secondary); }
+  .chip-late { background: var(--danger-bg); color: var(--danger); }
+  .chip-ot { background: var(--blue-bg); color: var(--blue); }
+  .chip-ok { background: var(--green-bg); color: var(--green-dark); }
+
+  /* ADJUST ROW */
+  .adjust-row {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    margin-bottom: 12px;
+  }
+
+  .adjust-input {
+    flex: 1;
+    border: 1.5px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 10px 12px;
+    font-family: 'Prompt', sans-serif;
+    font-size: 14px;
+    font-weight: 300;
+    color: var(--text);
+    background: var(--soft);
+    outline: none;
+  }
+
+  .adjust-input:focus { border-color: var(--red); }
+
+  .adjust-note {
+    width: 100%;
+    border: 1.5px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 10px 12px;
+    font-family: 'Prompt', sans-serif;
+    font-size: 13px;
+    font-weight: 300;
+    color: var(--text);
+    background: var(--soft);
+    outline: none;
+    resize: none;
+    margin-bottom: 12px;
+  }
+
+  .adjust-note:focus { border-color: var(--red); }
+
+  /* ACTION BUTTONS */
+  .detail-actions {
+    display: flex;
+    gap: 10px;
+    padding: 0 0 20px;
+  }
+
+  .detail-btn {
+    flex: 1;
+    border: none;
+    border-radius: var(--radius-sm);
+    padding: 14px;
+    font-family: 'Prompt', sans-serif;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .detail-btn:active { transform: scale(0.97); }
+  .detail-btn.primary { background: var(--red); color: white; }
+  .detail-btn.secondary { background: var(--soft); color: var(--text-secondary); border: 1.5px solid var(--border); }
+  .detail-btn.success { background: var(--green); color: white; }
+
+  /* ─── LOADING / TOAST / EMPTY ─── */
+  .loading-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(255,255,255,0.85);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 200;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.2s;
+  }
+
+  .loading-overlay.show { opacity: 1; pointer-events: all; }
+
+  .spinner {
+    width: 36px;
+    height: 36px;
+    border: 3px solid var(--border);
+    border-top-color: var(--red);
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+  }
+
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .toast {
+    position: fixed;
+    bottom: 24px;
+    left: 50%;
+    transform: translateX(-50%) translateY(80px);
+    background: var(--text);
+    color: white;
+    font-size: 13px;
+    padding: 12px 20px;
+    border-radius: 24px;
+    z-index: 300;
+    transition: transform 0.3s cubic-bezier(0.32, 0.72, 0, 1);
+    white-space: nowrap;
+    max-width: 90vw;
+    text-align: center;
+  }
+
+  .toast.show { transform: translateX(-50%) translateY(0); }
+  .toast.success { background: var(--green-dark); }
+  .toast.error { background: var(--danger); }
+
+  .empty-state {
+    text-align: center;
+    padding: 40px 20px;
+    color: var(--text-secondary);
+    font-size: 14px;
+    font-weight: 300;
+  }
+
+  .empty-icon { font-size: 36px; margin-bottom: 10px; }
+
+  /* ─── OT APPROVE ─── */
+  .ot-pending-card {
+    background: var(--blue-bg);
+    border: 1px solid #BFDBFE;
+    border-radius: var(--radius-sm);
+    padding: 12px 14px;
+    margin-bottom: 12px;
+  }
+
+  .ot-pending-title {
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--blue);
+    margin-bottom: 6px;
+  }
+
+  .ot-pending-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 13px;
+  }
+
+  .ot-pending-detail { color: var(--text); font-weight: 300; }
+
+  .ot-approve-btns {
+    display: flex;
+    gap: 6px;
+  }
+
+  .ot-btn {
+    border: none;
+    border-radius: 8px;
+    padding: 5px 12px;
+    font-family: 'Prompt', sans-serif;
+    font-size: 12px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .ot-btn.approve { background: var(--green-bg); color: var(--green-dark); }
+  .ot-btn.reject { background: var(--danger-bg); color: var(--danger); }
+
+  .divider {
+    height: 1px;
+    background: var(--border);
+    margin: 4px 0 12px;
+  }
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div class="app-header">
+  <div class="header-top">
+    <div class="header-logo">EASY</div>
+    <button class="back-btn" onclick="window.history.back()">← กลับ</button>
+  </div>
+  <div class="header-title">💰 Payroll</div>
+  <div class="header-sub" id="header-sub">เลือกรอบการจ่ายเงิน</div>
+</div>
+
+<div class="app-body">
+
+  <!-- PERIOD SELECTOR -->
+  <div class="period-card">
+    <div class="period-label">รอบการจ่ายเงิน</div>
+    <div class="period-tabs" id="period-tabs">
+      <div class="period-tab loading-pulse">กำลังโหลด...</div>
+    </div>
+  </div>
+
+  <!-- SUMMARY -->
+  <div class="summary-row" id="summary-row" style="display:none">
+    <div class="summary-card">
+      <div class="summary-card-icon">👥</div>
+      <div class="summary-card-value" id="sum-staff">0</div>
+      <div class="summary-card-label">พนักงานทั้งหมด</div>
+    </div>
+    <div class="summary-card">
+      <div class="summary-card-icon">💵</div>
+      <div class="summary-card-value red" id="sum-total">฿0</div>
+      <div class="summary-card-label">ยอดจ่ายรวม</div>
+    </div>
+    <div class="summary-card">
+      <div class="summary-card-icon">✅</div>
+      <div class="summary-card-value green" id="sum-paid">0</div>
+      <div class="summary-card-label">จ่ายแล้ว</div>
+    </div>
+    <div class="summary-card">
+      <div class="summary-card-icon">⏳</div>
+      <div class="summary-card-value" id="sum-pending">0</div>
+      <div class="summary-card-label">รอจ่าย</div>
+    </div>
+  </div>
+
+  <!-- STAFF LIST -->
+  <div class="section-title" id="staff-list-title" style="display:none">
+    👤 รายการพนักงาน
+  </div>
+  <div id="staff-list"></div>
+
+</div>
+
+<!-- DETAIL PANEL -->
+<div class="detail-overlay" id="detail-overlay" onclick="closeDetail(event)">
+  <div class="detail-sheet" id="detail-sheet">
+    <div class="detail-handle"></div>
+    <div class="detail-header">
+      <div class="detail-avatar" id="d-avatar">—</div>
+      <div>
+        <div class="detail-name" id="d-name">—</div>
+        <div class="detail-meta" id="d-meta">—</div>
+      </div>
+    </div>
+    <div class="detail-body" id="detail-body"></div>
+  </div>
+</div>
+
+<!-- LOADING / TOAST -->
+<div class="loading-overlay" id="loading"><div class="spinner"></div></div>
+<div class="toast" id="toast"></div>
+
+<script>
+const API_URL = 'https://script.google.com/macros/s/AKfycbxxTjC7xOGHlgyStVBf6SimoU5RA7xX3VPwxIUtfGlpMNO89OQPDaRewKDDEmWGK4kk/exec';
+
+let allStaff = [];
+let allTimesheets = [];
+let settings = {};
+let selectedPeriod = null;
+let currentStaffData = null;
+let manualAdjust = 0;
+
+// ─── THAI HELPERS ───
+const THAI_MONTHS = ['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
+
+function formatThaiDate(dateStr) {
+  if (!dateStr) return '—';
+  const d = new Date(dateStr);
+  return `${d.getDate()} ${THAI_MONTHS[d.getMonth()]} ${d.getFullYear()+543}`;
+}
+
+function formatMoney(n) {
+  return '฿' + Number(n).toLocaleString('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
+// ─── PERIOD HELPERS ───
+function getPeriods() {
+  const periods = [];
+  const now = new Date();
+
+  for (let i = 0; i < 4; i++) {
+    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+    const y = d.getFullYear();
+    const m = d.getMonth();
+
+    // bimonthly: 1-15, 16-end
+    const p1End = new Date(y, m, 15);
+    const p2End = new Date(y, m + 1, 0);
+
+    periods.push({
+      id: `${y}-${String(m+1).padStart(2,'0')}-P2`,
+      label: `16-${p2End.getDate()} ${THAI_MONTHS[m]} ${y+543}`,
+      start: `${y}-${String(m+1).padStart(2,'0')}-16`,
+      end: `${y}-${String(m+1).padStart(2,'0')}-${String(p2End.getDate()).padStart(2,'0')}`,
+      pay_date: `${y}-${String(m+1).padStart(2,'0')}-01`,
+      cycle: 'bimonthly'
+    });
+
+    periods.push({
+      id: `${y}-${String(m+1).padStart(2,'0')}-P1`,
+      label: `1-15 ${THAI_MONTHS[m]} ${y+543}`,
+      start: `${y}-${String(m+1).padStart(2,'0')}-01`,
+      end: `${y}-${String(m+1).padStart(2,'0')}-15`,
+      pay_date: `${y}-${String(m+1).padStart(2,'0')}-16`,
+      cycle: 'bimonthly'
+    });
+  }
+
+  // weekly: last 4 weeks
+  for (let w = 0; w < 4; w++) {
+    const mon = new Date(now);
+    mon.setDate(now.getDate() - now.getDay() + 1 - w * 7);
+    const sun = new Date(mon);
+    sun.setDate(mon.getDate() + 6);
+    const fmt = d => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+    periods.push({
+      id: `week-${fmt(mon)}`,
+      label: `${d => d.getDate()+' '+THAI_MONTHS[d.getMonth()]}${mon} – ${sun.getDate()} ${THAI_MONTHS[sun.getMonth()]}`,
+      start: fmt(mon),
+      end: fmt(sun),
+      pay_date: fmt(new Date(sun.setDate(sun.getDate()+1))),
+      cycle: 'weekly'
+    });
+  }
+
+  return periods.slice(0, 6);
+}
+
+function renderPeriodTabs(periods) {
+  const container = document.getElementById('period-tabs');
+  container.innerHTML = periods.map((p, i) => `
+    <div class="period-tab ${i===0?'active':''}" onclick="selectPeriod(${i})" data-idx="${i}">
+      ${p.label}
+    </div>
+  `).join('');
+}
+
+function selectPeriod(idx) {
+  document.querySelectorAll('.period-tab').forEach((t, i) => {
+    t.classList.toggle('active', i === idx);
+  });
+  const periods = getPeriods();
+  selectedPeriod = periods[idx];
+  document.getElementById('header-sub').textContent = `รอบ: ${selectedPeriod.label}`;
+  renderPayrollList();
+}
+
+// ─── PAYROLL CALCULATION ───
+function calcPayroll(staff, timesheets) {
+  const ts = timesheets.filter(t => t.staff_id === staff.staff_id);
+  const rate = parseFloat(staff.rate) || 0;
+  const otRatePerHour = parseFloat(settings.ot_rate_per_hour) || 50;
+  const lateGrace = parseInt(settings.late_grace_min) || 15;
+
+  let basePay = 0;
+  let otPay = 0;
+  let lateDeduct = 0;
+  let daysWorked = 0;
+  let hoursWorked = 0;
+  let details = [];
+
+  ts.forEach(t => {
+    if (!t.clock_in) return;
+    const lateMin = parseInt(t.late_min) || 0;
+    const otHours = parseFloat(t.ot_hours) || 0;
+    const otApproved = t.ot_status === 'approved' || t.ot_status === 'pending';
+
+    let dayBase = 0;
+    let dayDeduct = 0;
+    let dayOT = 0;
+
+    if (staff.pay_type === 'daily') {
+      dayBase = rate;
+      daysWorked++;
+      // หักสาย
+      if (lateMin > lateGrace) {
+        const minsPerDay = 8 * 60;
+        dayDeduct = parseFloat(((rate / minsPerDay) * lateMin).toFixed(2));
+        lateDeduct += dayDeduct;
+      }
+    } else {
+      // hourly
+      const hrs = parseFloat(t.hours_worked) || 0;
+      dayBase = parseFloat((rate * hrs).toFixed(2));
+      hoursWorked += hrs;
+    }
+
+    // OT
+    if (otHours > 0 && otApproved) {
+      dayOT = parseFloat((otHours * otRatePerHour).toFixed(2));
+      otPay += dayOT;
+    }
+
+    basePay += dayBase;
+
+    details.push({
+      date: t.date,
+      clock_in: t.clock_in,
+      clock_out: t.clock_out,
+      hours: staff.pay_type === 'daily' ? 8 : (parseFloat(t.hours_worked) || 0),
+      late_min: lateMin,
+      late_deduct: dayDeduct,
+      ot_hours: otHours,
+      ot_pay: dayOT,
+      ot_status: t.ot_status,
+      ot_reason: t.ot_reason,
+      record_id: t.record_id,
+      day_total: parseFloat((dayBase - dayDeduct + dayOT).toFixed(2))
+    });
+  });
+
+  const total = parseFloat((basePay - lateDeduct + otPay).toFixed(2));
+
+  return {
+    staff,
+    days_worked: daysWorked,
+    hours_worked: parseFloat(hoursWorked.toFixed(2)),
+    base_pay: parseFloat(basePay.toFixed(2)),
+    ot_pay: parseFloat(otPay.toFixed(2)),
+    late_deduct: parseFloat(lateDeduct.toFixed(2)),
+    total,
+    details,
+    ts_count: ts.length
+  };
+}
+
+// ─── RENDER LIST ───
+async function renderPayrollList() {
+  if (!selectedPeriod) return;
+  showLoading(true);
+
+  try {
+    const [tsRes] = await Promise.all([
+      apiGet(`action=getTimesheets&date_from=${selectedPeriod.start}&date_to=${selectedPeriod.end}`)
+    ]);
+
+    allTimesheets = tsRes.success ? tsRes.data : [];
+
+    const list = document.getElementById('staff-list');
+    const summaryRow = document.getElementById('summary-row');
+    const titleEl = document.getElementById('staff-list-title');
+
+    if (!allStaff.length) {
+      list.innerHTML = '<div class="empty-state"><div class="empty-icon">👥</div>ไม่พบข้อมูลพนักงาน</div>';
+      showLoading(false);
+      return;
+    }
+
+    summaryRow.style.display = 'grid';
+    titleEl.style.display = 'flex';
+
+    const payrolls = allStaff
+      .filter(s => {
+        if (selectedPeriod.cycle === 'bimonthly') return s.pay_cycle === 'bimonthly';
+        if (selectedPeriod.cycle === 'weekly') return s.pay_cycle === 'weekly';
+        return true;
+      })
+      .map(s => calcPayroll(s, allTimesheets));
+
+    // Summary
+    const totalAmt = payrolls.reduce((a, p) => a + p.total, 0);
+    document.getElementById('sum-staff').textContent = payrolls.length;
+    document.getElementById('sum-total').textContent = formatMoney(totalAmt);
+    document.getElementById('sum-paid').textContent = 0;
+    document.getElementById('sum-pending').textContent = payrolls.length;
+
+    if (!payrolls.length) {
+      list.innerHTML = '<div class="empty-state"><div class="empty-icon">📋</div>ไม่มีพนักงานในรอบนี้</div>';
+      showLoading(false);
+      return;
+    }
+
+    list.innerHTML = payrolls.map(p => {
+      const initials = (p.staff.nickname || p.staff.name || '?').charAt(0);
+      const typeLabel = p.staff.pay_type === 'daily' ? `รายวัน ฿${p.staff.rate}` : `รายชั่วโมง ฿${p.staff.rate}/ชม.`;
+      const workLabel = p.staff.pay_type === 'daily'
+        ? `${p.days_worked} วัน`
+        : `${p.hours_worked} ชม.`;
+      const statusClass = p.ts_count === 0 ? 'missing' : 'ready';
+      const statusLabel = p.ts_count === 0 ? '⚠️ ไม่มีข้อมูล' : '📋 พร้อมจ่าย';
+      const pendingOT = p.details.filter(d => d.ot_status === 'pending').length;
+
+      return `
+        <div class="staff-card" onclick="openDetail('${p.staff.staff_id}')">
+          <div class="staff-card-header">
+            <div class="staff-avatar">${initials}</div>
+            <div class="staff-info">
+              <div class="staff-name">${p.staff.nickname || p.staff.name}</div>
+              <div class="staff-meta">${typeLabel} · ${workLabel}${pendingOT > 0 ? ` · ⏰ OT รออนุมัติ ${pendingOT} รายการ` : ''}</div>
+            </div>
+            <div class="staff-total">
+              <div class="staff-total-amount">${formatMoney(p.total)}</div>
+              <div class="staff-total-label">ยอดสุทธิ</div>
+            </div>
+          </div>
+          <div class="staff-status-bar">
+            <div class="status-pill ${statusClass}">${statusLabel}</div>
+            <div class="staff-days">${workLabel} · OT ${formatMoney(p.ot_pay)} · หัก ${formatMoney(p.late_deduct)}</div>
+          </div>
+        </div>
+      `;
+    }).join('');
+
+  } catch(e) {
+    document.getElementById('staff-list').innerHTML = '<div class="empty-state"><div class="empty-icon">❌</div>โหลดไม่สำเร็จ</div>';
+  }
+
+  showLoading(false);
+}
+
+// ─── DETAIL ───
+function openDetail(staffId) {
+  const payroll = allStaff
+    .map(s => calcPayroll(s, allTimesheets))
+    .find(p => p.staff.staff_id === staffId);
+
+  if (!payroll) return;
+  currentStaffData = payroll;
+  manualAdjust = 0;
+
+  const initials = (payroll.staff.nickname || payroll.staff.name || '?').charAt(0);
+  document.getElementById('d-avatar').textContent = initials;
+  document.getElementById('d-name').textContent = payroll.staff.name;
+  document.getElementById('d-meta').textContent = `${payroll.staff.staff_type === 'fulltime' ? 'พนักงานประจำ' : 'Part-time'} · ${payroll.staff.shift === 'morning' ? 'กะเช้า' : 'กะดึก'}`;
+
+  renderDetailBody(payroll);
+  document.getElementById('detail-overlay').classList.add('visible');
+}
+
+function renderDetailBody(p) {
+  const pendingOTs = p.details.filter(d => d.ot_status === 'pending');
+  const totalWithAdjust = p.total + manualAdjust;
+
+  let html = '';
+
+  // TOTAL
+  html += `
+    <div class="total-highlight">
+      <div>
+        <div class="total-highlight-label">ยอดจ่ายสุทธิ</div>
+        <div class="total-highlight-amount">${formatMoney(totalWithAdjust)}</div>
+        <div class="total-highlight-period">${selectedPeriod?.label || '—'}</div>
+      </div>
+      <div style="text-align:right">
+        <div style="color:rgba(255,255,255,0.8);font-size:12px;font-weight:300">จ่ายวันที่</div>
+        <div style="color:white;font-size:15px;font-weight:500">${formatThaiDate(selectedPeriod?.pay_date)}</div>
+      </div>
+    </div>
+  `;
+
+  // OT PENDING
+  if (pendingOTs.length > 0) {
+    html += `<div class="ot-pending-card">
+      <div class="ot-pending-title">⏰ OT รออนุมัติ ${pendingOTs.length} รายการ</div>`;
+    pendingOTs.forEach(ot => {
+      html += `
+        <div class="ot-pending-row" style="margin-bottom:6px">
+          <div class="ot-pending-detail">${formatThaiDate(ot.date)} · ${(ot.ot_hours*60).toFixed(0)} นาที · "${ot.ot_reason || '—'}"</div>
+          <div class="ot-approve-btns">
+            <button class="ot-btn approve" onclick="approveOT('${ot.record_id}', true)">✓</button>
+            <button class="ot-btn reject" onclick="approveOT('${ot.record_id}', false)">✗</button>
+          </div>
+        </div>`;
+    });
+    html += `</div>`;
+  }
+
+  // BREAKDOWN
+  html += `
+    <div class="breakdown-card">
+      <div class="breakdown-title">สรุปค่าแรง</div>
+      <div class="breakdown-row">
+        <span class="breakdown-label">${p.staff.pay_type === 'daily' ? `ค่าแรง ${p.days_worked} วัน × ฿${p.staff.rate}` : `ค่าแรง ${p.hours_worked} ชม. × ฿${p.staff.rate}`}</span>
+        <span class="breakdown-value plus">${formatMoney(p.base_pay)}</span>
+      </div>
+      ${p.ot_pay > 0 ? `
+      <div class="breakdown-row">
+        <span class="breakdown-label">OT</span>
+        <span class="breakdown-value plus">+${formatMoney(p.ot_pay)}</span>
+      </div>` : ''}
+      ${p.late_deduct > 0 ? `
+      <div class="breakdown-row">
+        <span class="breakdown-label">หักสาย</span>
+        <span class="breakdown-value minus">-${formatMoney(p.late_deduct)}</span>
+      </div>` : ''}
+      ${manualAdjust !== 0 ? `
+      <div class="breakdown-row">
+        <span class="breakdown-label">ปรับด้วยมือ</span>
+        <span class="breakdown-value ${manualAdjust >= 0 ? 'plus' : 'minus'}">${manualAdjust >= 0 ? '+' : ''}${formatMoney(manualAdjust)}</span>
+      </div>` : ''}
+      <div class="breakdown-row" style="border-top:2px solid var(--border);margin-top:4px;padding-top:8px">
+        <span class="breakdown-label" style="font-weight:500;color:var(--text)">รวมจ่าย</span>
+        <span class="breakdown-value" style="font-size:16px;font-weight:700;color:var(--red)">${formatMoney(totalWithAdjust)}</span>
+      </div>
+    </div>
+  `;
+
+  // MANUAL ADJUST
+  html += `
+    <div class="breakdown-title" style="margin-bottom:8px">✏️ ปรับยอดด้วยมือ (ถ้ามี)</div>
+    <div class="adjust-row">
+      <input class="adjust-input" type="number" id="adjust-amount" placeholder="เช่น 100 หรือ -50" value="${manualAdjust || ''}" oninput="updateAdjust(this.value)">
+      <span style="font-size:13px;color:var(--text-secondary)">บาท</span>
+    </div>
+    <textarea class="adjust-note" id="adjust-note" rows="2" placeholder="เหตุผล เช่น โบนัส, ปรับพิเศษ..."></textarea>
+  `;
+
+  // TIMESHEET DETAIL
+  if (p.details.length > 0) {
+    html += `<div class="breakdown-title" style="margin-bottom:8px">📋 รายละเอียดแต่ละวัน</div>`;
+    html += `<div class="timesheet-list">`;
+    p.details.forEach(d => {
+      html += `
+        <div class="timesheet-row">
+          <div class="timesheet-row-top">
+            <span class="timesheet-date">${formatThaiDate(d.date)}</span>
+            <span class="timesheet-hours">${formatMoney(d.day_total)}</span>
+          </div>
+          <div class="timesheet-row-bottom">
+            <span class="timesheet-chip chip-time">${d.clock_in || '—'} – ${d.clock_out || 'ยังไม่ออก'}</span>
+            ${d.late_min > 15 ? `<span class="timesheet-chip chip-late">สาย ${d.late_min} นาที</span>` : ''}
+            ${d.late_min > 0 && d.late_min <= 15 ? `<span class="timesheet-chip chip-ok">สาย ${d.late_min} นาที (ไม่หัก)</span>` : ''}
+            ${d.ot_hours > 0 ? `<span class="timesheet-chip chip-ot">OT ${(d.ot_hours*60).toFixed(0)} นาที</span>` : ''}
+          </div>
+        </div>
+      `;
+    });
+    html += `</div>`;
+  } else {
+    html += `<div class="empty-state" style="padding:20px"><div class="empty-icon">📭</div>ไม่มีข้อมูลการเข้างานในรอบนี้</div>`;
+  }
+
+  // ACTIONS
+  html += `
+    <div class="detail-actions">
+      <button class="detail-btn secondary" onclick="closeDetail()">ปิด</button>
+      <button class="detail-btn success" onclick="confirmPayroll()">✅ ยืนยันจ่าย</button>
+    </div>
+  `;
+
+  document.getElementById('detail-body').innerHTML = html;
+}
+
+function updateAdjust(val) {
+  manualAdjust = parseFloat(val) || 0;
+  renderDetailBody(currentStaffData);
+  // restore input focus
+  setTimeout(() => {
+    const inp = document.getElementById('adjust-amount');
+    if (inp) { inp.focus(); inp.value = val; }
+  }, 50);
+}
+
+async function approveOT(recordId, approve) {
+  showLoading(true);
+  try {
+    await apiPost({
+      action: 'updateTimesheetOT',
+      record_id: recordId,
+      ot_status: approve ? 'approved' : 'rejected'
+    });
+    showToast(approve ? '✅ อนุมัติ OT แล้ว' : '❌ ปฏิเสธ OT แล้ว', approve ? 'success' : 'error');
+
+    // reload timesheets
+    const tsRes = await apiGet(`action=getTimesheets&date_from=${selectedPeriod.start}&date_to=${selectedPeriod.end}`);
+    allTimesheets = tsRes.success ? tsRes.data : [];
+    const payroll = allStaff.map(s => calcPayroll(s, allTimesheets)).find(p => p.staff.staff_id === currentStaffData.staff.staff_id);
+    if (payroll) { currentStaffData = payroll; renderDetailBody(payroll); }
+  } catch { showToast('เกิดข้อผิดพลาด', 'error'); }
+  showLoading(false);
+}
+
+async function confirmPayroll() {
+  if (!currentStaffData || !selectedPeriod) return;
+  const adjustNote = document.getElementById('adjust-note')?.value || '';
+  const totalWithAdjust = currentStaffData.total + manualAdjust;
+
+  showLoading(true);
+  try {
+    await apiPost({
+      action: 'savePayrollRun',
+      staff_id: currentStaffData.staff.staff_id,
+      period_start: selectedPeriod.start,
+      period_end: selectedPeriod.end,
+      pay_date: selectedPeriod.pay_date,
+      days_worked: currentStaffData.days_worked,
+      hours_worked: currentStaffData.hours_worked,
+      base_pay: currentStaffData.base_pay,
+      ot_pay: currentStaffData.ot_pay,
+      late_deduct: currentStaffData.late_deduct,
+      early_out_deduct: 0,
+      manual_adjust: manualAdjust,
+      adjust_note: adjustNote,
+      total_pay: totalWithAdjust,
+      status: 'paid',
+      paid_at: new Date().toISOString(),
+      note: ''
+    });
+    showToast(`✅ บันทึกการจ่าย ${formatMoney(totalWithAdjust)} เรียบร้อย`, 'success');
+    closeDetail();
+    await renderPayrollList();
+  } catch { showToast('เกิดข้อผิดพลาด', 'error'); }
+  showLoading(false);
+}
+
+function closeDetail(e) {
+  if (e && e.target !== document.getElementById('detail-overlay')) return;
+  document.getElementById('detail-overlay').classList.remove('visible');
+  currentStaffData = null;
+}
+
+// ─── API ───
+async function apiGet(params) {
+  const res = await fetch(`${API_URL}?${params}`);
+  return res.json();
+}
+
+async function apiPost(body) {
+  const res = await fetch(API_URL, { method: 'POST', body: JSON.stringify(body) });
+  return res.json();
+}
+
+// ─── UI ───
+function showLoading(show) {
+  document.getElementById('loading').classList.toggle('show', show);
+}
+
+function showToast(msg, type = '') {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = `toast ${type} show`;
+  setTimeout(() => t.classList.remove('show'), 3500);
+}
+
+// ─── BOOT ───
+window.addEventListener('load', async () => {
+  showLoading(true);
+  try {
+    const [staffRes, settingsRes] = await Promise.all([
+      apiGet('action=getStaff'),
+      apiGet('action=getSettings')
+    ]);
+    allStaff = staffRes.success ? staffRes.data : [];
+    settings = settingsRes.success ? settingsRes.data : {};
+
+    const periods = getPeriods();
+    renderPeriodTabs(periods);
+    selectedPeriod = periods[0];
+    document.getElementById('header-sub').textContent = `รอบ: ${selectedPeriod.label}`;
+    await renderPayrollList();
+  } catch(e) {
+    showToast('โหลดข้อมูลไม่สำเร็จ', 'error');
+  }
+  showLoading(false);
+});
+</script>
+</body>
+</html>
