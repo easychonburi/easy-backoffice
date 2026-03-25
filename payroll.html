@@ -651,10 +651,10 @@
 
 <!-- HEADER -->
 <div class="app-header">
-  <div class="header-top">
+ <div class="header-top">
     <div class="header-logo">EASY</div>
-    <button class="back-btn" onclick="window.history.back()">← กลับ</button>
-  </div>
+    <button class="back-btn" onclick="logout()">ออกจากระบบ</button>
+</div>
   <div class="header-title">💰 Payroll</div>
   <div class="header-sub" id="header-sub">เลือกรอบการจ่ายเงิน</div>
 </div>
@@ -1204,6 +1204,15 @@ function showToast(msg, type = '') {
 
 // ─── BOOT ───
 window.addEventListener('load', async () => {
+  // เช็ค session
+  const raw = localStorage.getItem('easy_session');
+  if (!raw) { window.location.href = '/index.html'; return; }
+  try {
+    const session = JSON.parse(raw);
+    if (Date.now() > session.expires) { localStorage.removeItem('easy_session'); window.location.href = '/index.html'; return; }
+    if (session.role !== 'admin') { window.location.href = '/clock.html'; return; }
+  } catch { window.location.href = '/index.html'; return; }
+
   showLoading(true);
   try {
     const [staffRes, settingsRes] = await Promise.all([
@@ -1223,6 +1232,12 @@ window.addEventListener('load', async () => {
   }
   showLoading(false);
 });
+
+  function logout() {
+  localStorage.removeItem('easy_session');
+  window.location.href = '/index.html';
+}
+  
 </script>
 </body>
 </html>
