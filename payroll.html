@@ -39,7 +39,6 @@
     min-height: 100vh;
   }
 
-  /* ─── HEADER ─── */
   .app-header {
     background: var(--red);
     padding: 48px 20px 24px;
@@ -66,10 +65,8 @@
   }
   .logout-btn:active { background: rgba(255,255,255,0.35); }
 
-  /* ─── BODY ─── */
   .app-body { padding: 20px 16px; display: flex; flex-direction: column; gap: 14px; }
 
-  /* ─── CARD ─── */
   .card {
     background: var(--white);
     border-radius: var(--radius);
@@ -78,17 +75,14 @@
     border: 1px solid var(--border);
   }
 
-  /* ─── OT ALERT ─── */
+  /* OT ALERT */
   .ot-alert {
     background: var(--orange-bg);
     border: 1px solid #FED7AA;
     border-radius: var(--radius);
     padding: 14px 16px;
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    cursor: pointer;
-    transition: all 0.2s;
+    display: flex; align-items: center; gap: 12px;
+    cursor: pointer; transition: all 0.2s;
   }
   .ot-alert:active { transform: scale(0.99); }
   .ot-alert-icon { font-size: 22px; flex-shrink: 0; }
@@ -97,81 +91,60 @@
   .ot-alert-sub { font-size: 12px; color: var(--text-secondary); font-weight: 300; }
   .ot-alert-arrow { font-size: 16px; color: var(--orange); flex-shrink: 0; }
 
-  /* ─── PAY DATE BADGE ─── */
-  .pay-date-card {
-    background: var(--red);
-    border-radius: var(--radius);
-    padding: 16px 18px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-  }
-  .pay-date-label { font-size: 12px; color: rgba(255,255,255,0.75); font-weight: 300; margin-bottom: 3px; }
-  .pay-date-value { font-size: 18px; font-weight: 600; color: white; }
-  .pay-date-badge {
-    background: var(--yellow);
-    color: #92400E;
-    font-size: 11px;
-    font-weight: 600;
-    padding: 4px 10px;
-    border-radius: 20px;
-  }
-  .pay-date-badge.normal {
-    background: rgba(255,255,255,0.2);
-    color: white;
-    font-weight: 400;
-  }
-
-  /* ─── GROUP CARDS ─── */
-  .group-row {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 12px;
-  }
-
+  /* GROUP CARD */
   .group-card {
     background: var(--white);
     border-radius: var(--radius);
-    padding: 16px;
+    padding: 14px 16px;
     box-shadow: var(--shadow);
     border: 1px solid var(--border);
-    cursor: pointer;
-    transition: all 0.2s;
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-  }
-  .group-card:active { transform: scale(0.97); box-shadow: none; }
-
-  .group-icon { font-size: 28px; }
-  .group-name { font-size: 14px; font-weight: 600; color: var(--text); }
-  .group-period { font-size: 11px; color: var(--text-secondary); font-weight: 300; margin-top: -6px; }
-  .group-count { font-size: 12px; color: var(--text-secondary); font-weight: 300; }
-  .group-amount { font-size: 20px; font-weight: 700; color: var(--text); }
-  .group-amount-label { font-size: 10px; color: var(--text-secondary); font-weight: 300; margin-top: -4px; }
-
-  .group-action {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 8px;
-    border-radius: var(--radius-sm);
-    font-size: 13px;
-    font-weight: 500;
-    margin-top: 2px;
   }
 
-  .group-action.pay-now { background: var(--red); color: white; }
-  .group-action.view-only { background: var(--soft); color: var(--text-secondary); border: 1px solid var(--border); }
+  .group-label {
+    font-size: 11px; color: var(--text-secondary);
+    font-weight: 400; text-transform: uppercase;
+    letter-spacing: 0.5px; margin-bottom: 10px;
+  }
 
-  /* ─── STAFF LIST PAGE ─── */
+  .group-period-row {
+    display: flex; justify-content: space-between;
+    align-items: flex-start; margin-bottom: 12px;
+  }
+
+  .group-period-title { font-size: 13px; color: var(--text-secondary); font-weight: 300; margin-bottom: 2px; }
+  .group-period-value { font-size: 15px; font-weight: 500; color: var(--text); }
+  .group-pay-label { font-size: 11px; color: var(--text-secondary); font-weight: 300; margin-bottom: 2px; }
+  .group-pay-value { font-size: 14px; font-weight: 600; }
+  .group-pay-value.payday { color: var(--red); }
+  .group-pay-value.normal { color: var(--text); }
+
+  .group-bottom {
+    display: flex; justify-content: space-between;
+    align-items: center; padding-top: 10px;
+    border-top: 1px solid var(--border);
+  }
+
+  .group-amount { font-size: 22px; font-weight: 700; color: var(--text); }
+  .group-count { font-size: 11px; color: var(--text-secondary); font-weight: 300; margin-top: 1px; }
+
+  .group-btn {
+    border: none; border-radius: var(--radius-sm);
+    padding: 10px 18px;
+    font-family: 'Prompt', sans-serif;
+    font-size: 13px; font-weight: 500;
+    cursor: pointer; transition: all 0.2s;
+  }
+  .group-btn:active { transform: scale(0.97); }
+  .group-btn.payday { background: var(--red); color: white; }
+  .group-btn.normal { background: var(--soft); color: var(--text-secondary); border: 1.5px solid var(--border); }
+
+  /* LIST PAGE */
   #staff-list-page { display: none; }
 
-  .back-header {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    margin-bottom: 4px;
+  .list-header {
+    background: var(--red);
+    padding: 48px 20px 24px;
+    border-radius: 0 0 28px 28px;
   }
 
   .back-btn-inline {
@@ -180,12 +153,11 @@
     font-family: 'Prompt', sans-serif;
     font-size: 13px; padding: 6px 12px;
     border-radius: 20px; cursor: pointer;
+    margin-bottom: 8px;
+    display: inline-block;
   }
 
-  .page-title { font-size: 18px; font-weight: 600; color: white; }
-  .page-sub { font-size: 12px; color: rgba(255,255,255,0.7); font-weight: 300; }
-
-  /* ─── STAFF CARD ─── */
+  /* STAFF CARD */
   .staff-card {
     background: var(--white);
     border-radius: var(--radius);
@@ -196,65 +168,54 @@
     transition: all 0.2s;
   }
   .staff-card:active { transform: scale(0.99); }
+  .staff-card.is-paid { opacity: 0.65; }
 
   .staff-card-top {
     padding: 14px 16px;
-    display: flex;
-    align-items: center;
-    gap: 12px;
+    display: flex; align-items: center; gap: 12px;
   }
 
   .staff-avatar {
-    width: 40px; height: 40px;
-    border-radius: 50%;
-    background: var(--red);
-    color: white;
+    width: 40px; height: 40px; border-radius: 50%;
+    background: var(--red); color: white;
     display: flex; align-items: center; justify-content: center;
-    font-size: 15px; font-weight: 600;
-    flex-shrink: 0;
+    font-size: 15px; font-weight: 600; flex-shrink: 0;
   }
+  .staff-avatar.paid { background: var(--green-dark); }
 
   .staff-info { flex: 1; min-width: 0; }
   .staff-name { font-size: 15px; font-weight: 500; color: var(--text); margin-bottom: 2px; }
   .staff-meta { font-size: 11px; color: var(--text-secondary); font-weight: 300; }
 
-  .staff-amount-wrap { text-align: right; flex-shrink: 0; }
+  .staff-right { text-align: right; flex-shrink: 0; }
   .staff-amount { font-size: 18px; font-weight: 700; color: var(--text); }
   .staff-amount-label { font-size: 10px; color: var(--text-secondary); font-weight: 300; }
 
   .staff-card-bottom {
     padding: 8px 16px;
     border-top: 1px solid var(--border);
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
+    display: flex; justify-content: space-between; align-items: center;
   }
 
   .staff-chips { display: flex; gap: 6px; flex-wrap: wrap; }
-
   .chip {
     font-size: 11px; font-weight: 400;
-    padding: 3px 8px;
-    border-radius: 10px;
+    padding: 3px 8px; border-radius: 10px;
   }
   .chip-late { background: var(--danger-bg); color: var(--danger); }
   .chip-ot { background: var(--orange-bg); color: var(--orange); }
   .chip-ot-pending { background: var(--orange-bg); color: var(--orange); }
   .chip-ok { background: var(--green-bg); color: var(--green-dark); }
-  .chip-missing { background: var(--danger-bg); color: var(--danger); }
-  .chip-paid { background: var(--green-bg); color: var(--green-dark); }
 
   .staff-status {
     font-size: 11px; font-weight: 500;
-    padding: 3px 10px;
-    border-radius: 20px;
-    flex-shrink: 0;
+    padding: 3px 10px; border-radius: 20px; flex-shrink: 0;
   }
   .status-ready { background: var(--blue-bg); color: var(--blue); }
   .status-paid { background: var(--green-bg); color: var(--green-dark); }
   .status-missing { background: var(--danger-bg); color: var(--danger); }
 
-  /* ─── DETAIL SHEET ─── */
+  /* DETAIL SHEET */
   .detail-overlay {
     position: fixed; inset: 0;
     background: rgba(0,0,0,0.5);
@@ -268,8 +229,7 @@
     position: absolute; bottom: 0; left: 0; right: 0;
     background: var(--white);
     border-radius: 24px 24px 0 0;
-    max-height: 92vh;
-    overflow-y: auto;
+    max-height: 92vh; overflow-y: auto;
     transform: translateY(100%);
     transition: transform 0.3s cubic-bezier(0.32, 0.72, 0, 1);
   }
@@ -277,27 +237,21 @@
 
   .sheet-handle {
     width: 36px; height: 4px;
-    background: var(--border);
-    border-radius: 2px;
+    background: var(--border); border-radius: 2px;
     margin: 16px auto 0;
   }
 
   .sheet-header {
     padding: 16px 20px 14px;
     border-bottom: 1px solid var(--border);
-    display: flex;
-    align-items: center;
-    gap: 12px;
+    display: flex; align-items: center; gap: 12px;
   }
 
   .sheet-avatar {
-    width: 44px; height: 44px;
-    border-radius: 50%;
-    background: var(--red);
-    color: white;
+    width: 44px; height: 44px; border-radius: 50%;
+    background: var(--red); color: white;
     display: flex; align-items: center; justify-content: center;
-    font-size: 17px; font-weight: 600;
-    flex-shrink: 0;
+    font-size: 17px; font-weight: 600; flex-shrink: 0;
   }
 
   .sheet-name { font-size: 17px; font-weight: 600; color: var(--text); margin-bottom: 2px; }
@@ -310,12 +264,9 @@
     background: var(--red);
     border-radius: var(--radius);
     padding: 18px 20px;
-    margin-bottom: 16px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
+    margin-bottom: 14px;
+    display: flex; justify-content: space-between; align-items: center;
   }
-  .total-box-left {}
   .total-box-label { font-size: 12px; color: rgba(255,255,255,0.75); font-weight: 300; margin-bottom: 4px; }
   .total-box-amount { font-size: 30px; font-weight: 700; color: white; line-height: 1; }
   .total-box-period { font-size: 11px; color: rgba(255,255,255,0.6); font-weight: 300; margin-top: 4px; }
@@ -323,23 +274,59 @@
   .total-box-pay-label { font-size: 11px; color: rgba(255,255,255,0.7); font-weight: 300; margin-bottom: 3px; }
   .total-box-pay-date { font-size: 14px; font-weight: 500; color: white; }
 
+  /* PAID BOX */
+  .paid-box {
+    background: var(--green-bg);
+    border: 1px solid #86EFAC;
+    border-radius: var(--radius);
+    padding: 14px 18px;
+    margin-bottom: 14px;
+    display: flex; align-items: center; gap: 12px;
+  }
+  .paid-box-icon { font-size: 24px; }
+  .paid-box-title { font-size: 15px; font-weight: 600; color: var(--green-dark); }
+  .paid-box-sub { font-size: 12px; color: var(--green-dark); font-weight: 300; opacity: 0.8; }
+
+  /* BANK CARD */
+  .bank-card {
+    background: var(--blue-bg);
+    border: 1px solid #BFDBFE;
+    border-radius: var(--radius-sm);
+    padding: 12px 14px;
+    margin-bottom: 14px;
+    display: flex; align-items: center; gap: 12px;
+  }
+  .bank-icon { font-size: 22px; flex-shrink: 0; }
+  .bank-info { flex: 1; }
+  .bank-name { font-size: 13px; font-weight: 500; color: var(--text); margin-bottom: 2px; }
+  .bank-account { font-size: 16px; font-weight: 600; color: var(--blue); letter-spacing: 0.5px; }
+  .bank-copy-btn {
+    border: none; background: var(--blue); color: white;
+    font-family: 'Prompt', sans-serif;
+    font-size: 11px; font-weight: 500;
+    padding: 6px 12px; border-radius: 8px;
+    cursor: pointer; flex-shrink: 0;
+  }
+
+  /* SECTION LABEL */
+  .section-label {
+    font-size: 11px; color: var(--text-secondary);
+    font-weight: 400; text-transform: uppercase;
+    letter-spacing: 0.5px; margin-bottom: 8px;
+  }
+
   /* OT PENDING */
   .ot-pending-section {
     background: var(--orange-bg);
     border: 1px solid #FED7AA;
     border-radius: var(--radius-sm);
-    padding: 12px 14px;
-    margin-bottom: 14px;
+    padding: 12px 14px; margin-bottom: 14px;
   }
   .ot-pending-title { font-size: 12px; font-weight: 500; color: var(--orange); margin-bottom: 8px; }
   .ot-pending-item {
-    background: var(--white);
-    border-radius: 8px;
-    padding: 10px 12px;
-    margin-bottom: 8px;
-    display: flex;
-    align-items: center;
-    gap: 10px;
+    background: var(--white); border-radius: 8px;
+    padding: 10px 12px; margin-bottom: 8px;
+    display: flex; align-items: center; gap: 10px;
   }
   .ot-pending-item:last-child { margin-bottom: 0; }
   .ot-pending-info { flex: 1; }
@@ -357,23 +344,15 @@
   .ot-btn.reject { background: var(--danger-bg); color: var(--danger); }
 
   /* BREAKDOWN */
-  .breakdown-section { margin-bottom: 14px; }
-  .section-label {
-    font-size: 11px; color: var(--text-secondary);
-    font-weight: 400; text-transform: uppercase;
-    letter-spacing: 0.5px; margin-bottom: 8px;
-  }
   .breakdown-box {
     background: var(--soft);
     border: 1px solid var(--border);
     border-radius: var(--radius-sm);
-    padding: 12px 14px;
+    padding: 12px 14px; margin-bottom: 14px;
   }
   .breakdown-row {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 5px 0;
+    display: flex; justify-content: space-between;
+    align-items: center; padding: 5px 0;
     border-bottom: 1px solid var(--border);
   }
   .breakdown-row:last-child { border-bottom: none; padding-bottom: 0; }
@@ -383,28 +362,18 @@
   .breakdown-value.minus { color: var(--danger); }
   .breakdown-total { font-size: 16px; font-weight: 700; color: var(--red); }
 
-  /* TIMESHEET ROWS */
+  /* TIMESHEET */
   .ts-item {
-    background: var(--white);
-    border: 1px solid var(--border);
+    background: var(--white); border: 1px solid var(--border);
     border-radius: var(--radius-sm);
-    padding: 10px 12px;
-    margin-bottom: 8px;
+    padding: 10px 12px; margin-bottom: 8px;
   }
   .ts-item:last-child { margin-bottom: 0; }
-  .ts-top {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 5px;
-  }
+  .ts-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px; }
   .ts-date { font-size: 13px; font-weight: 500; color: var(--text); }
   .ts-day-total { font-size: 13px; font-weight: 600; color: var(--blue); }
   .ts-chips { display: flex; gap: 5px; flex-wrap: wrap; }
-  .ts-chip {
-    font-size: 11px; padding: 2px 7px;
-    border-radius: 8px; font-weight: 400;
-  }
+  .ts-chip { font-size: 11px; padding: 2px 7px; border-radius: 8px; font-weight: 400; }
   .tc-time { background: var(--soft); color: var(--text-secondary); border: 1px solid var(--border); }
   .tc-late { background: var(--danger-bg); color: var(--danger); }
   .tc-ot { background: var(--blue-bg); color: var(--blue); }
@@ -418,12 +387,10 @@
     padding: 10px 12px;
     font-family: 'Prompt', sans-serif;
     font-size: 14px; font-weight: 300;
-    color: var(--text); background: var(--soft);
-    outline: none;
+    color: var(--text); background: var(--soft); outline: none;
   }
   .adjust-input:focus { border-color: var(--red); }
   .adjust-unit { font-size: 13px; color: var(--text-secondary); }
-
   .adjust-note {
     width: 100%; border: 1.5px solid var(--border);
     border-radius: var(--radius-sm);
@@ -439,8 +406,7 @@
   .sheet-actions { display: flex; gap: 10px; }
   .sheet-btn {
     flex: 1; border: none;
-    border-radius: var(--radius-sm);
-    padding: 14px;
+    border-radius: var(--radius-sm); padding: 14px;
     font-family: 'Prompt', sans-serif;
     font-size: 14px; font-weight: 500;
     cursor: pointer; transition: all 0.2s;
@@ -448,14 +414,16 @@
   .sheet-btn:active { transform: scale(0.97); }
   .sheet-btn.close { background: var(--soft); color: var(--text-secondary); border: 1.5px solid var(--border); }
   .sheet-btn.confirm { background: var(--green); color: white; }
-  .sheet-btn.confirm:disabled { background: #D1FAE5; color: #6EE7B7; cursor: not-allowed; }
+  .sheet-btn.confirm:disabled { background: #D1FAE5; color: #6EE7B7; cursor: not-allowed; transform: none; }
 
-  /* ─── EMPTY ─── */
+  .warn-text { text-align: center; font-size: 11px; color: var(--orange); font-weight: 300; margin-top: 8px; }
+
+  /* EMPTY */
   .empty-state { text-align: center; padding: 32px 20px; }
   .empty-icon { font-size: 32px; margin-bottom: 8px; }
   .empty-text { font-size: 13px; color: var(--text-secondary); font-weight: 300; }
 
-  /* ─── TOAST / LOADING ─── */
+  /* TOAST / LOADING */
   .toast {
     position: fixed; bottom: 24px; left: 50%;
     transform: translateX(-50%) translateY(80px);
@@ -485,13 +453,11 @@
     animation: spin 0.7s linear infinite;
   }
   @keyframes spin { to { transform: rotate(360deg); } }
-
-  .divider { height: 1px; background: var(--border); margin: 4px 0 12px; }
 </style>
 </head>
 <body>
 
-<!-- ══════════════ HEADER ══════════════ -->
+<!-- MAIN HEADER -->
 <div class="app-header" id="main-header">
   <div class="header-top">
     <div class="header-logo">EASY</div>
@@ -501,27 +467,27 @@
   <div class="header-sub" id="header-sub">กำลังโหลด...</div>
 </div>
 
-<!-- ══════════════ MAIN PAGE ══════════════ -->
+<!-- MAIN PAGE -->
 <div id="main-page">
   <div class="app-body" id="main-body">
     <div class="empty-state"><div class="spinner" style="margin:0 auto"></div></div>
   </div>
 </div>
 
-<!-- ══════════════ STAFF LIST PAGE ══════════════ -->
+<!-- STAFF LIST PAGE -->
 <div id="staff-list-page">
-  <div class="app-header">
+  <div class="list-header">
     <div class="header-top">
       <button class="back-btn-inline" onclick="backToMain()">← กลับ</button>
       <button class="logout-btn" onclick="logout()">ออกจากระบบ</button>
     </div>
-    <div class="header-title" id="list-page-title">—</div>
-    <div class="header-sub" id="list-page-sub">—</div>
+    <div class="header-title" id="list-title">—</div>
+    <div class="header-sub" id="list-sub">—</div>
   </div>
   <div class="app-body" id="staff-list-body"></div>
 </div>
 
-<!-- ══════════════ DETAIL SHEET ══════════════ -->
+<!-- DETAIL SHEET -->
 <div class="detail-overlay" id="detail-overlay" onclick="closeDetailOutside(event)">
   <div class="detail-sheet">
     <div class="sheet-handle"></div>
@@ -544,16 +510,16 @@ const API_URL = 'https://script.google.com/macros/s/AKfycbxxTjC7xOGHlgyStVBf6Sim
 const SESSION_KEY = 'easy_session';
 
 const THAI_MONTHS = ['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
-const THAI_DAYS_SHORT = ['อา.','จ.','อ.','พ.','พฤ.','ศ.','ส.'];
 
 let allStaff = [];
 let allTimesheets = [];
 let settings = {};
-let currentGroup = null; // 'fulltime' or 'parttime'
+let currentGroup = null;
 let currentStaffData = null;
 let manualAdjust = 0;
+let paidStaffIds = new Set(); // เก็บ staff_id ที่จ่ายแล้วในรอบนี้
 
-// ─── DATE HELPERS ───
+// ─── HELPERS ───
 function toDateStr(d) {
   return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
 }
@@ -566,48 +532,6 @@ function thaiDate(dateStr) {
 
 function formatMoney(n) {
   return '฿' + Number(n||0).toLocaleString('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-}
-
-// ─── PERIOD CALCULATOR ───
-function getCurrentPeriods() {
-  const now = new Date();
-  const y = now.getFullYear();
-  const m = now.getMonth();
-  const d = now.getDate();
-  const dow = now.getDay(); // 0=อา, 1=จ
-
-  // Bimonthly: รอบปัจจุบัน
-  let ftStart, ftEnd, ftPayDate;
-  if (d <= 15) {
-    ftStart = toDateStr(new Date(y, m, 1));
-    ftEnd = toDateStr(new Date(y, m, 15));
-    ftPayDate = toDateStr(new Date(y, m, 16));
-  } else {
-    const lastDay = new Date(y, m+1, 0).getDate();
-    ftStart = toDateStr(new Date(y, m, 16));
-    ftEnd = toDateStr(new Date(y, m, lastDay));
-    ftPayDate = toDateStr(new Date(y, m+1, 1));
-  }
-
-  // Weekly: จันทร์–อาทิตย์ของอาทิตย์ปัจจุบัน
-  const mondayOffset = dow === 0 ? -6 : 1 - dow;
-  const mon = new Date(now);
-  mon.setDate(now.getDate() + mondayOffset);
-  const sun = new Date(mon);
-  sun.setDate(mon.getDate() + 6);
-  const nextMon = new Date(mon);
-  nextMon.setDate(mon.getDate() + 7);
-
-  const ptStart = toDateStr(mon);
-  const ptEnd = toDateStr(sun);
-  const ptPayDate = toDateStr(nextMon);
-
-  // เช็คว่าใกล้วันจ่ายไหม (ภายใน 2 วัน)
-  const todayStr = toDateStr(now);
-  const ftIsPayDay = todayStr >= ftPayDate && todayStr <= addDays(ftPayDate, 1);
-  const ptIsPayDay = dow === 1; // วันจันทร์ = วันจ่าย parttime
-
-  return { ftStart, ftEnd, ftPayDate, ftIsPayDay, ptStart, ptEnd, ptPayDate, ptIsPayDay };
 }
 
 function addDays(dateStr, n) {
@@ -625,6 +549,47 @@ function periodLabel(start, end) {
   return `${s.getDate()} ${THAI_MONTHS[s.getMonth()]} – ${e.getDate()} ${THAI_MONTHS[e.getMonth()]} ${e.getFullYear()+543}`;
 }
 
+// ─── PERIOD CALCULATOR ───
+function getCurrentPeriods() {
+  const now = new Date();
+  const y = now.getFullYear();
+  const m = now.getMonth();
+  const d = now.getDate();
+  const dow = now.getDay();
+
+  // Fulltime bimonthly
+  let ftStart, ftEnd, ftPayDate;
+  if (d <= 15) {
+    ftStart = toDateStr(new Date(y, m, 1));
+    ftEnd = toDateStr(new Date(y, m, 15));
+    ftPayDate = toDateStr(new Date(y, m, 16));
+  } else {
+    const lastDay = new Date(y, m+1, 0).getDate();
+    ftStart = toDateStr(new Date(y, m, 16));
+    ftEnd = toDateStr(new Date(y, m, lastDay));
+    ftPayDate = toDateStr(new Date(y, m+1, 1));
+  }
+
+  // Parttime weekly จันทร์–อาทิตย์
+  const mondayOffset = dow === 0 ? -6 : 1 - dow;
+  const mon = new Date(now);
+  mon.setDate(now.getDate() + mondayOffset);
+  const sun = new Date(mon);
+  sun.setDate(mon.getDate() + 6);
+  const nextMon = new Date(mon);
+  nextMon.setDate(mon.getDate() + 7);
+
+  const ptStart = toDateStr(mon);
+  const ptEnd = toDateStr(sun);
+  const ptPayDate = toDateStr(nextMon);
+
+  const todayStr = toDateStr(now);
+  const ftIsPayDay = todayStr === ftPayDate || todayStr === addDays(ftPayDate, 1);
+  const ptIsPayDay = dow === 1;
+
+  return { ftStart, ftEnd, ftPayDate, ftIsPayDay, ptStart, ptEnd, ptPayDate, ptIsPayDay };
+}
+
 // ─── PAYROLL CALC ───
 function calcPayroll(staff, timesheets, periodStart, periodEnd) {
   const ts = timesheets.filter(t => {
@@ -638,8 +603,7 @@ function calcPayroll(staff, timesheets, periodStart, periodEnd) {
 
   let basePay = 0, otPay = 0, lateDeduct = 0;
   let daysWorked = 0, hoursWorked = 0;
-  let details = [];
-  let pendingOTs = [];
+  let details = [], pendingOTs = [];
 
   ts.forEach(t => {
     if (!t.clock_in) return;
@@ -651,11 +615,9 @@ function calcPayroll(staff, timesheets, periodStart, periodEnd) {
     let dayBase = 0, dayDeduct = 0, dayOT = 0;
 
     if (staff.pay_type === 'daily') {
-      dayBase = rate;
-      daysWorked++;
+      dayBase = rate; daysWorked++;
       if (lateMin > lateGrace) {
-        const minsPerDay = 8 * 60;
-        dayDeduct = parseFloat(((rate / minsPerDay) * lateMin).toFixed(2));
+        dayDeduct = parseFloat(((rate / 480) * lateMin).toFixed(2));
         lateDeduct += dayDeduct;
       }
     } else {
@@ -670,18 +632,12 @@ function calcPayroll(staff, timesheets, periodStart, periodEnd) {
     }
 
     if (otPending) {
-      pendingOTs.push({
-        record_id: t.record_id,
-        date: t.date,
-        ot_hours: otHours,
-        ot_reason: t.ot_reason || '—'
-      });
+      pendingOTs.push({ record_id: t.record_id, date: t.date, ot_hours: otHours, ot_reason: t.ot_reason || '—' });
     }
 
     basePay += dayBase;
     details.push({
       date: t.date, clock_in: t.clock_in, clock_out: t.clock_out,
-      hours: staff.pay_type === 'daily' ? 8 : (parseFloat(t.hours_worked)||0),
       late_min: lateMin, late_deduct: dayDeduct,
       ot_hours: otHours, ot_pay: dayOT, ot_status: t.ot_status,
       ot_reason: t.ot_reason, record_id: t.record_id,
@@ -693,12 +649,11 @@ function calcPayroll(staff, timesheets, periodStart, periodEnd) {
   return { staff, days_worked: daysWorked, hours_worked: parseFloat(hoursWorked.toFixed(2)), base_pay: parseFloat(basePay.toFixed(2)), ot_pay: parseFloat(otPay.toFixed(2)), late_deduct: parseFloat(lateDeduct.toFixed(2)), total, details, pendingOTs, ts_count: ts.length };
 }
 
-// ─── RENDER MAIN PAGE ───
+// ─── RENDER MAIN ───
 function renderMainPage() {
   const periods = getCurrentPeriods();
   const now = new Date();
 
-  // หา pending OTs ทั้งหมด
   const ftStaff = allStaff.filter(s => s.role !== 'admin' && s.pay_type === 'daily');
   const ptStaff = allStaff.filter(s => s.role !== 'admin' && s.pay_type === 'hourly');
 
@@ -709,7 +664,6 @@ function renderMainPage() {
   const ftTotal = ftPayrolls.reduce((a,p) => a + p.total, 0);
   const ptTotal = ptPayrolls.reduce((a,p) => a + p.total, 0);
 
-  // update header
   document.getElementById('header-sub').textContent = `วันนี้: ${thaiDate(toDateStr(now))}`;
 
   let html = '';
@@ -717,74 +671,65 @@ function renderMainPage() {
   // OT Alert
   if (allPendingOTs.length > 0) {
     html += `
-      <div class="ot-alert" onclick="scrollToOT()">
+      <div class="ot-alert" onclick="openGroup(currentGroup || 'fulltime')">
         <div class="ot-alert-icon">⏰</div>
         <div class="ot-alert-text">
           <div class="ot-alert-title">มี OT รออนุมัติ ${allPendingOTs.length} รายการ</div>
           <div class="ot-alert-sub">กดเพื่อดูรายละเอียดและอนุมัติ</div>
         </div>
         <div class="ot-alert-arrow">›</div>
-      </div>
-    `;
+      </div>`;
   }
 
-  // ─── FULLTIME GROUP ───
-  const ftIsPayDay = periods.ftIsPayDay;
+  // Fulltime card
   html += `
-    <div class="card" style="padding:14px 16px">
-      <div style="font-size:11px;color:var(--text-secondary);font-weight:400;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:10px">
-        💼 พนักงานประจำ
-      </div>
-      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px">
+    <div class="group-card">
+      <div class="group-label">💼 พนักงานประจำ</div>
+      <div class="group-period-row">
         <div>
-          <div style="font-size:13px;color:var(--text-secondary);font-weight:300">รอบนี้</div>
-          <div style="font-size:15px;font-weight:500;color:var(--text)">${periodLabel(periods.ftStart, periods.ftEnd)}</div>
+          <div class="group-period-title">รอบนี้</div>
+          <div class="group-period-value">${periodLabel(periods.ftStart, periods.ftEnd)}</div>
         </div>
         <div style="text-align:right">
-          <div style="font-size:11px;color:var(--text-secondary);font-weight:300">จ่ายวันที่</div>
-          <div style="font-size:14px;font-weight:600;color:${ftIsPayDay ? 'var(--red)' : 'var(--text)'}">${thaiDate(periods.ftPayDate)}</div>
+          <div class="group-pay-label">จ่ายวันที่</div>
+          <div class="group-pay-value ${periods.ftIsPayDay ? 'payday' : 'normal'}">${thaiDate(periods.ftPayDate)}</div>
         </div>
       </div>
-      <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-top:1px solid var(--border)">
+      <div class="group-bottom">
         <div>
-          <div style="font-size:22px;font-weight:700;color:var(--text)">${formatMoney(ftTotal)}</div>
-          <div style="font-size:11px;color:var(--text-secondary);font-weight:300">${ftStaff.length} คน</div>
+          <div class="group-amount">${formatMoney(ftTotal)}</div>
+          <div class="group-count">${ftStaff.length} คน</div>
         </div>
-        <button onclick="openGroup('fulltime')" style="border:none;border-radius:var(--radius-sm);padding:10px 18px;font-family:'Prompt',sans-serif;font-size:13px;font-weight:500;cursor:pointer;background:${ftIsPayDay ? 'var(--red)' : 'var(--soft)'};color:${ftIsPayDay ? 'white' : 'var(--text-secondary)'};border:${ftIsPayDay ? 'none' : '1.5px solid var(--border)'}">
-          ${ftIsPayDay ? '💰 จ่ายเงิน' : '📋 ดูรายละเอียด'}
+        <button class="group-btn ${periods.ftIsPayDay ? 'payday' : 'normal'}" onclick="openGroup('fulltime')">
+          ${periods.ftIsPayDay ? '💰 จ่ายเงิน' : '📋 ดูรายละเอียด'}
         </button>
       </div>
-    </div>
-  `;
+    </div>`;
 
-  // ─── PARTTIME GROUP ───
-  const ptIsPayDay = periods.ptIsPayDay;
+  // Parttime card
   html += `
-    <div class="card" style="padding:14px 16px">
-      <div style="font-size:11px;color:var(--text-secondary);font-weight:400;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:10px">
-        👤 Part-time
-      </div>
-      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px">
+    <div class="group-card">
+      <div class="group-label">👤 Part-time</div>
+      <div class="group-period-row">
         <div>
-          <div style="font-size:13px;color:var(--text-secondary);font-weight:300">รอบนี้</div>
-          <div style="font-size:15px;font-weight:500;color:var(--text)">${periodLabel(periods.ptStart, periods.ptEnd)}</div>
+          <div class="group-period-title">รอบนี้</div>
+          <div class="group-period-value">${periodLabel(periods.ptStart, periods.ptEnd)}</div>
         </div>
         <div style="text-align:right">
-          <div style="font-size:11px;color:var(--text-secondary);font-weight:300">จ่ายวันที่</div>
-          <div style="font-size:14px;font-weight:600;color:${ptIsPayDay ? 'var(--red)' : 'var(--text)'}">${thaiDate(periods.ptPayDate)}</div>
+          <div class="group-pay-label">จ่ายวันที่</div>
+          <div class="group-pay-value ${periods.ptIsPayDay ? 'payday' : 'normal'}">${thaiDate(periods.ptPayDate)}</div>
         </div>
       </div>
-      <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-top:1px solid var(--border)">
+      <div class="group-bottom">
         <div>
-          <div style="font-size:22px;font-weight:700;color:var(--text)">${formatMoney(ptTotal)}</div>
-          <div style="font-size:11px;color:var(--text-secondary);font-weight:300">${ptStaff.length} คน</div>
+          <div class="group-amount">${formatMoney(ptTotal)}</div>
+          <div class="group-count">${ptStaff.length} คน</div>
         </div>
-        <button onclick="openGroup('parttime')" style="border:none;border-radius:var(--radius-sm);padding:10px 18px;font-family:'Prompt',sans-serif;font-size:13px;font-weight:500;cursor:pointer;background:${ptIsPayDay ? 'var(--red)' : 'var(--soft)'};color:${ptIsPayDay ? 'white' : 'var(--text-secondary)'};border:${ptIsPayDay ? 'none' : '1.5px solid var(--border)'}">
-          ${ptIsPayDay ? '💰 จ่ายเงิน' : '📋 ดูรายละเอียด'}
+        <button class="group-btn ${periods.ptIsPayDay ? 'payday' : 'normal'}" onclick="openGroup('parttime')">
+          ${periods.ptIsPayDay ? '💰 จ่ายเงิน' : '📋 ดูรายละเอียด'}
         </button>
       </div>
-    </div>
-  `;
+    </div>`;
 
   document.getElementById('main-body').innerHTML = html;
 }
@@ -792,6 +737,7 @@ function renderMainPage() {
 // ─── OPEN GROUP ───
 async function openGroup(type) {
   currentGroup = type;
+  paidStaffIds = new Set();
   showLoading(true);
 
   const periods = getCurrentPeriods();
@@ -801,65 +747,69 @@ async function openGroup(type) {
   const end = isFulltime ? periods.ftEnd : periods.ptEnd;
   const payDate = isFulltime ? periods.ftPayDate : periods.ptPayDate;
 
-  // โหลด timesheets ใหม่สำหรับรอบนี้
   try {
-    const res = await apiGet(`action=getTimesheets&date_from=${start}&date_to=${end}`);
-    allTimesheets = res.success ? res.data : [];
+    const [tsRes, prRes] = await Promise.all([
+      apiGet(`action=getTimesheets&date_from=${start}&date_to=${end}`),
+      apiGet(`action=getPayrollRuns`)
+    ]);
+    allTimesheets = tsRes.success ? tsRes.data : [];
+
+    // เช็ค staff ที่จ่ายแล้วในรอบนี้
+    if (prRes.success) {
+      prRes.data.forEach(pr => {
+        if (pr.period_start === start && pr.period_end === end && pr.status === 'paid') {
+          paidStaffIds.add(pr.staff_id);
+        }
+      });
+    }
   } catch {}
 
   const payrolls = staff.map(s => calcPayroll(s, allTimesheets, start, end));
 
-  // update header
-  document.getElementById('list-page-title').textContent = isFulltime ? '💼 พนักงานประจำ' : '👤 Part-time';
-  document.getElementById('list-page-sub').textContent = `${periodLabel(start, end)} · จ่าย ${thaiDate(payDate)}`;
+  document.getElementById('list-title').textContent = isFulltime ? '💼 พนักงานประจำ' : '👤 Part-time';
+  document.getElementById('list-sub').textContent = `${periodLabel(start, end)} · จ่าย ${thaiDate(payDate)}`;
 
-  // render list
   let html = '';
-
   if (!payrolls.length) {
     html = '<div class="empty-state"><div class="empty-icon">👥</div><div class="empty-text">ไม่พบพนักงานในกลุ่มนี้</div></div>';
   } else {
     payrolls.forEach(p => {
+      const isPaid = paidStaffIds.has(p.staff.staff_id);
       const initials = (p.staff.nickname || p.staff.name || '?').charAt(0);
       const workLabel = isFulltime ? `${p.days_worked} วัน` : `${p.hours_worked} ชม.`;
       const hasPendingOT = p.pendingOTs.length > 0;
-      const hasLate = p.late_deduct > 0;
       const isEmpty = p.ts_count === 0;
 
-      let statusClass = 'status-ready';
-      let statusLabel = '📋 พร้อมจ่าย';
-      if (isEmpty) { statusClass = 'status-missing'; statusLabel = '⚠️ ไม่มีข้อมูล'; }
+      let statusClass = isPaid ? 'status-paid' : (isEmpty ? 'status-missing' : 'status-ready');
+      let statusLabel = isPaid ? '✅ จ่ายแล้ว' : (isEmpty ? '⚠️ ไม่มีข้อมูล' : '📋 พร้อมจ่าย');
 
       html += `
-        <div class="staff-card" onclick="openDetail('${p.staff.staff_id}', '${start}', '${end}', '${payDate}')">
+        <div class="staff-card ${isPaid ? 'is-paid' : ''}" onclick="openDetail('${p.staff.staff_id}', '${start}', '${end}', '${payDate}')">
           <div class="staff-card-top">
-            <div class="staff-avatar">${initials}</div>
+            <div class="staff-avatar ${isPaid ? 'paid' : ''}">${isPaid ? '✓' : initials}</div>
             <div class="staff-info">
               <div class="staff-name">${p.staff.nickname || p.staff.name}</div>
               <div class="staff-meta">${isFulltime ? `฿${p.staff.rate}/วัน` : `฿${p.staff.rate}/ชม.`} · ${workLabel}</div>
             </div>
-            <div class="staff-amount-wrap">
+            <div class="staff-right">
               <div class="staff-amount">${formatMoney(p.total)}</div>
               <div class="staff-amount-label">ยอดสุทธิ</div>
             </div>
           </div>
           <div class="staff-card-bottom">
             <div class="staff-chips">
-              ${hasLate ? `<span class="chip chip-late">หัก ฿${p.late_deduct.toFixed(0)}</span>` : ''}
+              ${p.late_deduct > 0 ? `<span class="chip chip-late">หัก ฿${p.late_deduct.toFixed(0)}</span>` : ''}
               ${p.ot_pay > 0 ? `<span class="chip chip-ot">OT ฿${p.ot_pay.toFixed(0)}</span>` : ''}
               ${hasPendingOT ? `<span class="chip chip-ot-pending">⏰ OT รออนุมัติ</span>` : ''}
-              ${!hasLate && !p.ot_pay && !hasPendingOT && !isEmpty ? `<span class="chip chip-ok">ปกติ</span>` : ''}
+              ${!p.late_deduct && !p.ot_pay && !hasPendingOT && !isEmpty ? `<span class="chip chip-ok">ปกติ</span>` : ''}
             </div>
             <div class="staff-status ${statusClass}">${statusLabel}</div>
           </div>
-        </div>
-      `;
+        </div>`;
     });
   }
 
   document.getElementById('staff-list-body').innerHTML = html;
-
-  // switch page
   document.getElementById('main-page').style.display = 'none';
   document.getElementById('main-header').style.display = 'none';
   document.getElementById('staff-list-page').style.display = 'block';
@@ -875,32 +825,45 @@ function backToMain() {
 
 // ─── DETAIL ───
 function openDetail(staffId, start, end, payDate) {
-  const payroll = calcPayroll(
-    allStaff.find(s => s.staff_id === staffId),
-    allTimesheets, start, end
-  );
-  currentStaffData = { payroll, start, end, payDate };
+  const staff = allStaff.find(s => s.staff_id === staffId);
+  const payroll = calcPayroll(staff, allTimesheets, start, end);
+  const isPaid = paidStaffIds.has(staffId);
+
+  currentStaffData = { payroll, start, end, payDate, isPaid };
   manualAdjust = 0;
 
-  document.getElementById('d-avatar').textContent = (payroll.staff.nickname || payroll.staff.name || '?').charAt(0);
-  document.getElementById('d-name').textContent = payroll.staff.name;
-  document.getElementById('d-meta').textContent = `${payroll.staff.staff_type === 'fulltime' ? 'พนักงานประจำ' : 'Part-time'} · ${payroll.staff.shift === 'morning' ? 'กะเช้า' : 'กะดึก'}`;
+  document.getElementById('d-avatar').textContent = (staff.nickname || staff.name || '?').charAt(0);
+  document.getElementById('d-name').textContent = staff.name;
+  document.getElementById('d-meta').textContent = `${staff.staff_type === 'fulltime' ? 'พนักงานประจำ' : 'Part-time'} · ${staff.shift === 'morning' ? 'กะเช้า' : 'กะดึก'}`;
 
   renderDetailBody();
   document.getElementById('detail-overlay').classList.add('visible');
 }
 
 function renderDetailBody() {
-  const { payroll, start, end, payDate } = currentStaffData;
+  const { payroll, start, end, payDate, isPaid } = currentStaffData;
   const totalWithAdjust = payroll.total + manualAdjust;
   const isFulltime = payroll.staff.pay_type === 'daily';
+  const hasPending = payroll.pendingOTs.length > 0;
 
   let html = '';
+
+  // ถ้าจ่ายแล้ว — แสดง paid box
+  if (isPaid) {
+    html += `
+      <div class="paid-box">
+        <div class="paid-box-icon">✅</div>
+        <div>
+          <div class="paid-box-title">จ่ายเงินแล้ว</div>
+          <div class="paid-box-sub">รอบ ${periodLabel(start, end)}</div>
+        </div>
+      </div>`;
+  }
 
   // TOTAL BOX
   html += `
     <div class="total-box">
-      <div class="total-box-left">
+      <div>
         <div class="total-box-label">ยอดจ่ายสุทธิ</div>
         <div class="total-box-amount">${formatMoney(totalWithAdjust)}</div>
         <div class="total-box-period">${periodLabel(start, end)}</div>
@@ -909,11 +872,23 @@ function renderDetailBody() {
         <div class="total-box-pay-label">จ่ายวันที่</div>
         <div class="total-box-pay-date">${thaiDate(payDate)}</div>
       </div>
-    </div>
-  `;
+    </div>`;
+
+  // BANK ACCOUNT
+  if (payroll.staff.bank_name || payroll.staff.bank_account) {
+    html += `
+      <div class="bank-card">
+        <div class="bank-icon">🏦</div>
+        <div class="bank-info">
+          <div class="bank-name">${payroll.staff.bank_name || '—'}</div>
+          <div class="bank-account">${payroll.staff.bank_account || '—'}</div>
+        </div>
+        <button class="bank-copy-btn" onclick="copyAccount('${payroll.staff.bank_account}')">Copy</button>
+      </div>`;
+  }
 
   // OT PENDING
-  if (payroll.pendingOTs.length > 0) {
+  if (hasPending && !isPaid) {
     html += `<div class="ot-pending-section">
       <div class="ot-pending-title">⏰ OT รออนุมัติ — กรุณาตรวจสอบก่อนจ่าย</div>`;
     payroll.pendingOTs.forEach(ot => {
@@ -927,45 +902,41 @@ function renderDetailBody() {
             <button class="ot-btn approve" onclick="approveOT('${ot.record_id}', true)">✓ อนุมัติ</button>
             <button class="ot-btn reject" onclick="approveOT('${ot.record_id}', false)">✗ ปฏิเสธ</button>
           </div>
-        </div>
-      `;
+        </div>`;
     });
     html += `</div>`;
   }
 
   // BREAKDOWN
   html += `
-    <div class="breakdown-section">
-      <div class="section-label">สรุปค่าแรง</div>
-      <div class="breakdown-box">
-        <div class="breakdown-row">
-          <span class="breakdown-label">${isFulltime ? `ค่าแรง ${payroll.days_worked} วัน × ฿${payroll.staff.rate}` : `ค่าแรง ${payroll.hours_worked} ชม. × ฿${payroll.staff.rate}`}</span>
-          <span class="breakdown-value plus">${formatMoney(payroll.base_pay)}</span>
-        </div>
-        ${payroll.ot_pay > 0 ? `
-        <div class="breakdown-row">
-          <span class="breakdown-label">OT (อนุมัติแล้ว)</span>
-          <span class="breakdown-value plus">+${formatMoney(payroll.ot_pay)}</span>
-        </div>` : ''}
-        ${payroll.late_deduct > 0 ? `
-        <div class="breakdown-row">
-          <span class="breakdown-label">หักสาย</span>
-          <span class="breakdown-value minus">-${formatMoney(payroll.late_deduct)}</span>
-        </div>` : ''}
-        ${manualAdjust !== 0 ? `
-        <div class="breakdown-row">
-          <span class="breakdown-label">ปรับพิเศษ</span>
-          <span class="breakdown-value ${manualAdjust >= 0 ? 'plus' : 'minus'}">${manualAdjust >= 0 ? '+' : ''}${formatMoney(manualAdjust)}</span>
-        </div>` : ''}
-        <div class="breakdown-row" style="border-top:2px solid var(--border);margin-top:4px;padding-top:8px">
-          <span class="breakdown-label" style="font-weight:500;color:var(--text)">รวมจ่าย</span>
-          <span class="breakdown-value breakdown-total">${formatMoney(totalWithAdjust)}</span>
-        </div>
+    <div class="section-label">สรุปค่าแรง</div>
+    <div class="breakdown-box">
+      <div class="breakdown-row">
+        <span class="breakdown-label">${isFulltime ? `ค่าแรง ${payroll.days_worked} วัน × ฿${payroll.staff.rate}` : `ค่าแรง ${payroll.hours_worked} ชม. × ฿${payroll.staff.rate}`}</span>
+        <span class="breakdown-value plus">${formatMoney(payroll.base_pay)}</span>
       </div>
-    </div>
-  `;
+      ${payroll.ot_pay > 0 ? `
+      <div class="breakdown-row">
+        <span class="breakdown-label">OT (อนุมัติแล้ว)</span>
+        <span class="breakdown-value plus">+${formatMoney(payroll.ot_pay)}</span>
+      </div>` : ''}
+      ${payroll.late_deduct > 0 ? `
+      <div class="breakdown-row">
+        <span class="breakdown-label">หักสาย</span>
+        <span class="breakdown-value minus">-${formatMoney(payroll.late_deduct)}</span>
+      </div>` : ''}
+      ${manualAdjust !== 0 ? `
+      <div class="breakdown-row">
+        <span class="breakdown-label">ปรับพิเศษ</span>
+        <span class="breakdown-value ${manualAdjust >= 0 ? 'plus' : 'minus'}">${manualAdjust >= 0 ? '+' : ''}${formatMoney(manualAdjust)}</span>
+      </div>` : ''}
+      <div class="breakdown-row" style="border-top:2px solid var(--border);margin-top:4px;padding-top:8px">
+        <span class="breakdown-label" style="font-weight:500;color:var(--text)">รวมจ่าย</span>
+        <span class="breakdown-value breakdown-total">${formatMoney(totalWithAdjust)}</span>
+      </div>
+    </div>`;
 
-  // TIMESHEET DETAILS
+  // TIMESHEET
   if (payroll.details.length > 0) {
     html += `<div class="section-label">รายละเอียดแต่ละวัน</div>`;
     payroll.details.forEach(d => {
@@ -981,41 +952,54 @@ function renderDetailBody() {
             ${d.late_min > 0 && d.late_min <= 15 ? `<span class="ts-chip tc-ok">สาย ${d.late_min} นาที (ไม่หัก)</span>` : ''}
             ${d.ot_hours > 0 && d.ot_status === 'approved' ? `<span class="ts-chip tc-ot">OT ${(d.ot_hours*60).toFixed(0)} นาที ✓</span>` : ''}
           </div>
-        </div>
-      `;
+        </div>`;
     });
     html += `<div style="margin-bottom:14px"></div>`;
   } else {
     html += `<div class="empty-state" style="padding:16px"><div class="empty-icon">📭</div><div class="empty-text">ไม่มีข้อมูลการเข้างานในรอบนี้</div></div>`;
   }
 
-  // MANUAL ADJUST
-  html += `
-    <div class="section-label">ปรับยอดพิเศษ (ถ้ามี)</div>
-    <div class="adjust-row">
-      <input class="adjust-input" type="number" id="adjust-amount"
-        placeholder="เช่น 100 หรือ -50"
-        value="${manualAdjust || ''}"
-        oninput="liveAdjust(this.value)">
-      <span class="adjust-unit">บาท</span>
-    </div>
-    <textarea class="adjust-note" id="adjust-note" rows="2"
-      placeholder="เหตุผล เช่น โบนัส, ปรับพิเศษ..."></textarea>
-  `;
+  // ADJUST (แสดงเฉพาะยังไม่จ่าย)
+  if (!isPaid) {
+    html += `
+      <div class="section-label">ปรับยอดพิเศษ (ถ้ามี)</div>
+      <div class="adjust-row">
+        <input class="adjust-input" type="number" id="adjust-amount"
+          placeholder="เช่น 100 หรือ -50"
+          value="${manualAdjust || ''}"
+          oninput="liveAdjust(this.value)">
+        <span class="adjust-unit">บาท</span>
+      </div>
+      <textarea class="adjust-note" id="adjust-note" rows="2"
+        placeholder="เหตุผล เช่น โบนัส, ปรับพิเศษ..."></textarea>`;
+  }
 
   // ACTIONS
-  const hasPending = payroll.pendingOTs.length > 0;
-  html += `
-    <div class="sheet-actions">
-      <button class="sheet-btn close" onclick="closeDetail()">ปิด</button>
-      <button class="sheet-btn confirm" onclick="confirmPayroll()" ${hasPending ? 'disabled title="อนุมัติ OT ก่อน"' : ''}>
-        ${hasPending ? '⚠️ อนุมัติ OT ก่อน' : '✅ ยืนยันจ่ายเงิน'}
-      </button>
-    </div>
-    ${hasPending ? '<div style="text-align:center;font-size:11px;color:var(--orange);font-weight:300;margin-top:8px">กรุณาอนุมัติหรือปฏิเสธ OT ทุกรายการก่อนกดยืนยัน</div>' : ''}
-  `;
+  if (!isPaid) {
+    html += `
+      <div class="sheet-actions">
+        <button class="sheet-btn close" onclick="closeDetail()">ปิด</button>
+        <button class="sheet-btn confirm" onclick="confirmPayroll()" ${hasPending ? 'disabled' : ''}>
+          ${hasPending ? '⚠️ อนุมัติ OT ก่อน' : '✅ ยืนยันจ่ายเงิน'}
+        </button>
+      </div>
+      ${hasPending ? '<div class="warn-text">กรุณาอนุมัติหรือปฏิเสธ OT ทุกรายการก่อนกดยืนยัน</div>' : ''}`;
+  } else {
+    html += `
+      <div class="sheet-actions">
+        <button class="sheet-btn close" style="flex:1" onclick="closeDetail()">ปิด</button>
+      </div>`;
+  }
 
   document.getElementById('detail-body').innerHTML = html;
+}
+
+function copyAccount(account) {
+  navigator.clipboard.writeText(account).then(() => {
+    showToast('📋 คัดลอกเลขบัญชีแล้ว', 'success');
+  }).catch(() => {
+    showToast('คัดลอกไม่ได้ กรุณา copy เอง', 'error');
+  });
 }
 
 function liveAdjust(val) {
@@ -1037,8 +1021,7 @@ async function approveOT(recordId, approve) {
     showToast(approve ? '✅ อนุมัติ OT แล้ว' : '❌ ปฏิเสธ OT แล้ว', approve ? 'success' : '');
     const res = await apiGet(`action=getTimesheets&date_from=${currentStaffData.start}&date_to=${currentStaffData.end}`);
     allTimesheets = res.success ? res.data : [];
-    const updated = calcPayroll(currentStaffData.payroll.staff, allTimesheets, currentStaffData.start, currentStaffData.end);
-    currentStaffData.payroll = updated;
+    currentStaffData.payroll = calcPayroll(currentStaffData.payroll.staff, allTimesheets, currentStaffData.start, currentStaffData.end);
     renderDetailBody();
   } catch { showToast('เกิดข้อผิดพลาด', 'error'); }
   showLoading(false);
@@ -1052,35 +1035,45 @@ async function confirmPayroll() {
 
   showLoading(true);
   try {
+    // บันทึก payroll run
     await apiPost({
       action: 'savePayrollRun',
       staff_id: payroll.staff.staff_id,
-      period_start: start,
-      period_end: end,
-      pay_date: payDate,
-      days_worked: payroll.days_worked,
-      hours_worked: payroll.hours_worked,
-      base_pay: payroll.base_pay,
-      ot_pay: payroll.ot_pay,
-      late_deduct: payroll.late_deduct,
-      early_out_deduct: 0,
-      manual_adjust: manualAdjust,
-      adjust_note: adjustNote,
-      total_pay: totalWithAdjust,
-      status: 'paid',
+      period_start: start, period_end: end, pay_date: payDate,
+      days_worked: payroll.days_worked, hours_worked: payroll.hours_worked,
+      base_pay: payroll.base_pay, ot_pay: payroll.ot_pay,
+      late_deduct: payroll.late_deduct, early_out_deduct: 0,
+      manual_adjust: manualAdjust, adjust_note: adjustNote,
+      total_pay: totalWithAdjust, status: 'paid',
       paid_at: new Date().toISOString()
     });
-    showToast(`✅ บันทึกจ่าย ${formatMoney(totalWithAdjust)} เรียบร้อย`, 'success');
-    closeDetail();
-    // reload
+
+    // แจ้ง Telegram
+    await apiPost({
+      action: 'sendPayrollNotify',
+      staff_name: payroll.staff.nickname || payroll.staff.name,
+      total_pay: totalWithAdjust,
+      period_start: start,
+      period_end: end
+    });
+
+    // อัปเดต state
+    paidStaffIds.add(payroll.staff.staff_id);
+    currentStaffData.isPaid = true;
+
+    showToast(`✅ จ่าย ${formatMoney(totalWithAdjust)} ให้ ${payroll.staff.nickname || payroll.staff.name} แล้ว`, 'success');
+
+    // อัปเดต badge ในหน้ารายชื่อ
+    renderDetailBody();
     await openGroup(currentGroup);
+    document.getElementById('detail-overlay').classList.add('visible');
+
   } catch { showToast('เกิดข้อผิดพลาด', 'error'); }
   showLoading(false);
 }
 
 function closeDetail() { document.getElementById('detail-overlay').classList.remove('visible'); }
 function closeDetailOutside(e) { if (e.target === document.getElementById('detail-overlay')) closeDetail(); }
-function scrollToOT() { openGroup(currentGroup || 'fulltime'); }
 
 // ─── SESSION / LOGOUT ───
 function logout() {
@@ -1102,7 +1095,6 @@ function showToast(msg, type = '') {
 
 // ─── BOOT ───
 window.addEventListener('load', async () => {
-  // เช็ค session
   const raw = localStorage.getItem(SESSION_KEY);
   if (!raw) { window.location.href = '/index.html'; return; }
   try {
