@@ -25,6 +25,8 @@
     --blue-bg: #EFF6FF;
     --orange: #F97316;
     --orange-bg: #FFF7ED;
+    --purple: #8B5CF6;
+    --purple-bg: #EDE9FE;
     --shadow: 0 2px 12px rgba(0,0,0,0.07);
     --radius: 16px;
     --radius-sm: 10px;
@@ -56,6 +58,8 @@
   .header-title { font-size: 22px; font-weight: 600; color: white; margin-bottom: 2px; }
   .header-sub { font-size: 13px; color: rgba(255,255,255,0.7); font-weight: 300; }
 
+  .header-btns { display: flex; gap: 8px; }
+
   .logout-btn {
     background: rgba(255,255,255,0.2);
     border: none; color: white;
@@ -70,7 +74,7 @@
   .card {
     background: var(--white);
     border-radius: var(--radius);
-    padding: 16px;
+    padding: 14px 16px;
     box-shadow: var(--shadow);
     border: 1px solid var(--border);
   }
@@ -92,41 +96,28 @@
   .ot-alert-arrow { font-size: 16px; color: var(--orange); flex-shrink: 0; }
 
   /* GROUP CARD */
-  .group-card {
-    background: var(--white);
-    border-radius: var(--radius);
-    padding: 14px 16px;
-    box-shadow: var(--shadow);
-    border: 1px solid var(--border);
-  }
-
   .group-label {
     font-size: 11px; color: var(--text-secondary);
     font-weight: 400; text-transform: uppercase;
     letter-spacing: 0.5px; margin-bottom: 10px;
   }
-
   .group-period-row {
     display: flex; justify-content: space-between;
     align-items: flex-start; margin-bottom: 12px;
   }
-
   .group-period-title { font-size: 13px; color: var(--text-secondary); font-weight: 300; margin-bottom: 2px; }
   .group-period-value { font-size: 15px; font-weight: 500; color: var(--text); }
-  .group-pay-label { font-size: 11px; color: var(--text-secondary); font-weight: 300; margin-bottom: 2px; }
-  .group-pay-value { font-size: 14px; font-weight: 600; }
+  .group-pay-label { font-size: 11px; color: var(--text-secondary); font-weight: 300; margin-bottom: 2px; text-align: right; }
+  .group-pay-value { font-size: 14px; font-weight: 600; text-align: right; }
   .group-pay-value.payday { color: var(--red); }
   .group-pay-value.normal { color: var(--text); }
-
   .group-bottom {
     display: flex; justify-content: space-between;
     align-items: center; padding-top: 10px;
     border-top: 1px solid var(--border);
   }
-
   .group-amount { font-size: 22px; font-weight: 700; color: var(--text); }
   .group-count { font-size: 11px; color: var(--text-secondary); font-weight: 300; margin-top: 1px; }
-
   .group-btn {
     border: none; border-radius: var(--radius-sm);
     padding: 10px 18px;
@@ -153,8 +144,7 @@
     font-family: 'Prompt', sans-serif;
     font-size: 13px; padding: 6px 12px;
     border-radius: 20px; cursor: pointer;
-    margin-bottom: 8px;
-    display: inline-block;
+    margin-bottom: 8px; display: inline-block;
   }
 
   /* STAFF CARD */
@@ -163,9 +153,7 @@
     border-radius: var(--radius);
     box-shadow: var(--shadow);
     border: 1px solid var(--border);
-    overflow: hidden;
-    cursor: pointer;
-    transition: all 0.2s;
+    overflow: hidden; cursor: pointer; transition: all 0.2s;
   }
   .staff-card:active { transform: scale(0.99); }
   .staff-card.is-paid { opacity: 0.65; }
@@ -198,14 +186,12 @@
   }
 
   .staff-chips { display: flex; gap: 6px; flex-wrap: wrap; }
-  .chip {
-    font-size: 11px; font-weight: 400;
-    padding: 3px 8px; border-radius: 10px;
-  }
+  .chip { font-size: 11px; font-weight: 400; padding: 3px 8px; border-radius: 10px; }
   .chip-late { background: var(--danger-bg); color: var(--danger); }
   .chip-ot { background: var(--orange-bg); color: var(--orange); }
   .chip-ot-pending { background: var(--orange-bg); color: var(--orange); }
   .chip-ok { background: var(--green-bg); color: var(--green-dark); }
+  .chip-advance { background: var(--purple-bg); color: var(--purple); }
 
   .staff-status {
     font-size: 11px; font-weight: 500;
@@ -219,16 +205,13 @@
   .detail-overlay {
     position: fixed; inset: 0;
     background: rgba(0,0,0,0.5);
-    z-index: 100;
-    opacity: 0; pointer-events: none;
-    transition: opacity 0.25s;
+    z-index: 100; opacity: 0; pointer-events: none; transition: opacity 0.25s;
   }
   .detail-overlay.visible { opacity: 1; pointer-events: all; }
 
   .detail-sheet {
     position: absolute; bottom: 0; left: 0; right: 0;
-    background: var(--white);
-    border-radius: 24px 24px 0 0;
+    background: var(--white); border-radius: 24px 24px 0 0;
     max-height: 92vh; overflow-y: auto;
     transform: translateY(100%);
     transition: transform 0.3s cubic-bezier(0.32, 0.72, 0, 1);
@@ -261,10 +244,8 @@
 
   /* TOTAL BOX */
   .total-box {
-    background: var(--red);
-    border-radius: var(--radius);
-    padding: 18px 20px;
-    margin-bottom: 14px;
+    background: var(--red); border-radius: var(--radius);
+    padding: 18px 20px; margin-bottom: 14px;
     display: flex; justify-content: space-between; align-items: center;
   }
   .total-box-label { font-size: 12px; color: rgba(255,255,255,0.75); font-weight: 300; margin-bottom: 4px; }
@@ -276,12 +257,9 @@
 
   /* PAID BOX */
   .paid-box {
-    background: var(--green-bg);
-    border: 1px solid #86EFAC;
-    border-radius: var(--radius);
-    padding: 14px 18px;
-    margin-bottom: 14px;
-    display: flex; align-items: center; gap: 12px;
+    background: var(--green-bg); border: 1px solid #86EFAC;
+    border-radius: var(--radius); padding: 14px 18px;
+    margin-bottom: 14px; display: flex; align-items: center; gap: 12px;
   }
   .paid-box-icon { font-size: 24px; }
   .paid-box-title { font-size: 15px; font-weight: 600; color: var(--green-dark); }
@@ -289,12 +267,9 @@
 
   /* BANK CARD */
   .bank-card {
-    background: var(--blue-bg);
-    border: 1px solid #BFDBFE;
-    border-radius: var(--radius-sm);
-    padding: 12px 14px;
-    margin-bottom: 14px;
-    display: flex; align-items: center; gap: 12px;
+    background: var(--blue-bg); border: 1px solid #BFDBFE;
+    border-radius: var(--radius-sm); padding: 12px 14px;
+    margin-bottom: 14px; display: flex; align-items: center; gap: 12px;
   }
   .bank-icon { font-size: 22px; flex-shrink: 0; }
   .bank-info { flex: 1; }
@@ -304,8 +279,7 @@
     border: none; background: var(--blue); color: white;
     font-family: 'Prompt', sans-serif;
     font-size: 11px; font-weight: 500;
-    padding: 6px 12px; border-radius: 8px;
-    cursor: pointer; flex-shrink: 0;
+    padding: 6px 12px; border-radius: 8px; cursor: pointer; flex-shrink: 0;
   }
 
   /* SECTION LABEL */
@@ -317,10 +291,8 @@
 
   /* OT PENDING */
   .ot-pending-section {
-    background: var(--orange-bg);
-    border: 1px solid #FED7AA;
-    border-radius: var(--radius-sm);
-    padding: 12px 14px; margin-bottom: 14px;
+    background: var(--orange-bg); border: 1px solid #FED7AA;
+    border-radius: var(--radius-sm); padding: 12px 14px; margin-bottom: 14px;
   }
   .ot-pending-title { font-size: 12px; font-weight: 500; color: var(--orange); margin-bottom: 8px; }
   .ot-pending-item {
@@ -334,39 +306,33 @@
   .ot-pending-detail { font-size: 11px; color: var(--text-secondary); font-weight: 300; margin-top: 1px; }
   .ot-pending-btns { display: flex; gap: 6px; }
   .ot-btn {
-    border: none; border-radius: 8px;
-    padding: 6px 12px;
-    font-family: 'Prompt', sans-serif;
-    font-size: 12px; font-weight: 500;
-    cursor: pointer; transition: all 0.2s;
+    border: none; border-radius: 8px; padding: 6px 12px;
+    font-family: 'Prompt', sans-serif; font-size: 12px; font-weight: 500; cursor: pointer;
   }
   .ot-btn.approve { background: var(--green-bg); color: var(--green-dark); }
   .ot-btn.reject { background: var(--danger-bg); color: var(--danger); }
 
   /* BREAKDOWN */
   .breakdown-box {
-    background: var(--soft);
-    border: 1px solid var(--border);
-    border-radius: var(--radius-sm);
-    padding: 12px 14px; margin-bottom: 14px;
+    background: var(--soft); border: 1px solid var(--border);
+    border-radius: var(--radius-sm); padding: 12px 14px; margin-bottom: 14px;
   }
   .breakdown-row {
-    display: flex; justify-content: space-between;
-    align-items: center; padding: 5px 0;
-    border-bottom: 1px solid var(--border);
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 5px 0; border-bottom: 1px solid var(--border);
   }
   .breakdown-row:last-child { border-bottom: none; padding-bottom: 0; }
   .breakdown-label { font-size: 13px; color: var(--text-secondary); font-weight: 300; }
   .breakdown-value { font-size: 14px; font-weight: 500; color: var(--text); }
   .breakdown-value.plus { color: var(--green-dark); }
   .breakdown-value.minus { color: var(--danger); }
+  .breakdown-value.advance { color: var(--purple); }
   .breakdown-total { font-size: 16px; font-weight: 700; color: var(--red); }
 
   /* TIMESHEET */
   .ts-item {
     background: var(--white); border: 1px solid var(--border);
-    border-radius: var(--radius-sm);
-    padding: 10px 12px; margin-bottom: 8px;
+    border-radius: var(--radius-sm); padding: 10px 12px; margin-bottom: 8px;
   }
   .ts-item:last-child { margin-bottom: 0; }
   .ts-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px; }
@@ -379,24 +345,31 @@
   .tc-ot { background: var(--blue-bg); color: var(--blue); }
   .tc-ok { background: var(--green-bg); color: var(--green-dark); }
 
+  /* ADVANCES LIST IN DETAIL */
+  .advance-deduct-item {
+    display: flex; justify-content: space-between; align-items: center;
+    background: var(--purple-bg); border-radius: 8px;
+    padding: 8px 12px; margin-bottom: 6px;
+  }
+  .advance-deduct-item:last-child { margin-bottom: 0; }
+  .advance-deduct-label { font-size: 13px; color: var(--purple); font-weight: 400; }
+  .advance-deduct-note { font-size: 11px; color: var(--text-secondary); font-weight: 300; }
+  .advance-deduct-amount { font-size: 14px; font-weight: 600; color: var(--purple); }
+
   /* ADJUST */
   .adjust-row { display: flex; gap: 8px; align-items: center; margin-bottom: 10px; }
   .adjust-input {
     flex: 1; border: 1.5px solid var(--border);
-    border-radius: var(--radius-sm);
-    padding: 10px 12px;
-    font-family: 'Prompt', sans-serif;
-    font-size: 14px; font-weight: 300;
+    border-radius: var(--radius-sm); padding: 10px 12px;
+    font-family: 'Prompt', sans-serif; font-size: 14px; font-weight: 300;
     color: var(--text); background: var(--soft); outline: none;
   }
   .adjust-input:focus { border-color: var(--red); }
   .adjust-unit { font-size: 13px; color: var(--text-secondary); }
   .adjust-note {
     width: 100%; border: 1.5px solid var(--border);
-    border-radius: var(--radius-sm);
-    padding: 10px 12px;
-    font-family: 'Prompt', sans-serif;
-    font-size: 13px; font-weight: 300;
+    border-radius: var(--radius-sm); padding: 10px 12px;
+    font-family: 'Prompt', sans-serif; font-size: 13px; font-weight: 300;
     color: var(--text); background: var(--soft);
     outline: none; resize: none; margin-bottom: 14px;
   }
@@ -405,17 +378,14 @@
   /* SHEET ACTIONS */
   .sheet-actions { display: flex; gap: 10px; }
   .sheet-btn {
-    flex: 1; border: none;
-    border-radius: var(--radius-sm); padding: 14px;
-    font-family: 'Prompt', sans-serif;
-    font-size: 14px; font-weight: 500;
+    flex: 1; border: none; border-radius: var(--radius-sm); padding: 14px;
+    font-family: 'Prompt', sans-serif; font-size: 14px; font-weight: 500;
     cursor: pointer; transition: all 0.2s;
   }
   .sheet-btn:active { transform: scale(0.97); }
   .sheet-btn.close { background: var(--soft); color: var(--text-secondary); border: 1.5px solid var(--border); }
   .sheet-btn.confirm { background: var(--green); color: white; }
   .sheet-btn.confirm:disabled { background: #D1FAE5; color: #6EE7B7; cursor: not-allowed; transform: none; }
-
   .warn-text { text-align: center; font-size: 11px; color: var(--orange); font-weight: 300; margin-top: 8px; }
 
   /* EMPTY */
@@ -427,8 +397,7 @@
   .toast {
     position: fixed; bottom: 24px; left: 50%;
     transform: translateX(-50%) translateY(80px);
-    background: var(--text); color: white;
-    font-size: 13px; padding: 12px 20px;
+    background: var(--text); color: white; font-size: 13px; padding: 12px 20px;
     border-radius: 24px; z-index: 300;
     transition: transform 0.3s cubic-bezier(0.32, 0.72, 0, 1);
     white-space: nowrap; max-width: 90vw; text-align: center;
@@ -438,18 +407,15 @@
   .toast.error { background: var(--danger); }
 
   .loading-overlay {
-    position: fixed; inset: 0;
-    background: rgba(255,255,255,0.85);
+    position: fixed; inset: 0; background: rgba(255,255,255,0.85);
     display: flex; align-items: center; justify-content: center;
     z-index: 200; opacity: 0; pointer-events: none; transition: opacity 0.2s;
   }
   .loading-overlay.show { opacity: 1; pointer-events: all; }
 
   .spinner {
-    width: 36px; height: 36px;
-    border: 3px solid var(--border);
-    border-top-color: var(--red);
-    border-radius: 50%;
+    width: 36px; height: 36px; border: 3px solid var(--border);
+    border-top-color: var(--red); border-radius: 50%;
     animation: spin 0.7s linear infinite;
   }
   @keyframes spin { to { transform: rotate(360deg); } }
@@ -461,7 +427,7 @@
 <div class="app-header" id="main-header">
   <div class="header-top">
     <div class="header-logo">EASY</div>
-    <div style="display:flex;gap:8px">
+    <div class="header-btns">
       <button class="logout-btn" onclick="window.location.href='/dashboard.html'">← Dashboard</button>
       <button class="logout-btn" onclick="logout()">ออกจากระบบ</button>
     </div>
@@ -482,7 +448,10 @@
   <div class="list-header">
     <div class="header-top">
       <button class="back-btn-inline" onclick="backToMain()">← กลับ</button>
-      <button class="logout-btn" onclick="logout()">ออกจากระบบ</button>
+      <div class="header-btns">
+        <button class="logout-btn" onclick="window.location.href='/dashboard.html'">← Dashboard</button>
+        <button class="logout-btn" onclick="logout()">ออกจากระบบ</button>
+      </div>
     </div>
     <div class="header-title" id="list-title">—</div>
     <div class="header-sub" id="list-sub">—</div>
@@ -516,11 +485,12 @@ const THAI_MONTHS = ['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.
 
 let allStaff = [];
 let allTimesheets = [];
+let allAdvances = [];
 let settings = {};
 let currentGroup = null;
 let currentStaffData = null;
 let manualAdjust = 0;
-let paidStaffIds = new Set(); // เก็บ staff_id ที่จ่ายแล้วในรอบนี้
+let paidStaffIds = new Set();
 
 // ─── HELPERS ───
 function toDateStr(d) {
@@ -552,15 +522,11 @@ function periodLabel(start, end) {
   return `${s.getDate()} ${THAI_MONTHS[s.getMonth()]} – ${e.getDate()} ${THAI_MONTHS[e.getMonth()]} ${e.getFullYear()+543}`;
 }
 
-// ─── PERIOD CALCULATOR ───
+// ─── PERIOD ───
 function getCurrentPeriods() {
   const now = new Date();
-  const y = now.getFullYear();
-  const m = now.getMonth();
-  const d = now.getDate();
-  const dow = now.getDay();
+  const y = now.getFullYear(), m = now.getMonth(), d = now.getDate(), dow = now.getDay();
 
-  // Fulltime bimonthly
   let ftStart, ftEnd, ftPayDate;
   if (d <= 15) {
     ftStart = toDateStr(new Date(y, m, 1));
@@ -573,24 +539,32 @@ function getCurrentPeriods() {
     ftPayDate = toDateStr(new Date(y, m+1, 1));
   }
 
-  // Parttime weekly จันทร์–อาทิตย์
   const mondayOffset = dow === 0 ? -6 : 1 - dow;
-  const mon = new Date(now);
-  mon.setDate(now.getDate() + mondayOffset);
-  const sun = new Date(mon);
-  sun.setDate(mon.getDate() + 6);
-  const nextMon = new Date(mon);
-  nextMon.setDate(mon.getDate() + 7);
+  const mon = new Date(now); mon.setDate(now.getDate() + mondayOffset);
+  const sun = new Date(mon); sun.setDate(mon.getDate() + 6);
+  const nextMon = new Date(mon); nextMon.setDate(mon.getDate() + 7);
 
-  const ptStart = toDateStr(mon);
-  const ptEnd = toDateStr(sun);
-  const ptPayDate = toDateStr(nextMon);
+  return {
+    ftStart, ftEnd, ftPayDate,
+    ftIsPayDay: toDateStr(now) === ftPayDate || toDateStr(now) === addDays(ftPayDate, 1),
+    ptStart: toDateStr(mon), ptEnd: toDateStr(sun), ptPayDate: toDateStr(nextMon),
+    ptIsPayDay: dow === 1
+  };
+}
 
-  const todayStr = toDateStr(now);
-  const ftIsPayDay = todayStr === ftPayDate || todayStr === addDays(ftPayDate, 1);
-  const ptIsPayDay = dow === 1;
+// ─── ADVANCE HELPERS ───
+function getAdvancesForStaffPeriod(staffId, periodStart, periodEnd) {
+  return allAdvances.filter(a =>
+    String(a.staff_id) === String(staffId) &&
+    a.status === 'pending' &&
+    a.period_start === periodStart &&
+    a.period_end === periodEnd
+  );
+}
 
-  return { ftStart, ftEnd, ftPayDate, ftIsPayDay, ptStart, ptEnd, ptPayDate, ptIsPayDay };
+function totalAdvanceAmount(staffId, periodStart, periodEnd) {
+  return getAdvancesForStaffPeriod(staffId, periodStart, periodEnd)
+    .reduce((sum, a) => sum + parseFloat(a.amount || 0), 0);
 }
 
 // ─── PAYROLL CALC ───
@@ -648,8 +622,24 @@ function calcPayroll(staff, timesheets, periodStart, periodEnd) {
     });
   });
 
-  const total = parseFloat((basePay - lateDeduct + otPay).toFixed(2));
-  return { staff, days_worked: daysWorked, hours_worked: parseFloat(hoursWorked.toFixed(2)), base_pay: parseFloat(basePay.toFixed(2)), ot_pay: parseFloat(otPay.toFixed(2)), late_deduct: parseFloat(lateDeduct.toFixed(2)), total, details, pendingOTs, ts_count: ts.length };
+  // เบิกล่วงหน้า
+  const advanceTotal = totalAdvanceAmount(staff.staff_id, periodStart, periodEnd);
+  const advanceItems = getAdvancesForStaffPeriod(staff.staff_id, periodStart, periodEnd);
+
+  const subtotal = parseFloat((basePay - lateDeduct + otPay).toFixed(2));
+  const total = parseFloat((subtotal - advanceTotal).toFixed(2));
+
+  return {
+    staff, days_worked: daysWorked,
+    hours_worked: parseFloat(hoursWorked.toFixed(2)),
+    base_pay: parseFloat(basePay.toFixed(2)),
+    ot_pay: parseFloat(otPay.toFixed(2)),
+    late_deduct: parseFloat(lateDeduct.toFixed(2)),
+    advance_total: parseFloat(advanceTotal.toFixed(2)),
+    advance_items: advanceItems,
+    subtotal, total,
+    details, pendingOTs, ts_count: ts.length
+  };
 }
 
 // ─── RENDER MAIN ───
@@ -671,7 +661,6 @@ function renderMainPage() {
 
   let html = '';
 
-  // OT Alert
   if (allPendingOTs.length > 0) {
     html += `
       <div class="ot-alert" onclick="openGroup(currentGroup || 'fulltime')">
@@ -684,16 +673,15 @@ function renderMainPage() {
       </div>`;
   }
 
-  // Fulltime card
   html += `
-    <div class="group-card">
+    <div class="card">
       <div class="group-label">💼 พนักงานประจำ</div>
       <div class="group-period-row">
         <div>
           <div class="group-period-title">รอบนี้</div>
           <div class="group-period-value">${periodLabel(periods.ftStart, periods.ftEnd)}</div>
         </div>
-        <div style="text-align:right">
+        <div>
           <div class="group-pay-label">จ่ายวันที่</div>
           <div class="group-pay-value ${periods.ftIsPayDay ? 'payday' : 'normal'}">${thaiDate(periods.ftPayDate)}</div>
         </div>
@@ -707,18 +695,15 @@ function renderMainPage() {
           ${periods.ftIsPayDay ? '💰 จ่ายเงิน' : '📋 ดูรายละเอียด'}
         </button>
       </div>
-    </div>`;
-
-  // Parttime card
-  html += `
-    <div class="group-card">
+    </div>
+    <div class="card">
       <div class="group-label">👤 Part-time</div>
       <div class="group-period-row">
         <div>
           <div class="group-period-title">รอบนี้</div>
           <div class="group-period-value">${periodLabel(periods.ptStart, periods.ptEnd)}</div>
         </div>
-        <div style="text-align:right">
+        <div>
           <div class="group-pay-label">จ่ายวันที่</div>
           <div class="group-pay-value ${periods.ptIsPayDay ? 'payday' : 'normal'}">${thaiDate(periods.ptPayDate)}</div>
         </div>
@@ -751,13 +736,14 @@ async function openGroup(type) {
   const payDate = isFulltime ? periods.ftPayDate : periods.ptPayDate;
 
   try {
-    const [tsRes, prRes] = await Promise.all([
+    const [tsRes, prRes, advRes] = await Promise.all([
       apiGet(`action=getTimesheets&date_from=${start}&date_to=${end}`),
-      apiGet(`action=getPayrollRuns`)
+      apiGet('action=getPayrollRuns'),
+      apiGet('action=getAdvances&status=pending')
     ]);
     allTimesheets = tsRes.success ? tsRes.data : [];
+    allAdvances = advRes.success ? advRes.data : [];
 
-    // เช็ค staff ที่จ่ายแล้วในรอบนี้
     if (prRes.success) {
       prRes.data.forEach(pr => {
         if (pr.period_start === start && pr.period_end === end && pr.status === 'paid') {
@@ -774,13 +760,14 @@ async function openGroup(type) {
 
   let html = '';
   if (!payrolls.length) {
-    html = '<div class="empty-state"><div class="empty-icon">👥</div><div class="empty-text">ไม่พบพนักงานในกลุ่มนี้</div></div>';
+    html = '<div class="empty-state"><div class="empty-icon">👥</div><div class="empty-text">ไม่พบพนักงาน</div></div>';
   } else {
     payrolls.forEach(p => {
       const isPaid = paidStaffIds.has(p.staff.staff_id);
       const initials = (p.staff.nickname || p.staff.name || '?').charAt(0);
       const workLabel = isFulltime ? `${p.days_worked} วัน` : `${p.hours_worked} ชม.`;
       const hasPendingOT = p.pendingOTs.length > 0;
+      const hasAdvance = p.advance_total > 0;
       const isEmpty = p.ts_count === 0;
 
       let statusClass = isPaid ? 'status-paid' : (isEmpty ? 'status-missing' : 'status-ready');
@@ -804,7 +791,8 @@ async function openGroup(type) {
               ${p.late_deduct > 0 ? `<span class="chip chip-late">หัก ฿${p.late_deduct.toFixed(0)}</span>` : ''}
               ${p.ot_pay > 0 ? `<span class="chip chip-ot">OT ฿${p.ot_pay.toFixed(0)}</span>` : ''}
               ${hasPendingOT ? `<span class="chip chip-ot-pending">⏰ OT รออนุมัติ</span>` : ''}
-              ${!p.late_deduct && !p.ot_pay && !hasPendingOT && !isEmpty ? `<span class="chip chip-ok">ปกติ</span>` : ''}
+              ${hasAdvance ? `<span class="chip chip-advance">เบิกล่วงหน้า -฿${p.advance_total.toFixed(0)}</span>` : ''}
+              ${!p.late_deduct && !p.ot_pay && !hasPendingOT && !hasAdvance && !isEmpty ? `<span class="chip chip-ok">ปกติ</span>` : ''}
             </div>
             <div class="staff-status ${statusClass}">${statusLabel}</div>
           </div>
@@ -851,7 +839,6 @@ function renderDetailBody() {
 
   let html = '';
 
-  // ถ้าจ่ายแล้ว — แสดง paid box
   if (isPaid) {
     html += `
       <div class="paid-box">
@@ -863,7 +850,6 @@ function renderDetailBody() {
       </div>`;
   }
 
-  // TOTAL BOX
   html += `
     <div class="total-box">
       <div>
@@ -877,7 +863,7 @@ function renderDetailBody() {
       </div>
     </div>`;
 
-  // BANK ACCOUNT
+  // BANK
   if (payroll.staff.bank_name || payroll.staff.bank_account) {
     html += `
       <div class="bank-card">
@@ -928,6 +914,11 @@ function renderDetailBody() {
         <span class="breakdown-label">หักสาย</span>
         <span class="breakdown-value minus">-${formatMoney(payroll.late_deduct)}</span>
       </div>` : ''}
+      ${payroll.advance_total > 0 ? `
+      <div class="breakdown-row">
+        <span class="breakdown-label">หักเบิกล่วงหน้า</span>
+        <span class="breakdown-value advance">-${formatMoney(payroll.advance_total)}</span>
+      </div>` : ''}
       ${manualAdjust !== 0 ? `
       <div class="breakdown-row">
         <span class="breakdown-label">ปรับพิเศษ</span>
@@ -938,6 +929,22 @@ function renderDetailBody() {
         <span class="breakdown-value breakdown-total">${formatMoney(totalWithAdjust)}</span>
       </div>
     </div>`;
+
+  // ADVANCE ITEMS DETAIL
+  if (payroll.advance_items.length > 0) {
+    html += `<div class="section-label">รายการเบิกล่วงหน้า</div>`;
+    payroll.advance_items.forEach(adv => {
+      html += `
+        <div class="advance-deduct-item">
+          <div>
+            <div class="advance-deduct-label">💸 ${thaiDate(adv.date)}</div>
+            <div class="advance-deduct-note">${adv.note || '—'}</div>
+          </div>
+          <div class="advance-deduct-amount">-${formatMoney(adv.amount)}</div>
+        </div>`;
+    });
+    html += `<div style="margin-bottom:14px"></div>`;
+  }
 
   // TIMESHEET
   if (payroll.details.length > 0) {
@@ -962,7 +969,7 @@ function renderDetailBody() {
     html += `<div class="empty-state" style="padding:16px"><div class="empty-icon">📭</div><div class="empty-text">ไม่มีข้อมูลการเข้างานในรอบนี้</div></div>`;
   }
 
-  // ADJUST (แสดงเฉพาะยังไม่จ่าย)
+  // ADJUST
   if (!isPaid) {
     html += `
       <div class="section-label">ปรับยอดพิเศษ (ถ้ามี)</div>
@@ -1000,9 +1007,7 @@ function renderDetailBody() {
 function copyAccount(account) {
   navigator.clipboard.writeText(account).then(() => {
     showToast('📋 คัดลอกเลขบัญชีแล้ว', 'success');
-  }).catch(() => {
-    showToast('คัดลอกไม่ได้ กรุณา copy เอง', 'error');
-  });
+  }).catch(() => showToast('คัดลอกไม่ได้ กรุณา copy เอง', 'error'));
 }
 
 function liveAdjust(val) {
@@ -1045,28 +1050,34 @@ async function confirmPayroll() {
       period_start: start, period_end: end, pay_date: payDate,
       days_worked: payroll.days_worked, hours_worked: payroll.hours_worked,
       base_pay: payroll.base_pay, ot_pay: payroll.ot_pay,
-      late_deduct: payroll.late_deduct, early_out_deduct: 0,
+      late_deduct: payroll.late_deduct,
+      early_out_deduct: 0,
       manual_adjust: manualAdjust, adjust_note: adjustNote,
       total_pay: totalWithAdjust, status: 'paid',
       paid_at: new Date().toISOString()
     });
+
+    // อัปเดต advances เป็น deducted
+    if (payroll.advance_items.length > 0) {
+      await apiPost({
+        action: 'markAdvancesDeducted',
+        advance_ids: payroll.advance_items.map(a => a.advance_id)
+      });
+    }
 
     // แจ้ง Telegram
     await apiPost({
       action: 'sendPayrollNotify',
       staff_name: payroll.staff.nickname || payroll.staff.name,
       total_pay: totalWithAdjust,
-      period_start: start,
-      period_end: end
+      period_start: start, period_end: end
     });
 
-    // อัปเดต state
     paidStaffIds.add(payroll.staff.staff_id);
     currentStaffData.isPaid = true;
 
     showToast(`✅ จ่าย ${formatMoney(totalWithAdjust)} ให้ ${payroll.staff.nickname || payroll.staff.name} แล้ว`, 'success');
 
-    // อัปเดต badge ในหน้ารายชื่อ
     renderDetailBody();
     await openGroup(currentGroup);
     document.getElementById('detail-overlay').classList.add('visible');
@@ -1078,17 +1089,14 @@ async function confirmPayroll() {
 function closeDetail() { document.getElementById('detail-overlay').classList.remove('visible'); }
 function closeDetailOutside(e) { if (e.target === document.getElementById('detail-overlay')) closeDetail(); }
 
-// ─── SESSION / LOGOUT ───
 function logout() {
   localStorage.removeItem(SESSION_KEY);
   window.location.href = '/index.html';
 }
 
-// ─── API ───
 async function apiGet(p) { const r = await fetch(`${API_URL}?${p}`); return r.json(); }
 async function apiPost(b) { const r = await fetch(API_URL, { method: 'POST', body: JSON.stringify(b) }); return r.json(); }
 
-// ─── UI ───
 function showLoading(s) { document.getElementById('loading').classList.toggle('show', s); }
 function showToast(msg, type = '') {
   const t = document.getElementById('toast');
@@ -1108,14 +1116,16 @@ window.addEventListener('load', async () => {
 
   showLoading(true);
   try {
-    const [staffRes, settingsRes, tsRes] = await Promise.all([
+    const [staffRes, settingsRes, tsRes, advRes] = await Promise.all([
       apiGet('action=getStaff'),
       apiGet('action=getSettings'),
-      apiGet(`action=getTimesheets&date_from=${addDays(toDateStr(new Date()), -31)}&date_to=${toDateStr(new Date())}`)
+      apiGet(`action=getTimesheets&date_from=${addDays(toDateStr(new Date()), -31)}&date_to=${toDateStr(new Date())}`),
+      apiGet('action=getAdvances&status=pending')
     ]);
     allStaff = staffRes.success ? staffRes.data : [];
     settings = settingsRes.success ? settingsRes.data : {};
     allTimesheets = tsRes.success ? tsRes.data : [];
+    allAdvances = advRes.success ? advRes.data : [];
     renderMainPage();
   } catch { showToast('โหลดข้อมูลไม่สำเร็จ', 'error'); }
   showLoading(false);
