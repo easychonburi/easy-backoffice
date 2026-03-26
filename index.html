@@ -16,11 +16,10 @@
     --border: #E5E7EB;
     --text: #1F2937;
     --text-secondary: #6B7280;
-    --green: #22C55E;
     --danger: #FF5A4F;
+    --green-dark: #16A34A;
     --shadow: 0 2px 12px rgba(0,0,0,0.08);
     --radius: 16px;
-    --radius-sm: 10px;
   }
 
   * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
@@ -34,7 +33,6 @@
     flex-direction: column;
   }
 
-  /* ─── HEADER ─── */
   .pin-header {
     background: var(--red);
     padding: 60px 24px 40px;
@@ -43,257 +41,100 @@
     flex-shrink: 0;
   }
 
-  .logo-wrap {
-    display: inline-flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 6px;
-    margin-bottom: 8px;
-  }
+  .logo-easy { font-size: 42px; font-weight: 700; color: var(--yellow); letter-spacing: -1px; line-height: 1; margin-bottom: 6px; }
+  .logo-sub { font-size: 14px; color: rgba(255,255,255,0.85); font-weight: 300; }
+  .pin-header-desc { font-size: 13px; color: rgba(255,255,255,0.65); font-weight: 300; margin-top: 4px; }
 
-  .logo-easy {
-    font-size: 42px;
-    font-weight: 700;
-    color: var(--yellow);
-    letter-spacing: -1px;
-    line-height: 1;
-  }
-
-  .logo-sub {
-    font-size: 14px;
-    color: rgba(255,255,255,0.85);
-    font-weight: 300;
-    letter-spacing: 0.3px;
-  }
-
-  .pin-header-desc {
-    font-size: 13px;
-    color: rgba(255,255,255,0.65);
-    font-weight: 300;
-    margin-top: 4px;
-  }
-
-  /* ─── BODY ─── */
   .pin-body {
-    flex: 1;
-    padding: 32px 24px 24px;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
+    flex: 1; padding: 32px 24px 24px;
+    display: flex; flex-direction: column; align-items: center;
   }
 
-  .pin-label {
-    font-size: 14px;
-    color: var(--text-secondary);
-    font-weight: 400;
-    margin-bottom: 20px;
-  }
+  .pin-label { font-size: 14px; color: var(--text-secondary); font-weight: 400; margin-bottom: 20px; }
 
-  /* ─── DOTS ─── */
-  .pin-dots {
-    display: flex;
-    gap: 16px;
-    margin-bottom: 36px;
-  }
+  .pin-dots { display: flex; gap: 16px; margin-bottom: 36px; }
 
   .pin-dot {
-    width: 14px;
-    height: 14px;
-    border-radius: 50%;
-    border: 2px solid var(--border);
-    background: transparent;
+    width: 14px; height: 14px; border-radius: 50%;
+    border: 2px solid var(--border); background: transparent;
     transition: all 0.2s ease;
   }
-
-  .pin-dot.filled {
-    background: var(--red);
-    border-color: var(--red);
-    transform: scale(1.15);
-  }
-
-  .pin-dot.error {
-    background: var(--danger);
-    border-color: var(--danger);
-    animation: shake 0.35s ease;
-  }
+  .pin-dot.filled { background: var(--red); border-color: var(--red); transform: scale(1.15); }
+  .pin-dot.error { background: var(--danger); border-color: var(--danger); animation: shake 0.35s ease; }
 
   @keyframes shake {
-    0%,100% { transform: translateX(0); }
-    20% { transform: translateX(-5px); }
-    60% { transform: translateX(5px); }
+    0%,100%{transform:translateX(0)}
+    20%{transform:translateX(-5px)}
+    60%{transform:translateX(5px)}
   }
 
-  /* ─── KEYPAD ─── */
   .pin-keypad {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 12px;
-    width: 100%;
-    max-width: 300px;
-    margin-bottom: 16px;
+    display: grid; grid-template-columns: repeat(3, 1fr);
+    gap: 12px; width: 100%; max-width: 300px; margin-bottom: 16px;
   }
 
   .pin-key {
-    aspect-ratio: 1;
-    border: 1.5px solid var(--border);
-    border-radius: var(--radius);
-    background: var(--white);
-    font-family: 'Prompt', sans-serif;
-    font-size: 24px;
-    font-weight: 500;
-    color: var(--text);
-    cursor: pointer;
-    transition: all 0.15s ease;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    box-shadow: var(--shadow);
-    user-select: none;
-    -webkit-user-select: none;
+    aspect-ratio: 1; border: 1.5px solid var(--border);
+    border-radius: var(--radius); background: var(--white);
+    font-family: 'Prompt', sans-serif; font-size: 24px; font-weight: 500;
+    color: var(--text); cursor: pointer; transition: all 0.15s ease;
+    display: flex; align-items: center; justify-content: center;
+    box-shadow: var(--shadow); user-select: none;
   }
+  .pin-key:active { background: var(--red); color: white; border-color: var(--red); transform: scale(0.94); box-shadow: none; }
+  .pin-key.delete { background: var(--soft); border-color: var(--border); font-size: 20px; color: var(--text-secondary); box-shadow: none; }
+  .pin-key.empty { background: transparent; border-color: transparent; box-shadow: none; pointer-events: none; }
 
-  .pin-key:active {
-    background: var(--red);
-    color: white;
-    border-color: var(--red);
-    transform: scale(0.94);
-    box-shadow: none;
-  }
+  .pin-error { font-size: 13px; color: var(--danger); font-weight: 400; min-height: 20px; text-align: center; margin-top: 4px; }
 
-  .pin-key.delete {
-    background: var(--soft);
-    border-color: var(--border);
-    font-size: 20px;
-    color: var(--text-secondary);
-    box-shadow: none;
-  }
-
-  .pin-key.empty {
-    background: transparent;
-    border-color: transparent;
-    box-shadow: none;
-    pointer-events: none;
-  }
-
-  /* ─── ERROR ─── */
-  .pin-error {
-    font-size: 13px;
-    color: var(--danger);
-    font-weight: 400;
-    min-height: 20px;
-    text-align: center;
-    margin-top: 4px;
-  }
-
-  /* ─── LOADING ─── */
   .loading-overlay {
-    position: fixed;
-    inset: 0;
+    position: fixed; inset: 0;
     background: rgba(255,255,255,0.9);
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    z-index: 100;
-    opacity: 0;
-    pointer-events: none;
-    transition: opacity 0.2s;
-    gap: 14px;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    z-index: 100; opacity: 0; pointer-events: none; transition: opacity 0.2s; gap: 14px;
   }
-
-  .loading-overlay.show {
-    opacity: 1;
-    pointer-events: all;
-  }
+  .loading-overlay.show { opacity: 1; pointer-events: all; }
 
   .spinner {
-    width: 36px;
-    height: 36px;
+    width: 36px; height: 36px;
     border: 3px solid var(--border);
     border-top-color: var(--red);
     border-radius: 50%;
     animation: spin 0.7s linear infinite;
   }
-
-  .loading-text {
-    font-size: 14px;
-    color: var(--text-secondary);
-    font-weight: 300;
-  }
-
   @keyframes spin { to { transform: rotate(360deg); } }
 
-  /* ─── WELCOME FLASH ─── */
+  .loading-text { font-size: 14px; color: var(--text-secondary); font-weight: 300; }
+
   .welcome-overlay {
-    position: fixed;
-    inset: 0;
-    background: var(--red);
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    z-index: 200;
-    opacity: 0;
-    pointer-events: none;
-    transition: opacity 0.3s ease;
-    gap: 8px;
+    position: fixed; inset: 0; background: var(--red);
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    z-index: 200; opacity: 0; pointer-events: none; transition: opacity 0.3s ease; gap: 8px;
   }
+  .welcome-overlay.show { opacity: 1; pointer-events: all; }
+  .welcome-icon { font-size: 48px; margin-bottom: 8px; }
+  .welcome-name { font-size: 28px; font-weight: 600; color: white; }
+  .welcome-role { font-size: 14px; color: rgba(255,255,255,0.75); font-weight: 300; }
 
-  .welcome-overlay.show {
-    opacity: 1;
-    pointer-events: all;
-  }
-
-  .welcome-name {
-    font-size: 28px;
-    font-weight: 600;
-    color: white;
-  }
-
-  .welcome-role {
-    font-size: 14px;
-    color: rgba(255,255,255,0.75);
-    font-weight: 300;
-  }
-
-  .welcome-icon {
-    font-size: 48px;
-    margin-bottom: 8px;
-  }
-
-  /* ─── VERSION ─── */
-  .version-tag {
-    text-align: center;
-    font-size: 11px;
-    color: var(--text-secondary);
-    font-weight: 300;
-    padding-bottom: 20px;
-    opacity: 0.5;
-  }
+  .version-tag { text-align: center; font-size: 11px; color: var(--text-secondary); font-weight: 300; padding-bottom: 20px; opacity: 0.5; }
 </style>
 </head>
 <body>
 
-<!-- HEADER -->
 <div class="pin-header">
-  <div class="logo-wrap">
-    <div class="logo-easy">EASY</div>
-    <div class="logo-sub">หมี่ไก่ฉีก</div>
-  </div>
+  <div class="logo-easy">EASY</div>
+  <div class="logo-sub">หมี่ไก่ฉีก</div>
   <div class="pin-header-desc">ระบบจัดการร้าน</div>
 </div>
 
-<!-- PIN BODY -->
 <div class="pin-body">
   <div class="pin-label">กรอก PIN เพื่อเข้าสู่ระบบ</div>
-
   <div class="pin-dots" id="pin-dots">
     <div class="pin-dot"></div>
     <div class="pin-dot"></div>
     <div class="pin-dot"></div>
     <div class="pin-dot"></div>
   </div>
-
   <div class="pin-keypad">
     <button class="pin-key" onclick="pinPress('1')">1</button>
     <button class="pin-key" onclick="pinPress('2')">2</button>
@@ -308,19 +149,16 @@
     <button class="pin-key" onclick="pinPress('0')">0</button>
     <button class="pin-key delete" onclick="pinDelete()">⌫</button>
   </div>
-
   <div class="pin-error" id="pin-error"></div>
 </div>
 
 <div class="version-tag">EASY Back-Office v1.0</div>
 
-<!-- LOADING -->
 <div class="loading-overlay" id="loading">
   <div class="spinner"></div>
   <div class="loading-text">กำลังตรวจสอบ...</div>
 </div>
 
-<!-- WELCOME FLASH -->
 <div class="welcome-overlay" id="welcome">
   <div class="welcome-icon" id="welcome-icon">👋</div>
   <div class="welcome-name" id="welcome-name">—</div>
@@ -334,16 +172,11 @@ const SESSION_HOURS = 3;
 
 let pinBuffer = '';
 
-// ─── CHECK SESSION ───
 window.addEventListener('load', () => {
   const session = loadSession();
-  if (session) {
-    // มี session อยู่แล้ว — พาไปหน้าที่ถูกต้องเลย
-    redirectByRole(session.role, session);
-  }
+  if (session) redirectByRole(session.role);
 });
 
-// ─── PIN ───
 function pinPress(digit) {
   if (pinBuffer.length >= 4) return;
   document.getElementById('pin-error').textContent = '';
@@ -370,11 +203,9 @@ async function verifyPin() {
   try {
     const res = await fetch(`${API_URL}?action=getStaffByPin&pin=${pinBuffer}`);
     const data = await res.json();
-
     if (data.success) {
-      const staff = data.data;
-      saveSession(staff);
-      showWelcome(staff);
+      saveSession(data.data);
+      showWelcome(data.data);
     } else {
       pinBuffer = '';
       document.querySelectorAll('.pin-dot').forEach(d => d.classList.add('error'));
@@ -389,41 +220,28 @@ async function verifyPin() {
   showLoading(false);
 }
 
-// ─── WELCOME FLASH ───
 function showWelcome(staff) {
   const role = staff.role || 'staff';
-  const icon = role === 'admin' ? '👑' : '👋';
-  const roleLabel = role === 'admin' ? 'เจ้าของร้าน / Admin' : 'พนักงาน';
-
-  document.getElementById('welcome-icon').textContent = icon;
+  document.getElementById('welcome-icon').textContent = role === 'admin' ? '👑' : '👋';
   document.getElementById('welcome-name').textContent = `สวัสดี คุณ${staff.nickname || staff.name}`;
-  document.getElementById('welcome-role').textContent = roleLabel;
-
+  document.getElementById('welcome-role').textContent = role === 'admin' ? 'เจ้าของร้าน / Admin' : 'พนักงาน';
   document.getElementById('welcome').classList.add('show');
-
-  // หน่วง 1.2 วินาทีแล้วค่อย redirect
-  setTimeout(() => {
-    redirectByRole(role, staff);
-  }, 1200);
+  setTimeout(() => redirectByRole(role, staff), 1200);
 }
 
-// ─── REDIRECT ───
-function redirectByRole(role, staff) {
+function redirectByRole(role) {
   if (role === 'admin') {
-    window.location.href = '/payroll.html';
+    window.location.href = '/dashboard.html';
   } else {
     window.location.href = '/clock.html';
   }
 }
 
-// ─── SESSION ───
 function saveSession(staff) {
-  const data = {
-    staff,
-    role: staff.role || 'staff',
+  localStorage.setItem(SESSION_KEY, JSON.stringify({
+    staff, role: staff.role || 'staff',
     expires: Date.now() + SESSION_HOURS * 60 * 60 * 1000
-  };
-  localStorage.setItem(SESSION_KEY, JSON.stringify(data));
+  }));
 }
 
 function loadSession() {
@@ -431,20 +249,12 @@ function loadSession() {
     const raw = localStorage.getItem(SESSION_KEY);
     if (!raw) return null;
     const data = JSON.parse(raw);
-    if (Date.now() > data.expires) {
-      localStorage.removeItem(SESSION_KEY);
-      return null;
-    }
+    if (Date.now() > data.expires) { localStorage.removeItem(SESSION_KEY); return null; }
     return data;
-  } catch {
-    return null;
-  }
+  } catch { return null; }
 }
 
-// ─── LOADING ───
-function showLoading(show) {
-  document.getElementById('loading').classList.toggle('show', show);
-}
+function showLoading(s) { document.getElementById('loading').classList.toggle('show', s); }
 </script>
 </body>
 </html>
