@@ -568,6 +568,33 @@ function totalAdvanceAmount(staffId, periodStart, periodEnd) {
 }
 
 // ─── PAYROLL CALC ───
+function getEffectiveShift(staff, dateStr, settings) {
+  // วันอาทิตย์ → ทุกคนทุกสาขาใช้ 10:30–20:00
+  const d = new Date(dateStr + 'T00:00:00');
+  if (d.getDay() === 0) return { start: '10:30', end: '20:00', flexible: false };
+  // ใช้ custom shift ต่อคน (จาก Sheets)
+  if (staff.custom_shift_start) {
+    return {
+      start: staff.custom_shift_start,
+      end: staff.custom_shift_end || null,
+      flexible: !staff.custom_shift_end
+    };
+  }
+  // fallback → global settings (สำหรับ fulltime)
+  const start = staff.shift === 'night' ? (settings.shift_night_start || '17:00') : (settings.shift_morning_start || '09:00');
+  const end   = staff.shift === 'night' ? (settings.shift_night_end   || '01:00') : (settings.shift_morning_end   || '17:00');
+  return { start, end, flexible: false };
+}
+
+function calcHoursBetween(startStr, endStr, shift) {
+  if (!startStr || !endStr) return 0;
+  const [sh, sm] = startStr.split(':').map(Number);
+  const [eh, em] = endStr.split(':').map(Number);
+  let s = sh * 60 + sm, e = eh * 60 + em;
+  if (shift === 'night' && e < s) e += 1440;
+  return Math.max(0, parseFloat(((e - s) / 60).toFixed(2)));
+}
+
 function calcPayroll(staff, timesheets, periodStart, periodEnd) {
   const ts = timesheets.filter(t => {
     const td = typeof t.date === 'string' ? t.date.substring(0,10) : toDateStr(new Date(t.date));
@@ -590,17 +617,35 @@ function calcPayroll(staff, timesheets, periodStart, periodEnd) {
     const otPending = t.ot_status === 'pending';
 
     let dayBase = 0, dayDeduct = 0, dayOT = 0;
+    let effectiveClockIn = null, effectiveClockOut = null;
 
     if (staff.pay_type === 'daily') {
       dayBase = rate; daysWorked++;
-      if (lateMin > lateGrace) {
+      // หักสายเฉพาะ fulltime (part-time daily เช่น ต้น ไม่หัก)
+      if (staff.staff_type === 'fulltime' && lateMin > lateGrace) {
         dayDeduct = parseFloat(((rate / 480) * lateMin).toFixed(2));
         lateDeduct += dayDeduct;
       }
     } else {
-      const hrs = parseFloat(t.hours_worked) || 0;
+      // Part-time hourly: ตัดเวลาตาม shift จริงของแต่ละคน/วัน
+      let hrs = parseFloat(t.hours_worked) || 0;
+      if (t.clock_in && t.clock_out) {
+        const shiftInfo = getEffectiveShift(staff, t.date, settings);
+        let eIn = t.clock_in, eOut = t.clock_out;
+        if (!shiftInfo.flexible) {
+          if (shiftInfo.start && t.clock_in < shiftInfo.start) {
+            eIn = shiftInfo.start;
+            effectiveClockIn = shiftInfo.start;
+          }
+          if (shiftInfo.end && t.clock_out > shiftInfo.end) {
+            eOut = shiftInfo.end;
+            effectiveClockOut = shiftInfo.end;
+          }
+        }
+        hrs = calcHoursBetween(eIn, eOut, staff.shift);
+      }
       dayBase = parseFloat((rate * hrs).toFixed(2));
-      hoursWorked += hrs;
+      hoursWorked += parseFloat(hrs.toFixed(2));
     }
 
     if (otHours > 0 && otApproved) {
@@ -618,7 +663,9 @@ function calcPayroll(staff, timesheets, periodStart, periodEnd) {
       late_min: lateMin, late_deduct: dayDeduct,
       ot_hours: otHours, ot_pay: dayOT, ot_status: t.ot_status,
       ot_reason: t.ot_reason, record_id: t.record_id,
-      day_total: parseFloat((dayBase - dayDeduct + dayOT).toFixed(2))
+      day_total: parseFloat((dayBase - dayDeduct + dayOT).toFixed(2)),
+      effective_clock_in: effectiveClockIn,
+      effective_clock_out: effectiveClockOut
     });
   });
 
@@ -958,6 +1005,8 @@ function renderDetailBody() {
           </div>
           <div class="ts-chips">
             <span class="ts-chip tc-time">${d.clock_in||'—'} – ${d.clock_out||'ยังไม่ออก'}</span>
+            ${d.effective_clock_in ? `<span class="ts-chip" style="background:#EDE9FE;color:#7C3AED">⏱ เริ่มนับ ${d.effective_clock_in}</span>` : ''}
+            ${d.effective_clock_out ? `<span class="ts-chip" style="background:#EDE9FE;color:#7C3AED">🔚 หยุดนับ ${d.effective_clock_out}</span>` : ''}
             ${d.late_min > 15 ? `<span class="ts-chip tc-late">สาย ${d.late_min} นาที</span>` : ''}
             ${d.late_min > 0 && d.late_min <= 15 ? `<span class="ts-chip tc-ok">สาย ${d.late_min} นาที (ไม่หัก)</span>` : ''}
             ${d.ot_hours > 0 && d.ot_status === 'approved' ? `<span class="ts-chip tc-ot">OT ${(d.ot_hours*60).toFixed(0)} นาที ✓</span>` : ''}
