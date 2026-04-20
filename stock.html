@@ -526,6 +526,49 @@ function getLocalFallbackItems(mode, bName) {
    }
    return mode === 'open' ? openBase : closeBase;
 }
+
+  // --- ระบบปัดลงเพื่อปิด (Swipe to Dismiss) ---
+const sheetOverlay = document.getElementById('summary-sheet');
+const sheetElement = sheetOverlay.querySelector('.summary-sheet');
+let startY = 0;
+let currentY = 0;
+let isDragging = false;
+
+sheetElement.addEventListener('touchstart', (e) => {
+  // เงื่อนไข: ให้ปัดลงได้เฉพาะตอนที่เนื้อหาสกอร์ลอยู่ด้านบนสุดเท่านั้น (จะได้สกอร์ลดูรายการข้างล่างได้ปกติ)
+  if (sheetElement.scrollTop > 0) return; 
+  startY = e.touches[0].clientY;
+  isDragging = true;
+  sheetElement.style.transition = 'none'; // ปิด animation ชั่วคราวเพื่อให้นิ้วลากเนียนๆ
+}, { passive: true });
+
+sheetElement.addEventListener('touchmove', (e) => {
+  if (!isDragging) return;
+  currentY = e.touches[0].clientY;
+  const deltaY = currentY - startY;
+
+  if (deltaY > 0) { // ลากลงเท่านั้น
+    e.preventDefault(); // กันไม่ให้หน้าจอหลังขยับตาม
+    sheetElement.style.transform = `translateY(${deltaY}px)`; // ขยับหน้าต่างตามนิ้ว
+  }
+}, { passive: false });
+
+sheetElement.addEventListener('touchend', (e) => {
+  if (!isDragging) return;
+  isDragging = false;
+  sheetElement.style.transition = ''; // เปิด animation กลับมา
+
+  const deltaY = currentY - startY;
+  if (deltaY > 120) { 
+    // ถ้ารูดลงมาเกิน 120px ให้สั่งปิดไปเลย
+    closeSummary();
+    // รีเซ็ตตำแหน่งหลังจากปิดเสร็จแล้ว
+    setTimeout(() => { sheetElement.style.transform = ''; }, 300); 
+  } else {
+    // ถ้ารูดลงไม่พอ ให้เด้งกลับขึ้นไปที่เดิม
+    sheetElement.style.transform = ''; 
+  }
+});
 </script>
 </body>
 </html>
