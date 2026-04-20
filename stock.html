@@ -1,0 +1,717 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>EASY — เช็คสต็อก</title>
+<link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --red: #E5232B;
+    --red-dark: #C81D24;
+    --yellow: #FFC928;
+    --bg: #F5F7FB;
+    --white: #FFFFFF;
+    --soft: #F9FAFB;
+    --border: #E5E7EB;
+    --text: #1F2937;
+    --text-secondary: #6B7280;
+    --green: #22C55E;
+    --green-dark: #16A34A;
+    --green-bg: #DCFCE7;
+    --danger: #FF5A4F;
+    --blue: #3B82F6;
+    --shadow: 0 2px 12px rgba(0,0,0,0.08);
+    --radius: 16px;
+    --radius-sm: 10px;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+  body {
+    font-family: 'Prompt', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    padding-bottom: 80px; /* Space for bottom button */
+  }
+
+  /* --- HEADER --- */
+  .app-header {
+    background: var(--red);
+    padding: 48px 20px 24px;
+    border-radius: 0 0 28px 28px;
+    position: relative;
+  }
+
+  .header-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+  }
+  
+  .back-btn {
+    background: rgba(255,255,255,0.2);
+    border: none; color: white;
+    font-family: 'Prompt', sans-serif; font-size: 13px;
+    padding: 6px 14px; border-radius: 20px; cursor: pointer;
+  }
+
+  .header-logo { font-size: 20px; font-weight: 700; color: var(--yellow); }
+  .header-title { font-size: 24px; font-weight: 600; color: white; margin-bottom: 2px; }
+  .header-sub { font-size: 13px; color: rgba(255,255,255,0.8); font-weight: 300; }
+
+  /* --- PROGRESS BAR --- */
+  .progress-wrap { margin-top: 16px; }
+  .progress-text { display: flex; justify-content: space-between; font-size: 12px; color: white; font-weight: 300; margin-bottom: 6px; }
+  .progress-bg { background: rgba(0,0,0,0.2); height: 8px; border-radius: 4px; overflow: hidden; }
+  .progress-fill { background: var(--yellow); height: 100%; width: 0%; transition: width 0.3s ease; }
+
+  /* --- BODY & SCREENS --- */
+  .app-body { padding: 20px 16px; }
+  .screen { display: none; }
+  .screen.active { display: block; }
+
+  /* --- MODE SELECT --- */
+  .mode-btn {
+    background: var(--white); border-radius: var(--radius); padding: 24px 16px;
+    text-align: center; border: 1.5px solid var(--border); box-shadow: var(--shadow);
+    margin-bottom: 16px; cursor: pointer; transition: all 0.2s;
+  }
+  .mode-btn:active { transform: scale(0.98); }
+  .mode-icon { font-size: 40px; margin-bottom: 8px; }
+  .mode-title { font-size: 18px; font-weight: 600; color: var(--text); }
+
+  /* --- ITEM LIST --- */
+  .cat-title { font-size: 16px; font-weight: 600; color: var(--text); margin: 24px 0 12px; display: flex; align-items: center; gap: 8px; }
+  
+  .item-card {
+    background: var(--white); border-radius: var(--radius-sm);
+    padding: 14px 16px; margin-bottom: 10px; border: 1px solid var(--border);
+    box-shadow: var(--shadow); transition: background-color 0.2s;
+  }
+  /* ไฮไลท์สีเขียวเมื่อกรอกแล้ว */
+  .item-card.filled { background-color: #F0FDF4; border-color: #BBF7D0; } 
+
+  .item-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+  .item-name { font-size: 15px; font-weight: 500; color: var(--text); }
+  
+  /* สั่งเพิ่ม (Toggle) */
+  .order-toggle { 
+    font-size: 12px; padding: 4px 10px; border-radius: 20px; font-weight: 500;
+    border: 1px solid var(--border); color: var(--text-secondary); cursor: pointer;
+    background: var(--soft);
+  }
+  .order-toggle.active { background: var(--green-bg); color: var(--green-dark); border-color: var(--green); }
+
+  /* --- INPUT AREA --- */
+  .input-area { display: flex; align-items: center; gap: 10px; }
+  
+  /* กล่องพิมพ์ตัวเลข ใหญ่และชัดเจน */
+  .num-input {
+    width: 80px; padding: 10px; font-family: 'Prompt', sans-serif;
+    font-size: 18px; font-weight: 600; text-align: center;
+    border: 1.5px solid var(--border); border-radius: 8px;
+    background: var(--bg); outline: none; transition: border-color 0.2s;
+  }
+  .num-input:focus { border-color: var(--red); background: var(--white); }
+  
+  .unit-text { font-size: 13px; color: var(--text-secondary); font-weight: 300; flex-shrink: 0; }
+
+  /* ปุ่มเศษส่วนลัด */
+  .frac-btns { display: flex; gap: 6px; flex-wrap: nowrap; overflow-x: auto; padding-bottom: 2px;}
+  .frac-btn {
+    padding: 8px 12px; font-family: 'Prompt', sans-serif; font-size: 13px; font-weight: 500;
+    border: 1px solid var(--border); border-radius: 8px; background: var(--white);
+    color: var(--text); cursor: pointer; white-space: nowrap; transition: all 0.2s;
+  }
+  .frac-btn:active { background: var(--soft); transform: scale(0.95); }
+  .frac-btn.selected { background: var(--blue-bg); color: var(--blue); border-color: var(--blue); }
+
+  /* Custom Order (สั่งอื่นๆ) */
+  .custom-order-row { display: flex; gap: 8px; margin-bottom: 12px; }
+  .custom-input { flex: 1; padding: 12px; border: 1.5px solid var(--border); border-radius: 8px; font-family: 'Prompt', sans-serif; font-size: 14px; outline: none; }
+  .add-btn { background: var(--blue); color: white; border: none; border-radius: 8px; padding: 0 16px; font-family: 'Prompt', sans-serif; cursor: pointer; font-weight: 500; }
+  .custom-list { display: flex; flex-direction: column; gap: 8px; }
+  .custom-item { display: flex; justify-content: space-between; align-items: center; background: var(--white); padding: 10px 12px; border-radius: 8px; border: 1px solid var(--border); font-size: 14px;}
+  .del-btn { color: var(--danger); background: none; border: none; cursor: pointer; font-size: 12px; font-family: 'Prompt', sans-serif;}
+
+  /* --- BOTTOM BAR --- */
+  .bottom-bar {
+    position: fixed; bottom: 0; left: 0; right: 0;
+    background: var(--white); padding: 16px 20px;
+    border-top: 1px solid var(--border); box-shadow: 0 -4px 12px rgba(0,0,0,0.05);
+    z-index: 50; display: none;
+  }
+  .btn-primary {
+    width: 100%; background: var(--green); color: white;
+    border: none; border-radius: var(--radius-sm); padding: 14px;
+    font-family: 'Prompt', sans-serif; font-size: 16px; font-weight: 600;
+    cursor: pointer; transition: transform 0.2s; box-shadow: 0 4px 16px rgba(34,197,94,0.3);
+  }
+  .btn-primary:active { transform: scale(0.98); }
+
+  /* --- SUMMARY SHEET --- */
+  .summary-overlay {
+    position: fixed; inset: 0; background: rgba(0,0,0,0.5);
+    display: flex; align-items: flex-end; z-index: 100;
+    opacity: 0; pointer-events: none; transition: opacity 0.25s;
+  }
+  .summary-overlay.visible { opacity: 1; pointer-events: all; }
+  
+  .summary-sheet {
+    background: var(--white); border-radius: 24px 24px 0 0;
+    padding: 24px 20px 40px; width: 100%; max-height: 85vh; overflow-y: auto;
+    transform: translateY(100%); transition: transform 0.3s cubic-bezier(0.32, 0.72, 0, 1);
+  }
+  .summary-overlay.visible .summary-sheet { transform: translateY(0); }
+  
+  .sheet-handle { width: 36px; height: 4px; background: var(--border); border-radius: 2px; margin: 0 auto 20px; }
+  .summary-title { font-size: 18px; font-weight: 600; text-align: center; margin-bottom: 16px; }
+  .summary-list { margin-bottom: 24px; }
+  .summary-item { padding: 10px 0; border-bottom: 1px solid var(--border); font-size: 14px; display:flex; justify-content: space-between;}
+  .summary-item:last-child { border-bottom: none; }
+
+  .toast {
+    position: fixed; bottom: 90px; left: 50%; transform: translateX(-50%) translateY(80px);
+    background: var(--text); color: white; font-size: 13px; padding: 12px 20px;
+    border-radius: 24px; z-index: 300; transition: transform 0.3s cubic-bezier(0.32, 0.72, 0, 1);
+    white-space: nowrap; max-width: 90vw; text-align: center;
+  }
+  .toast.show { transform: translateX(-50%) translateY(0); }
+
+  .loading-overlay {
+    position: fixed; inset: 0; background: rgba(255,255,255,0.85);
+    display: flex; align-items: center; justify-content: center;
+    z-index: 200; opacity: 0; pointer-events: none; transition: opacity 0.2s;
+  }
+  .loading-overlay.show { opacity: 1; pointer-events: all; }
+  .spinner { width: 36px; height: 36px; border: 3px solid var(--border); border-top-color: var(--red); border-radius: 50%; animation: spin 0.7s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+</style>
+</head>
+<body>
+
+<div class="app-header">
+  <div class="header-top">
+    <button class="back-btn" id="btn-back" onclick="goBack()" style="display:none;">← กลับ</button>
+    <div class="header-logo">EASY</div>
+  </div>
+  <div class="header-title" id="h-title">ระบบสต็อก</div>
+  <div class="header-sub" id="h-sub">สาขา: กำลังตรวจสอบ...</div>
+  
+  <div class="progress-wrap" id="progress-container" style="display:none;">
+    <div class="progress-text">
+      <span id="prog-label">นับแล้ว 0/0</span>
+      <span id="prog-pct">0%</span>
+    </div>
+    <div class="progress-bg"><div class="progress-fill" id="prog-bar"></div></div>
+  </div>
+</div>
+
+<div class="app-body">
+  
+  <div id="screen-mode" class="screen active">
+    <div class="mode-btn" onclick="selectMode('open')">
+      <div class="mode-icon">☀️</div>
+      <div class="mode-title" id="mode-open-label">เช็คสต็อกเปิดร้าน</div>
+    </div>
+    <div class="mode-btn" onclick="selectMode('close')">
+      <div class="mode-icon">🌙</div>
+      <div class="mode-title">เช็คสต็อกปิดร้าน</div>
+    </div>
+  </div>
+
+  <div id="screen-stock" class="screen">
+    <div id="stock-container"></div>
+  </div>
+
+</div>
+
+<div class="bottom-bar" id="bottom-bar">
+  <button class="btn-primary" onclick="handleSave()">บันทึกข้อมูล</button>
+</div>
+
+<div class="summary-overlay" id="summary-sheet">
+  <div class="summary-sheet">
+    <div class="sheet-handle"></div>
+    <div class="summary-title">📝 ยืนยันการสั่งของเพิ่ม</div>
+    <div style="font-size: 13px; color: var(--text-secondary); margin-bottom: 8px; text-align: center;">รายการที่จะถูกส่งเข้าไลน์กลุ่มสาขา</div>
+    <div class="summary-list" id="summary-list"></div>
+    <div style="display: flex; gap: 10px;">
+      <button class="btn-primary" style="background: var(--soft); color: var(--text-secondary); border: 1px solid var(--border);" onclick="closeSummary()">แก้ไข</button>
+      <button class="btn-primary" onclick="confirmSubmit()">ยืนยัน & ส่งเข้าคลัง</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+<div class="loading-overlay" id="loading"><div class="spinner"></div></div>
+
+<script>
+const API_URL = 'https://script.google.com/macros/s/AKfycbxxTjC7xOGHlgyStVBf6SimoU5RA7xX3VPwxIUtfGlpMNO89OQPDaRewKDDEmWGK4kk/exec';
+const SESSION_KEY = 'easy_session';
+
+let currentStaff = null;
+let currentBranchName = ''; // ชื่อสาขาจริงๆ จาก Sheet Branches
+let currentMode = '';
+let inventoryData = [];
+let stockValues = {}; // { itemName: value (string) }
+let orderRequests = {}; // { itemName: boolean }
+let customOrders = []; // [{id, name}]
+
+// Mapping รหัสสาขาเป็นชื่อ (ชั่วคราวเผื่อดึง API ไม่ทัน)
+const branchNames = {
+  'BR001': 'อมตะนคร',
+  'BR002': 'พระยาสัจจา',
+  'BR003': 'บางแสน',
+  'BR004': 'อ่าวอุดม',
+  'BR005': 'หนองตำลึง',
+  'BR006': 'วังหิน'
+};
+
+window.addEventListener('load', async () => {
+  const session = loadSession();
+  if (!session) { window.location.href = '/index.html'; return; }
+  currentStaff = session.staff;
+  
+  let bName = branchNames[currentStaff.branch_id] || currentStaff.branch_id || 'ไม่ระบุ';
+  // ถ้าบังเอิญเป็นคำว่าหนองตำลึง ปรับป้ายเปิดร้าน
+  if(bName === 'หนองตำลึง' || currentStaff.branch_id === 'BR005') {
+      document.getElementById('mode-open-label').textContent = 'เช็คเฉพาะสิ่งที่ทำแล้ว (เปิดร้าน)';
+      bName = 'หนองตำลึง (ครัวกลาง)';
+  }
+  currentBranchName = bName;
+  document.getElementById('h-sub').textContent = `สาขา: ${bName}`;
+});
+
+function loadSession() {
+  try {
+    const raw = localStorage.getItem(SESSION_KEY);
+    if (!raw) return null;
+    const data = JSON.parse(raw);
+    if (Date.now() > data.expires) return null;
+    return data;
+  } catch { return null; }
+}
+
+function goBack() {
+  document.getElementById('screen-stock').classList.remove('active');
+  document.getElementById('screen-mode').classList.add('active');
+  document.getElementById('btn-back').style.display = 'none';
+  document.getElementById('progress-container').style.display = 'none';
+  document.getElementById('bottom-bar').style.display = 'none';
+  document.getElementById('h-title').textContent = 'ระบบสต็อก';
+  currentMode = '';
+}
+
+async function selectMode(mode) {
+  currentMode = mode;
+  document.getElementById('screen-mode').classList.remove('active');
+  document.getElementById('screen-stock').classList.add('active');
+  document.getElementById('btn-back').style.display = 'block';
+  document.getElementById('h-title').textContent = mode === 'open' ? '☀️ เปิดร้าน' : '🌙 ปิดร้าน';
+  
+  stockValues = {};
+  orderRequests = {};
+  customOrders = [];
+  
+  showLoading(true);
+  try {
+    // เรียก API ดึงไอเท็ม (ในที่นี้ Apps Script จะแยกตาม mode และสาขาให้เบื้องต้น)
+    const res = await apiGet(`action=getStockItems&mode=${mode}&branch_id=${currentStaff.branch_id}`);
+    if (res.success) {
+      let items = res.data;
+      
+      // ดึง logic กรองสาขาจากของเก่ามาใช้ ถ้า API ส่งมาเป็นก้อนรวม
+      if(items.base) {
+          if(currentBranchName.includes('หนองตำลึง')) inventoryData = items.special;
+          else inventoryData = items.base;
+      } else {
+         inventoryData = items; // เผื่อ API ส่ง array มาตรงๆ
+      }
+      
+      renderStockItems();
+      document.getElementById('progress-container').style.display = 'block';
+      document.getElementById('bottom-bar').style.display = 'block';
+      updateProgress();
+    } else {
+      showToast('โหลดข้อมูลไม่สำเร็จ', 'error');
+    }
+  } catch(e) {
+      // Fallback เผื่อลืมแปะโค้ดฝั่ง Apps Script (ลอก Logic เก่ามาใช้แก้ขัด)
+      showToast('ใช้ข้อมูลสำรอง', '');
+      inventoryData = getLocalFallbackItems(mode, currentBranchName);
+      renderStockItems();
+      document.getElementById('progress-container').style.display = 'block';
+      document.getElementById('bottom-bar').style.display = 'block';
+      updateProgress();
+  }
+  showLoading(false);
+}
+
+// ----------------------------------------------------
+// UI Rendering
+// ----------------------------------------------------
+function renderStockItems() {
+  const container = document.getElementById('stock-container');
+  container.innerHTML = '';
+  
+  if(inventoryData.length === 0) {
+      container.innerHTML = '<div style="text-align:center; padding: 20px; color: var(--text-secondary);">ไม่มีรายการให้เช็ค</div>';
+      return;
+  }
+
+  // Group by category (ใช้หมวดหมู่ตามเดิม ถ้ามี)
+  const cats = {
+    'fresh': { title: '🥬 หมวดวัตถุดิบสด', items: [] },
+    'seasoning': { title: '🧂 หมวดเครื่องปรุง', items: [] },
+    'packaging': { title: '📦 หมวดบรรจุภัณฑ์', items: [] },
+    'cleaning': { title: '🧹 หมวดทำความสะอาด', items: [] },
+    'other': { title: '📝 หมวดอื่นๆ', items: [] }
+  };
+
+  inventoryData.forEach(item => {
+    const c = item.category || 'other';
+    if(cats[c]) cats[c].items.push(item);
+    else cats['other'].items.push(item);
+  });
+
+  let html = '';
+  Object.keys(cats).forEach(key => {
+    const group = cats[key];
+    if(group.items.length === 0) return;
+    
+    html += `<div class="cat-title">${group.title}</div>`;
+    
+    group.items.forEach(item => {
+      // Sanitize ID
+      const safeId = item.name.replace(/[^a-zA-Z0-9ก-๙]/g, '_');
+      
+      html += `
+        <div class="item-card" id="card_${safeId}">
+          <div class="item-header">
+            <div class="item-name">${item.name}</div>
+            ${currentMode === 'close' ? `<button class="order-toggle" id="btn_order_${safeId}" onclick="toggleOrder('${item.name}', '${safeId}')">+ สั่งเพิ่ม</button>` : ''}
+          </div>
+      `;
+
+      if (item.orderOnly) {
+         html += `<div style="font-size:12px; color:var(--text-secondary);">รายการนี้กดสั่งเพิ่มได้อย่างเดียว</div>`;
+      } else {
+         // Input Area
+         html += `<div class="input-area">`;
+         
+         // กล่องกรอกตัวเลขใหญ่ๆ
+         const step = item.type === 'free' ? 'any' : '1';
+         html += `<input type="number" step="${step}" inputmode="decimal" class="num-input" id="inp_${safeId}" placeholder="0" oninput="handleInput('${item.name}', '${safeId}', this.value, '${item.type}')">`;
+         
+         if(item.unit) html += `<span class="unit-text">${item.unit}</span>`;
+         
+         // ปุ่มเศษส่วนลัด (เฉพาะ type fraction)
+         if (item.type === 'fraction') {
+             html += `<div class="frac-btns">
+                <button class="frac-btn" id="frac_${safeId}_14" onclick="setFrac('${item.name}', '${safeId}', '1/4')">+ ¼</button>
+                <button class="frac-btn" id="frac_${safeId}_12" onclick="setFrac('${item.name}', '${safeId}', '1/2')">+ ½</button>
+                <button class="frac-btn" id="frac_${safeId}_34" onclick="setFrac('${item.name}', '${safeId}', '3/4')">+ ¾</button>
+             </div>`;
+         }
+         html += `</div>`; // end input-area
+         
+         // จุดโชว์ผลลัพธ์เศษส่วน (เช่น 2 1/2) ซ่อนไว้ถ้าเป็นเลขเพียวๆ
+         html += `<div id="val_${safeId}" style="font-size: 12px; color: var(--blue); font-weight: 500; margin-top: 4px; display:none;">รวม: <span id="val_text_${safeId}"></span> ${item.unit||''}</div>`;
+      }
+
+      html += `</div>`; // end item-card
+    });
+  });
+
+  // ส่วนของการสั่งเพิ่มเติม (เฉพาะตอนปิดร้าน)
+  if (currentMode === 'close') {
+      html += `
+      <div class="cat-title">✍️ สั่งอื่นๆ เพิ่มเติม</div>
+      <div class="item-card" style="background:var(--soft);">
+         <div class="custom-order-row">
+            <input type="text" id="custom-inp" class="custom-input" placeholder="เช่น โพสอิท, เทปใส">
+            <button class="add-btn" onclick="addCustom()">เพิ่ม</button>
+         </div>
+         <div class="custom-list" id="custom-list"></div>
+      </div>
+      `;
+  }
+
+  container.innerHTML = html;
+}
+
+// ----------------------------------------------------
+// Interactions
+// ----------------------------------------------------
+function handleInput(name, safeId, value, type) {
+    let cleanVal = value;
+    if(type !== 'free') {
+        cleanVal = value.replace(/[^0-9]/g, ''); // บังคับเลขจำนวนเต็ม
+        document.getElementById(`inp_${safeId}`).value = cleanVal;
+    }
+    
+    // ดึงค่าเศษส่วนที่อาจจะกดค้างไว้มาต่อ
+    let finalStr = cleanVal;
+    const fracBtn = document.querySelector(`.frac-btn.selected[id^="frac_${safeId}"]`);
+    if(fracBtn) {
+        let fracStr = fracBtn.textContent.replace('+ ', '');
+        // แปลง ¼ เป็น 1/4 เพื่อบันทึก
+        if(fracStr === '¼') fracStr = '1/4';
+        if(fracStr === '½') fracStr = '1/2';
+        if(fracStr === '¾') fracStr = '3/4';
+        
+        if(cleanVal && cleanVal !== '0') finalStr = `${cleanVal} ${fracStr}`;
+        else finalStr = fracStr;
+    }
+
+    saveValueAndUpdateUI(name, safeId, finalStr);
+}
+
+function setFrac(name, safeId, fracVal) {
+    // เคลียร์ปุ่มเก่า
+    document.querySelectorAll(`[id^="frac_${safeId}"]`).forEach(btn => btn.classList.remove('selected'));
+    
+    // หาปุ่มใหม่และ toggle
+    let displayFrac = '';
+    if(fracVal === '1/4') displayFrac = '¼';
+    if(fracVal === '1/2') displayFrac = '½';
+    if(fracVal === '3/4') displayFrac = '¾';
+    
+    const btnId = `frac_${safeId}_${fracVal.replace('/','')}`;
+    const btn = document.getElementById(btnId);
+    
+    // ถ้าเคยกดแล้วให้ยกเลิก
+    if(stockValues[name] && stockValues[name].includes(fracVal)) {
+        // ยกเลิกเศษส่วน
+        const numVal = document.getElementById(`inp_${safeId}`).value;
+        saveValueAndUpdateUI(name, safeId, numVal);
+    } else {
+        // เลือกเศษส่วน
+        btn.classList.add('selected');
+        const numVal = document.getElementById(`inp_${safeId}`).value;
+        let finalStr = fracVal;
+        if(numVal && numVal !== '0') finalStr = `${numVal} ${fracVal}`;
+        saveValueAndUpdateUI(name, safeId, finalStr);
+    }
+}
+
+function saveValueAndUpdateUI(name, safeId, finalStr) {
+    if(finalStr === '' || finalStr === '0') {
+        delete stockValues[name];
+        document.getElementById(`card_${safeId}`).classList.remove('filled');
+        document.getElementById(`val_${safeId}`).style.display = 'none';
+    } else {
+        stockValues[name] = finalStr;
+        document.getElementById(`card_${safeId}`).classList.add('filled'); // ไฮไลท์เขียว
+        
+        // ถ้ามีช่องว่างแสดงว่าเป็นเลขผสมเศษส่วน ให้โชว์สรุปด้านล่าง
+        if(finalStr.includes(' ') || finalStr.includes('/')) {
+            document.getElementById(`val_text_${safeId}`).textContent = finalStr;
+            document.getElementById(`val_${safeId}`).style.display = 'block';
+        } else {
+            document.getElementById(`val_${safeId}`).style.display = 'none';
+        }
+    }
+    updateProgress();
+}
+
+function toggleOrder(name, safeId) {
+    const btn = document.getElementById(`btn_order_${safeId}`);
+    if(orderRequests[name]) {
+        delete orderRequests[name];
+        btn.classList.remove('active');
+        btn.textContent = '+ สั่งเพิ่ม';
+    } else {
+        orderRequests[name] = true;
+        btn.classList.add('active');
+        btn.textContent = '✓ สั่งแล้ว';
+    }
+    // สั่งอย่างเดียวให้นับว่าตรวจแล้ว
+    const itemDef = inventoryData.find(i => i.name === name);
+    if(itemDef && itemDef.orderOnly) {
+         if(orderRequests[name]) document.getElementById(`card_${safeId}`).classList.add('filled');
+         else document.getElementById(`card_${safeId}`).classList.remove('filled');
+         updateProgress();
+    }
+}
+
+// Custom Orders
+function addCustom() {
+    const inp = document.getElementById('custom-inp');
+    const val = inp.value.trim();
+    if(!val) return;
+    const id = Date.now();
+    customOrders.push({id, name: val});
+    inp.value = '';
+    renderCustom();
+}
+function delCustom(id) {
+    customOrders = customOrders.filter(c => c.id !== id);
+    renderCustom();
+}
+function renderCustom() {
+    const list = document.getElementById('custom-list');
+    list.innerHTML = customOrders.map(c => `
+        <div class="custom-item">
+            <span>${c.name}</span>
+            <button class="del-btn" onclick="delCustom(${c.id})">✕ ลบ</button>
+        </div>
+    `).join('');
+}
+
+// ----------------------------------------------------
+// Progress & Save
+// ----------------------------------------------------
+function updateProgress() {
+    let requiredItems = inventoryData.filter(i => !i.orderOnly); // ของที่ต้องนับ
+    let orderOnlyItems = inventoryData.filter(i => i.orderOnly); // ของสั่งอย่างเดียว
+    
+    let completedCount = 0;
+    
+    requiredItems.forEach(i => {
+        if(stockValues[i.name]) completedCount++;
+    });
+    orderOnlyItems.forEach(i => {
+        if(orderRequests[i.name]) completedCount++; // ถือว่าถ้ากดสั่งแปลว่าดูแล้ว (หรือถ้าไม่กดสั่งก็ไม่ต้องนับก็ได้)
+    });
+    
+    // สำหรับ orderOnly ให้บวก total ไปด้วยเผื่อเค้าจะสั่ง
+    let total = requiredItems.length + orderOnlyItems.length;
+    let actualTotal = requiredItems.length; // เอาชัวร์ๆ แค่ของที่ต้องนับ
+    let actualCompleted = requiredItems.filter(i => stockValues[i.name]).length;
+    
+    // ให้ user รู้สึกดี เอา total ของสิ่งที่ต้อง "กรอกเลข" จริงๆ
+    let pct = actualTotal === 0 ? 100 : Math.round((actualCompleted / actualTotal) * 100);
+    if(pct > 100) pct = 100;
+
+    document.getElementById('prog-label').textContent = `นับแล้ว ${actualCompleted}/${actualTotal} (เหลือ ${actualTotal-actualCompleted})`;
+    document.getElementById('prog-pct').textContent = `${pct}%`;
+    document.getElementById('prog-bar').style.width = `${pct}%`;
+    
+    // เปลี่ยนสีแถบถ้าครบ
+    if(pct === 100) document.getElementById('prog-bar').style.background = 'var(--green)';
+    else document.getElementById('prog-bar').style.background = 'var(--yellow)';
+}
+
+function handleSave() {
+    // ถ้านับยังไม่เสร็จ เตือนได้ แต่ก็ให้เซฟอยู่ดี
+    const totalReq = inventoryData.filter(i => !i.orderOnly).length;
+    const done = Object.keys(stockValues).length;
+    
+    if(done < totalReq && !confirm(`คุณยังนับไม่ครบ ขาดอีก ${totalReq - done} รายการ ยืนยันที่จะบันทึกหรือไม่?`)) {
+        return;
+    }
+
+    if(currentMode === 'close') {
+        const orderList = [...Object.keys(orderRequests), ...customOrders.map(c => c.name)];
+        if(orderList.length > 0) {
+            // มีของสั่งเพิ่ม โชว์ Summary ก่อน
+            const sList = document.getElementById('summary-list');
+            sList.innerHTML = orderList.map(o => `
+               <div class="summary-item">
+                  <span style="font-weight: 500; color: var(--text);">${o}</span>
+                  <span style="color: var(--green); font-weight: 600;">✓</span>
+               </div>
+            `).join('');
+            document.getElementById('summary-sheet').classList.add('visible');
+        } else {
+            confirmSubmit();
+        }
+    } else {
+        // โหมดเปิดร้าน เซฟเลยไม่ต้องสรุป
+        confirmSubmit();
+    }
+}
+
+function closeSummary() {
+    document.getElementById('summary-sheet').classList.remove('visible');
+}
+
+async function confirmSubmit() {
+    closeSummary();
+    showLoading(true);
+    
+    const pctStr = document.getElementById('prog-pct').textContent.replace('%','');
+    
+    // จัด format data
+    const finalStocks = Object.keys(stockValues).map(name => {
+        const iDef = inventoryData.find(i => i.name === name);
+        return { name: name, value: stockValues[name], unit: iDef ? iDef.unit : '' };
+    });
+    const finalOrders = [...Object.keys(orderRequests), ...customOrders.map(c => c.name)];
+
+    const payload = {
+        action: 'saveStockLog',
+        branch_id: currentStaff.branch_id,
+        mode: currentMode,
+        staff_id: currentStaff.staff_id,
+        progress: parseInt(pctStr) || 0,
+        stocks: finalStocks,
+        orders: finalOrders
+    };
+
+    try {
+        const res = await apiPost(payload);
+        if(res.success) {
+            showToast('✅ บันทึกสต็อกสำเร็จ', 'success');
+            setTimeout(() => {
+                window.location.href = '/dashboard.html'; // กลับหน้าแรกเมื่อเสร็จ
+            }, 1500);
+        } else {
+            showToast(res.message || 'เกิดข้อผิดพลาด', 'error');
+        }
+    } catch(e) {
+        showToast('เชื่อมต่อไม่สำเร็จ', 'error');
+    }
+    showLoading(false);
+}
+
+// ----------------------------------------------------
+// API & Utils
+// ----------------------------------------------------
+async function apiGet(p) { const r = await fetch(`${API_URL}?${p}`); return r.json(); }
+async function apiPost(b) { const r = await fetch(API_URL, { method: 'POST', body: JSON.stringify(b) }); return r.json(); }
+
+function showLoading(s) { document.getElementById('loading').classList.toggle('show', s); }
+function showToast(msg, type = '') {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.className = `toast ${type} show`;
+  setTimeout(() => t.classList.remove('show'), 3500);
+}
+
+// --- Fallback Data (เผื่อ API ยังไม่ทำงาน จะได้เอาหน้ากากไปทดสอบได้) ---
+function getLocalFallbackItems(mode, bName) {
+   // ก๊อปปี้ Logic จากไฟล์เก่าเป๊ะๆ เพื่อให้หน้าตาทดสอบได้เลย
+   const openBase = [
+      { name: 'เส้นหมี่', unit: 'ห่อ', type:'fraction', category: 'fresh' },
+      { name: 'อกไก่', unit: 'กิโล', type:'free', category: 'fresh' },
+      { name: 'หมูกระจก', unit: 'ถุง', type:'fraction', category: 'fresh' },
+      { name: 'กล่อง 26 oz', unit: 'แถว', type:'fraction', category: 'packaging' },
+      { name: 'โค้ก',        unit: 'ขวด', type:'free', category: 'packaging' },
+   ];
+   const closeBase = [
+      { name:'เส้นหมี่', unit:'ห่อ', category:'fresh', type:'fraction' },
+      { name:'อกไก่', unit:'กิโล', category:'fresh', type:'free' },
+      { name:'น้ำมันกระเทียมเจียว', unit:'แกลลอน', category:'seasoning', type:'fraction' },
+      { name:'ซอสดั้งเดิม', unit:'แกลลอน', category:'seasoning', type:'fraction' },
+      { name:'น้ำมะนาว', unit:'ขวด', category:'seasoning', orderOnly:true },
+      { name:'ถุงซีล 7×10', unit:'ห่อ', category:'packaging', type:'fraction' },
+      { name:'ตะเกียบ', unit:'', category:'packaging', orderOnly:true },
+      { name:'น้ำยาถูพื้น', unit:'', category:'cleaning', orderOnly:true },
+   ];
+   
+   if(bName.includes('หนองตำลึง')) {
+      if(mode === 'open') return [{ name:'อกไก่', unit:'ถุง', type:'free', category: 'fresh' }];
+      else return [{ name:'น้ำมัน', unit:'แกลลอน', category:'seasoning', type:'free' }, { name:'ขวดน้ำ', unit:'', category:'packaging', orderOnly:true }];
+   }
+   
+   return mode === 'open' ? openBase : closeBase;
+}
+</script>
+</body>
+</html>
