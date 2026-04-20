@@ -346,7 +346,6 @@
 </head>
 <body>
 
-<!-- HEADER -->
 <div class="app-header">
   <div class="header-top">
     <div class="header-logo">EASY</div>
@@ -358,10 +357,8 @@
 
 <div class="app-body">
 
-  <!-- OT ALERT -->
   <div id="ot-alert-section"></div>
 
-  <!-- ใครมาบ้างวันนี้ -->
   <div>
     <div class="section-title">👥 วันนี้ใครมาบ้าง</div>
     <div class="card" id="attendance-card">
@@ -371,7 +368,6 @@
     </div>
   </div>
 
-  <!-- รอบจ่ายเงินถัดไป -->
   <div>
     <div class="section-title">💰 รอบจ่ายเงินถัดไป</div>
     <div class="card" id="payroll-card">
@@ -379,7 +375,6 @@
     </div>
   </div>
 
-  <!-- เบิกล่วงหน้า -->
   <div>
     <div class="section-title">💸 เบิกล่วงหน้า</div>
     <div class="card" id="advances-card">
@@ -393,7 +388,6 @@
     </div>
   </div>
 
-  <!-- SHORTCUTS -->
   <div>
     <div class="section-title">⚡ ไปที่</div>
     <div class="shortcut-grid">
@@ -422,7 +416,6 @@
 
 </div>
 
-<!-- ADVANCE MODAL -->
 <div class="modal-overlay" id="advance-modal">
   <div class="modal-sheet">
     <div class="modal-handle"></div>
@@ -621,7 +614,9 @@ function renderAttendance() {
       const initials = (staff.nickname || staff.name || '?').charAt(0);
       const isPresent = !!ts;
       const lateMin = ts ? parseInt(ts.late_min) || 0 : 0;
-      const isLate = lateMin >= 16;
+      
+      // 🔴 FIXED: เช็คว่าต้องเป็น fulltime ถึงจะขึ้นว่า late
+      const isLate = staff.staff_type === 'fulltime' && lateMin >= 16;
 
       let timeLabel = 'ยังไม่เข้างาน';
       let timeClass = 'absent';
