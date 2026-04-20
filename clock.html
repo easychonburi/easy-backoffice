@@ -100,6 +100,7 @@
   .clock-card { text-align: center; padding: 20px 16px; }
   .clock-label { font-size: 11px; color: var(--text-secondary); font-weight: 300; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px; }
   .clock-time { font-size: 52px; font-weight: 700; color: var(--text); letter-spacing: -2px; line-height: 1; margin-bottom: 4px; }
+  .clock-time span { font-variant-numeric: tabular-nums; }
   .clock-date { font-size: 13px; color: var(--text-secondary); font-weight: 300; }
 
   .action-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
@@ -132,6 +133,7 @@
   .today-row-value.pending { color: #D97706; }
 
   .history-title { font-size: 12px; color: var(--text-secondary); font-weight: 400; margin-bottom: 10px; }
+  .history-list-container { max-height: 200px; overflow-y: auto; }
   .history-item { display: flex; align-items: center; gap: 12px; padding: 8px 0; border-bottom: 1px solid var(--border); }
   .history-item:last-child { border-bottom: none; }
   .history-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
@@ -258,11 +260,12 @@
 
   <div class="card">
     <div class="history-title">🕐 ประวัติล่าสุด</div>
-    <div id="history-list"><div class="history-empty">กำลังโหลด...</div></div>
+    <div class="history-list-container" id="history-list">
+      <div class="history-empty">กำลังโหลด...</div>
+    </div>
   </div>
 </div>
 
-<!-- MODAL สาย -->
 <div class="modal-overlay" id="modal-late">
   <div class="modal-sheet">
     <div class="modal-handle"></div>
@@ -280,7 +283,6 @@
   </div>
 </div>
 
-<!-- MODAL OT -->
 <div class="modal-overlay" id="modal-ot">
   <div class="modal-sheet">
     <div class="modal-handle"></div>
@@ -320,7 +322,7 @@ const API_URL = 'https://script.google.com/macros/s/AKfycbxxTjC7xOGHlgyStVBf6Sim
 const SESSION_KEY = 'easy_session';
 
 const THAI_DAYS = ['อาทิตย์','จันทร์','อังคาร','พุธ','พฤหัสบดี','ศุกร์','เสาร์'];
-const THAI_MONTHS = ['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
+const THAI_MONTHS = ['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มี.ค.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
 
 let currentStaff = null;
 let currentPosition = null;
@@ -381,8 +383,15 @@ function startGPS() {
     setGPS('error','❌','GPS ไม่รองรับ','อุปกรณ์ไม่รองรับ GPS','ไม่รองรับ'); return;
   }
   navigator.geolocation.watchPosition(
-    pos => { currentPosition = { lat: pos.coords.latitude, lng: pos.coords.longitude }; checkNearBranch(); },
-    () => { setGPS('error','❌','ไม่สามารถรับ GPS','กรุณาเปิดอนุญาต Location','ไม่มี GPS'); gpsOk = false; updateButtons(); },
+    pos => { 
+      currentPosition = { lat: pos.coords.latitude, lng: pos.coords.longitude }; 
+      checkNearBranch(); 
+    },
+    () => { 
+      setGPS('error','❌','ไม่สามารถรับ GPS','กรุณาเปิดอนุญาต Location','ไม่มี GPS'); 
+      gpsOk = false; 
+      updateButtons(); 
+    },
     { enableHighAccuracy: true, timeout: 15000, maximumAge: 30000 }
   );
 }
@@ -430,7 +439,8 @@ async function loadTodayStatus() {
     const res = await apiGet('action=getTodayStatus');
     if (res.success && currentStaff) {
       todayRecord = res.data.find(r => r.staff_id === currentStaff.staff_id) || null;
-      renderToday(); updateButtons();
+      renderToday(); 
+      updateButtons();
     }
   } catch {}
 }
@@ -441,9 +451,19 @@ function renderToday() {
   card.style.display = 'block';
   let html = '';
   if (todayRecord.clock_in) html += row('เข้างาน', todayRecord.clock_in);
-  if (todayRecord.late_min > 0) html += row('สาย', `${todayRecord.late_min} นาที${todayRecord.late_min < 16 ? ' (ไม่หัก)' : ''}`, todayRecord.late_min >= 16 ? 'late' : '');
+  
+  // FIXED: Only show late row for FULLTIME staff to prevent part-time confusion
+  if (currentStaff && currentStaff.staff_type === 'fulltime' && todayRecord.late_min > 0) {
+    html += row('สาย', `${todayRecord.late_min} นาที${todayRecord.late_min < 16 ? ' (ไม่หัก)' : ''}`, todayRecord.late_min >= 16 ? 'late' : '');
+  }
+  
   if (todayRecord.clock_out) html += row('ออกงาน', todayRecord.clock_out);
-  if (parseFloat(todayRecord.ot_hours) > 0) html += row(todayRecord.ot_status === 'pending' ? 'OT (รออนุมัติ)' : 'OT', `${(parseFloat(todayRecord.ot_hours)*60).toFixed(0)} นาที`, todayRecord.ot_status === 'pending' ? 'pending' : 'ot');
+  
+  // FIXED: Only show OT row for FULLTIME staff
+  if (currentStaff && currentStaff.staff_type === 'fulltime' && parseFloat(todayRecord.ot_hours) > 0) {
+    html += row(todayRecord.ot_status === 'pending' ? 'OT (รออนุมัติ)' : 'OT', `${(parseFloat(todayRecord.ot_hours)*60).toFixed(0)} นาที`, todayRecord.ot_status === 'pending' ? 'pending' : 'ot');
+  }
+  
   document.getElementById('today-rows').innerHTML = html;
 }
 
@@ -459,11 +479,11 @@ async function loadHistory() {
     const res = await apiGet(`action=getTimesheets&staff_id=${currentStaff.staff_id}&date_from=${dateFrom}`);
     if (!res.success || !res.data.length) { list.innerHTML = '<div class="history-empty">ยังไม่มีประวัติ</div>'; return; }
     const items = [];
-    res.data.slice(-5).reverse().forEach(r => {
+    res.data.slice(-10).reverse().forEach(r => {
       if (r.clock_out) items.push({ type: 'out', text: 'ออกงาน', time: `${r.date} · ${r.clock_out}` });
       if (r.clock_in) items.push({ type: 'in', text: 'เข้างาน', time: `${r.date} · ${r.clock_in}` });
     });
-    list.innerHTML = items.slice(0,4).map(it => `
+    list.innerHTML = items.map(it => `
       <div class="history-item">
         <div class="history-dot ${it.type}"></div>
         <div class="history-action">${it.text}</div>
@@ -474,17 +494,23 @@ async function loadHistory() {
 
 async function handleCheckIn() {
   if (!gpsOk || !currentPosition) { showToast('GPS ยังไม่พร้อม', 'error'); return; }
+  
+  // Part-time Bypass Late Modal
   if (currentStaff.staff_type !== 'fulltime') { await doClockIn(''); return; }
+  
   const now = new Date();
   const shift = currentStaff.shift === 'night' ? settings.shift_night_start : settings.shift_morning_start;
   const lateMin = calcLateMin(shift, now);
+  
   if (lateMin >= 11) {
     document.getElementById('late-shift-time').textContent = shift;
     document.getElementById('late-actual-time').textContent = getTimeStr(now);
     document.getElementById('late-minutes').textContent = `${lateMin} นาที`;
     document.getElementById('late-reason-input').value = '';
     showModal('modal-late');
-  } else { await doClockIn(''); }
+  } else { 
+    await doClockIn(''); 
+  }
 }
 
 async function submitLateReason() {
@@ -497,8 +523,19 @@ async function submitLateReason() {
 async function doClockIn(lateReason) {
   showLoading(true);
   try {
-    const res = await apiPost({ action: 'clockIn', staff_id: currentStaff.staff_id, lat: currentPosition.lat, lng: currentPosition.lng, date: getDateStr(), late_reason: lateReason });
-    if (res.success) { showToast(`✅ บันทึกเข้างาน ${res.clock_in}`, 'success'); await loadTodayStatus(); await loadHistory(); }
+    const res = await apiPost({ 
+      action: 'clockIn', 
+      staff_id: currentStaff.staff_id, 
+      lat: currentPosition.lat, 
+      lng: currentPosition.lng, 
+      date: getDateStr(), 
+      late_reason: lateReason 
+    });
+    if (res.success) { 
+      showToast(`✅ บันทึกเข้างาน ${res.clock_in}`, 'success'); 
+      await loadTodayStatus(); 
+      await loadHistory(); 
+    }
     else showToast(res.message || 'เกิดข้อผิดพลาด', 'error');
   } catch { showToast('เชื่อมต่อไม่ได้', 'error'); }
   showLoading(false);
@@ -506,11 +543,15 @@ async function doClockIn(lateReason) {
 
 async function handleCheckOut() {
   if (!gpsOk || !currentPosition) { showToast('GPS ยังไม่พร้อม', 'error'); return; }
+  
+  // Part-time Bypass OT Modal
   if (currentStaff.staff_type !== 'fulltime') { await doClockOut('no', ''); return; }
+  
   const now = new Date();
   const shift = currentStaff.shift === 'night' ? settings.shift_night_end : settings.shift_morning_end;
   const otMin = calcOTMin(shift, now);
   const grace = parseInt(settings.ot_grace_min) || 15;
+  
   if (otMin >= grace + 1) {
     document.getElementById('ot-shift-end').textContent = shift;
     document.getElementById('ot-actual-time').textContent = getTimeStr(now);
@@ -523,7 +564,9 @@ async function handleCheckOut() {
     document.getElementById('ot-cancel-btn').textContent = 'ยืนยัน';
     document.getElementById('ot-reason-input').value = '';
     showModal('modal-ot');
-  } else { await doClockOut('no', ''); }
+  } else { 
+    await doClockOut('no', ''); 
+  }
 }
 
 function selectOT(choice) {
@@ -539,26 +582,51 @@ async function submitOT(withOT) {
   if (withOT) {
     const reason = document.getElementById('ot-reason-input').value.trim();
     if (!reason) { showToast('กรุณาระบุเหตุผล OT', 'error'); return; }
-    hideModal('modal-ot'); await doClockOut('yes', reason);
+    hideModal('modal-ot'); 
+    await doClockOut('yes', reason);
   } else {
     if (!otChoice) { showToast('กรุณาเลือกก่อน', 'error'); return; }
-    hideModal('modal-ot'); await doClockOut('no', '');
+    hideModal('modal-ot'); 
+    await doClockOut('no', '');
   }
 }
 
 async function doClockOut(otRequested, otReason) {
   showLoading(true);
   try {
-    const res = await apiPost({ action: 'clockOut', staff_id: currentStaff.staff_id, lat: currentPosition.lat, lng: currentPosition.lng, date: getDateStr(), ot_requested: otRequested, ot_reason: otReason });
-    if (res.success) { showToast(otRequested === 'yes' ? `✅ ออกงาน ${res.clock_out} — ส่งคำขอ OT แล้ว` : `✅ บันทึกออกงาน ${res.clock_out}`, 'success'); await loadTodayStatus(); await loadHistory(); }
+    const res = await apiPost({ 
+      action: 'clockOut', 
+      staff_id: currentStaff.staff_id, 
+      lat: currentPosition.lat, 
+      lng: currentPosition.lng, 
+      date: getDateStr(), 
+      ot_requested: otRequested, 
+      ot_reason: otReason 
+    });
+    if (res.success) { 
+      showToast(otRequested === 'yes' ? `✅ ออกงาน ${res.clock_out} — ส่งคำขอ OT แล้ว` : `✅ บันทึกออกงาน ${res.clock_out}`, 'success'); 
+      await loadTodayStatus(); 
+      await loadHistory(); 
+    }
     else showToast(res.message || 'เกิดข้อผิดพลาด', 'error');
   } catch { showToast('เชื่อมต่อไม่ได้', 'error'); }
   showLoading(false);
 }
 
-function calcLateMin(s, now) { const [sh,sm]=s.split(':').map(Number); return Math.max(0,(now.getHours()*60+now.getMinutes())-(sh*60+sm)); }
-function calcOTMin(s, now) { const [eh,em]=s.split(':').map(Number); let n=now.getHours()*60+now.getMinutes(),e=eh*60+em; if(n<e-300)n+=1440; return Math.max(0,n-e); }
-function haversine(a,b,c,d){const R=6371000,dL=(c-a)*Math.PI/180,dN=(d-b)*Math.PI/180,x=Math.sin(dL/2)**2+Math.cos(a*Math.PI/180)*Math.cos(c*Math.PI/180)*Math.sin(dN/2)**2;return R*2*Math.atan2(Math.sqrt(x),Math.sqrt(1-x));}
+function calcLateMin(s, now) { 
+  const [sh,sm]=s.split(':').map(Number); 
+  return Math.max(0,(now.getHours()*60+now.getMinutes())-(sh*60+sm)); 
+}
+function calcOTMin(s, now) { 
+  const [eh,em]=s.split(':').map(Number); 
+  let n=now.getHours()*60+now.getMinutes(),e=eh*60+em; 
+  if(n<e-300)n+=1440; 
+  return Math.max(0,n-e); 
+}
+function haversine(a,b,c,d){
+  const R=6371000,dL=(c-a)*Math.PI/180,dN=(d-b)*Math.PI/180,x=Math.sin(dL/2)**2+Math.cos(a*Math.PI/180)*Math.cos(c*Math.PI/180)*Math.sin(dN/2)**2;
+  return R*2*Math.atan2(Math.sqrt(x),Math.sqrt(1-x));
+}
 function getTimeStr(d=new Date()){return`${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;}
 function getDateStr(d=new Date()){return`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;}
 async function apiGet(p){const r=await fetch(`${API_URL}?${p}`);return r.json();}
@@ -566,7 +634,12 @@ async function apiPost(b){const r=await fetch(API_URL,{method:'POST',body:JSON.s
 function showModal(id){document.getElementById(id).classList.add('visible');}
 function hideModal(id){document.getElementById(id).classList.remove('visible');}
 function showLoading(s){document.getElementById('loading').classList.toggle('show',s);}
-function showToast(msg,type=''){const t=document.getElementById('toast');t.textContent=msg;t.className=`toast ${type} show`;setTimeout(()=>t.classList.remove('show'),3500);}
+function showToast(msg,type=''){
+  const t=document.getElementById('toast');
+  t.textContent=msg;
+  t.className=`toast ${type} show`;
+  setTimeout(()=>t.classList.remove('show'),3500);
+}
 </script>
 </body>
 </html>
