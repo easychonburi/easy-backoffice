@@ -97,7 +97,6 @@
   .item-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
   .item-name { font-size: 15px; font-weight: 500; color: var(--text); }
   
-  /* สั่งเพิ่ม (Toggle) - สีฟ้าอ่อน */
   .order-toggle { 
     font-size: 12px; padding: 4px 10px; border-radius: 20px; font-weight: 500;
     border: 1px solid #BFDBFE; color: var(--blue); cursor: pointer;
@@ -201,6 +200,7 @@
 
 <div class="app-header">
   <div class="header-top">
+    <button class="back-btn" id="btn-home" onclick="goHome()">🏠 หน้าแรก</button>
     <button class="back-btn" id="btn-back" onclick="goBack()" style="display:none;">← กลับ</button>
     <div class="header-logo">EASY</div>
   </div>
@@ -295,10 +295,20 @@ function loadSession() {
   } catch { return null; }
 }
 
+function goHome() {
+  const session = loadSession();
+  if (session && session.role === 'admin') {
+    window.location.href = '/dashboard.html';
+  } else {
+    window.location.href = '/clock.html';
+  }
+}
+
 function goBack() {
   document.getElementById('screen-stock').classList.remove('active');
   document.getElementById('screen-mode').classList.add('active');
   document.getElementById('btn-back').style.display = 'none';
+  document.getElementById('btn-home').style.display = 'block';
   document.getElementById('progress-container').style.display = 'none';
   document.getElementById('bottom-bar').style.display = 'none';
   document.getElementById('h-title').textContent = 'ระบบสต็อก';
@@ -309,6 +319,7 @@ async function selectMode(mode) {
   currentMode = mode;
   document.getElementById('screen-mode').classList.remove('active');
   document.getElementById('screen-stock').classList.add('active');
+  document.getElementById('btn-home').style.display = 'none';
   document.getElementById('btn-back').style.display = 'block';
   document.getElementById('h-title').textContent = mode === 'open' ? '☀️ เปิดร้าน' : '🌙 ปิดร้าน';
   
@@ -475,7 +486,6 @@ function updateProgress() {
 }
 
 function handleSave() {
-    // แก้ไข: ข้ามการแจ้งเตือนเรื่องนับไม่ครบ และไปหน้ายืนยันทันที
     if(currentMode === 'close') {
         const orderList = [...Object.keys(orderRequests), ...customOrders.map(c => c.name)];
         if(orderList.length > 0) {
@@ -502,7 +512,7 @@ async function confirmSubmit() {
         const res = await apiPost(payload);
         if(res.success) {
             showToast('✅ บันทึกสต็อกสำเร็จ', 'success');
-            setTimeout(() => { window.location.href = '/dashboard.html'; }, 1500);
+            setTimeout(() => { goHome(); }, 1500);
         } else { showToast(res.message || 'เกิดข้อผิดพลาด', 'error'); }
     } catch(e) { showToast('เชื่อมต่อไม่สำเร็จ', 'error'); }
     showLoading(false);
@@ -527,48 +537,13 @@ function getLocalFallbackItems(mode, bName) {
    return mode === 'open' ? openBase : closeBase;
 }
 
-  // --- ระบบปัดลงเพื่อปิด (Swipe to Dismiss) ---
+// --- ระบบปัดลงเพื่อปิด (Swipe to Dismiss) ---
 const sheetOverlay = document.getElementById('summary-sheet');
 const sheetElement = sheetOverlay.querySelector('.summary-sheet');
-let startY = 0;
-let currentY = 0;
-let isDragging = false;
-
-sheetElement.addEventListener('touchstart', (e) => {
-  // เงื่อนไข: ให้ปัดลงได้เฉพาะตอนที่เนื้อหาสกอร์ลอยู่ด้านบนสุดเท่านั้น (จะได้สกอร์ลดูรายการข้างล่างได้ปกติ)
-  if (sheetElement.scrollTop > 0) return; 
-  startY = e.touches[0].clientY;
-  isDragging = true;
-  sheetElement.style.transition = 'none'; // ปิด animation ชั่วคราวเพื่อให้นิ้วลากเนียนๆ
-}, { passive: true });
-
-sheetElement.addEventListener('touchmove', (e) => {
-  if (!isDragging) return;
-  currentY = e.touches[0].clientY;
-  const deltaY = currentY - startY;
-
-  if (deltaY > 0) { // ลากลงเท่านั้น
-    e.preventDefault(); // กันไม่ให้หน้าจอหลังขยับตาม
-    sheetElement.style.transform = `translateY(${deltaY}px)`; // ขยับหน้าต่างตามนิ้ว
-  }
-}, { passive: false });
-
-sheetElement.addEventListener('touchend', (e) => {
-  if (!isDragging) return;
-  isDragging = false;
-  sheetElement.style.transition = ''; // เปิด animation กลับมา
-
-  const deltaY = currentY - startY;
-  if (deltaY > 120) { 
-    // ถ้ารูดลงมาเกิน 120px ให้สั่งปิดไปเลย
-    closeSummary();
-    // รีเซ็ตตำแหน่งหลังจากปิดเสร็จแล้ว
-    setTimeout(() => { sheetElement.style.transform = ''; }, 300); 
-  } else {
-    // ถ้ารูดลงไม่พอ ให้เด้งกลับขึ้นไปที่เดิม
-    sheetElement.style.transform = ''; 
-  }
-});
+let startY = 0, currentY = 0, isDragging = false;
+sheetElement.addEventListener('touchstart', (e) => { if (sheetElement.scrollTop > 0) return; startY = e.touches[0].clientY; isDragging = true; sheetElement.style.transition = 'none'; }, { passive: true });
+sheetElement.addEventListener('touchmove', (e) => { if (!isDragging) return; currentY = e.touches[0].clientY; const deltaY = currentY - startY; if (deltaY > 0) { e.preventDefault(); sheetElement.style.transform = `translateY(${deltaY}px)`; } }, { passive: false });
+sheetElement.addEventListener('touchend', (e) => { if (!isDragging) return; isDragging = false; sheetElement.style.transition = ''; const deltaY = currentY - startY; if (deltaY > 120) { closeSummary(); setTimeout(() => { sheetElement.style.transform = ''; }, 300); } else { sheetElement.style.transform = ''; } });
 </script>
 </body>
 </html>
