@@ -474,6 +474,7 @@ async function loadHistory() {
 
 async function handleCheckIn() {
   if (!gpsOk || !currentPosition) { showToast('GPS ยังไม่พร้อม', 'error'); return; }
+  if (currentStaff.staff_type !== 'fulltime') { await doClockIn(''); return; }
   const now = new Date();
   const shift = currentStaff.shift === 'night' ? settings.shift_night_start : settings.shift_morning_start;
   const lateMin = calcLateMin(shift, now);
@@ -505,6 +506,7 @@ async function doClockIn(lateReason) {
 
 async function handleCheckOut() {
   if (!gpsOk || !currentPosition) { showToast('GPS ยังไม่พร้อม', 'error'); return; }
+  if (currentStaff.staff_type !== 'fulltime') { await doClockOut('no', ''); return; }
   const now = new Date();
   const shift = currentStaff.shift === 'night' ? settings.shift_night_end : settings.shift_morning_end;
   const otMin = calcOTMin(shift, now);
