@@ -173,13 +173,20 @@
   .summary-item { padding: 10px 0; border-bottom: 1px solid var(--border); font-size: 14px; display:flex; justify-content: space-between;}
   .summary-item:last-child { border-bottom: none; }
 
-  .toast {
-    position: fixed; bottom: 90px; left: 50%; transform: translateX(-50%) translateY(80px);
+ .toast {
+    position: fixed; bottom: 90px; left: 50%; 
+    transform: translateX(-50%) translateY(100px); /* ดันลงไปให้ลึกขึ้น */
     background: var(--text); color: white; font-size: 13px; padding: 12px 20px;
-    border-radius: 24px; z-index: 300; transition: transform 0.3s cubic-bezier(0.32, 0.72, 0, 1);
+    border-radius: 24px; z-index: 300; 
+    transition: all 0.3s cubic-bezier(0.32, 0.72, 0, 1);
     white-space: nowrap; max-width: 90vw; text-align: center;
+    opacity: 0; /* ซ่อนให้โปร่งใสสนิท */
+    pointer-events: none;
   }
-  .toast.show { transform: translateX(-50%) translateY(0); }
+  .toast.show { 
+    transform: translateX(-50%) translateY(0); 
+    opacity: 1; /* โชว์ชัดๆ ตอนมีแจ้งเตือน */
+  }
 
   .loading-overlay {
     position: fixed; inset: 0; background: rgba(255,255,255,0.85);
