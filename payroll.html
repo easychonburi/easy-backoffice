@@ -423,7 +423,6 @@
 </head>
 <body>
 
-<!-- MAIN HEADER -->
 <div class="app-header" id="main-header">
   <div class="header-top">
     <div class="header-logo">EASY</div>
@@ -436,14 +435,12 @@
   <div class="header-sub" id="header-sub">กำลังโหลด...</div>
 </div>
 
-<!-- MAIN PAGE -->
 <div id="main-page">
   <div class="app-body" id="main-body">
     <div class="empty-state"><div class="spinner" style="margin:0 auto"></div></div>
   </div>
 </div>
 
-<!-- STAFF LIST PAGE -->
 <div id="staff-list-page">
   <div class="list-header">
     <div class="header-top">
@@ -459,7 +456,6 @@
   <div class="app-body" id="staff-list-body"></div>
 </div>
 
-<!-- DETAIL SHEET -->
 <div class="detail-overlay" id="detail-overlay" onclick="closeDetailOutside(event)">
   <div class="detail-sheet">
     <div class="sheet-handle"></div>
@@ -572,6 +568,7 @@ function getEffectiveShift(staff, dateStr, settings) {
   // วันอาทิตย์ → ทุกคนทุกสาขาใช้ 10:30–20:00
   const d = new Date(dateStr + 'T00:00:00');
   if (d.getDay() === 0) return { start: '10:30', end: '20:00', flexible: false };
+
   // ใช้ custom shift ต่อคน (จาก Sheets)
   if (staff.custom_shift_start) {
     return {
@@ -580,7 +577,13 @@ function getEffectiveShift(staff, dateStr, settings) {
       flexible: !staff.custom_shift_end
     };
   }
-  // fallback → global settings (สำหรับ fulltime)
+
+  // 🔴 FIXED: ถ้าเป็น part-time และไม่ได้ใส่เวลา ให้เป็น Flexible ทันที ห้ามดึงค่า Global
+  if (staff.staff_type !== 'fulltime') {
+    return { start: null, end: null, flexible: true };
+  }
+
+  // fallback → global settings (สำหรับ fulltime เท่านั้น)
   const start = staff.shift === 'night' ? (settings.shift_night_start || '17:00') : (settings.shift_morning_start || '09:00');
   const end   = staff.shift === 'night' ? (settings.shift_night_end   || '01:00') : (settings.shift_morning_end   || '17:00');
   return { start, end, flexible: false };
