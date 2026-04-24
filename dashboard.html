@@ -155,6 +155,7 @@
   .att-time.present { color: var(--green-dark); }
   .att-time.absent { color: var(--text-secondary); font-weight: 300; font-size: 12px; }
   .att-time.late { color: var(--danger); }
+  .att-time.out { color: var(--danger); } /* เพิ่มคลาสสีแดงตอนออกงาน */
 
   /* ─── PAYROLL NEXT ─── */
   .payroll-next { padding: 14px 16px; }
@@ -454,66 +455,56 @@ let allStaff = [];
 let allTimesheets = [];
 let allAdvances = [];
 let settings = {};
-let allPayrollRuns = [];
 
-// Mapping รหัสสาขาเป็นชื่อ (ใช้สำหรับดึงชื่อแสดงผลแทนรหัส)
+// Mapping สาขา
 const branchNames = {
-  'BR001': 'อมตะนคร',
-  'BR002': 'พระยาสัจจา',
-  'BR003': 'บางแสน',
-  'BR004': 'อ่าวอุดม',
-  'BR005': 'หนองตำลึง',
-  'BR006': 'วังหิน'
+  'BR001': 'อมตะนคร', 'BR002': 'พระยาสัจจา', 'BR003': 'บางแสน',
+  'BR004': 'อ่าวอุดม', 'BR005': 'หนองตำลึง', 'BR006': 'วังหิน'
 };
 
-// ─── HELPERS ───
-function toDateStr(d) {
-  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
-}
-
+function toDateStr(d) { return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; }
 function thaiDate(dateStr) {
   if (!dateStr) return '—';
   const d = new Date(dateStr + 'T00:00:00');
   return `${d.getDate()} ${THAI_MONTHS[d.getMonth()]} ${d.getFullYear()+543}`;
 }
-
-function thaiDateFull(d = new Date()) {
-  return `วัน${THAI_DAYS[d.getDay()]}ที่ ${d.getDate()} ${THAI_MONTHS[d.getMonth()]} ${d.getFullYear()+543}`;
-}
-
-function formatMoney(n) {
-  return '฿' + Number(n||0).toLocaleString('th-TH', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
-}
-
-function addDays(dateStr, n) {
-  const d = new Date(dateStr + 'T00:00:00');
-  d.setDate(d.getDate() + n);
-  return toDateStr(d);
-}
+function thaiDateFull(d = new Date()) { return `วัน${THAI_DAYS[d.getDay()]}ที่ ${d.getDate()} ${THAI_MONTHS[d.getMonth()]} ${d.getFullYear()+543}`; }
+function formatMoney(n) { return '฿' + Number(n||0).toLocaleString('th-TH', { minimumFractionDigits: 0, maximumFractionDigits: 0 }); }
 
 function diffDays(dateStr) {
   const now = new Date();
   const target = new Date(dateStr + 'T00:00:00');
+  target.setHours(23, 59, 59, 999); // ปัดให้สุดวัน
   return Math.ceil((target - now) / (1000 * 60 * 60 * 24));
 }
 
 function periodLabel(start, end) {
   const s = new Date(start + 'T00:00:00');
   const e = new Date(end + 'T00:00:00');
-  if (s.getMonth() === e.getMonth()) {
-    return `${s.getDate()}–${e.getDate()} ${THAI_MONTHS[s.getMonth()]} ${s.getFullYear()+543}`;
-  }
+  if (s.getMonth() === e.getMonth()) return `${s.getDate()}–${e.getDate()} ${THAI_MONTHS[s.getMonth()]} ${s.getFullYear()+543}`;
   return `${s.getDate()} ${THAI_MONTHS[s.getMonth()]} – ${e.getDate()} ${THAI_MONTHS[e.getMonth()]}`;
 }
 
-// ─── PERIOD CALC ───
+// ─── ปรับปรุง: การคำนวณรอบจ่าย (ให้แสดงยอดค้างในวันจ่ายเงิน) ───
 function getCurrentPeriods() {
   const now = new Date();
   const y = now.getFullYear(), m = now.getMonth(), d = now.getDate();
   const dow = now.getDay();
 
   let ftStart, ftEnd, ftPayDate;
-  if (d <= 15) {
+  // พนักงานประจำ (ถ้าวันนี้เป็นวันที่ 16 พอดี ให้ยังคงแสดงยอดของวันที่ 1-15 อยู่)
+  if (d === 16) {
+    ftStart = toDateStr(new Date(y, m, 1));
+    ftEnd = toDateStr(new Date(y, m, 15));
+    ftPayDate = toDateStr(new Date(y, m, 16));
+  } else if (d === 1) { // ถ้าวันนี้เป็นวันที่ 1 พอดี ให้ยังคงแสดงยอดของวันที่ 16-สิ้นเดือนก่อนอยู่
+    let lastM = m - 1; let lastY = y;
+    if (lastM < 0) { lastM = 11; lastY--; }
+    let lastDay = new Date(lastY, lastM + 1, 0).getDate();
+    ftStart = toDateStr(new Date(lastY, lastM, 16));
+    ftEnd = toDateStr(new Date(lastY, lastM, lastDay));
+    ftPayDate = toDateStr(new Date(y, m, 1));
+  } else if (d > 1 && d < 16) {
     ftStart = toDateStr(new Date(y, m, 1));
     ftEnd = toDateStr(new Date(y, m, 15));
     ftPayDate = toDateStr(new Date(y, m, 16));
@@ -524,28 +515,29 @@ function getCurrentPeriods() {
     ftPayDate = toDateStr(new Date(y, m+1, 1));
   }
 
-  const mondayOffset = dow === 0 ? -6 : 1 - dow;
-  const mon = new Date(now);
-  mon.setDate(now.getDate() + mondayOffset);
-  const sun = new Date(mon);
-  sun.setDate(mon.getDate() + 6);
-  const nextMon = new Date(mon);
-  nextMon.setDate(mon.getDate() + 7);
+  // พาร์ทไทม์ (ถ้าวันนี้เป็นวันจันทร์ ให้ยังคงแสดงยอดของจันทร์-อาทิตย์ที่แล้วอยู่)
+  let ptMon = new Date(now);
+  if (dow === 1) {
+    ptMon.setDate(now.getDate() - 7);
+  } else {
+    const mondayOffset = dow === 0 ? -6 : 1 - dow;
+    ptMon.setDate(now.getDate() + mondayOffset);
+  }
+  const ptSun = new Date(ptMon);
+  ptSun.setDate(ptMon.getDate() + 6);
+  const ptPay = new Date(ptMon);
+  ptPay.setDate(ptMon.getDate() + 7);
 
   return {
     ftStart, ftEnd, ftPayDate,
-    ptStart: toDateStr(mon),
-    ptEnd: toDateStr(sun),
-    ptPayDate: toDateStr(nextMon)
+    ptStart: toDateStr(ptMon), ptEnd: toDateStr(ptSun), ptPayDate: toDateStr(ptPay)
   };
 }
 
-// ─── PAYROLL CALC (simplified) ───
 function calcGroupTotal(staffList, timesheets, start, end) {
   const rate_ot = parseFloat(settings.ot_rate_per_hour) || 50;
   const lateGrace = parseInt(settings.late_grace_min) || 15;
   let total = 0;
-
   staffList.forEach(staff => {
     const ts = timesheets.filter(t => {
       const td = typeof t.date === 'string' ? t.date.substring(0,10) : toDateStr(new Date(t.date));
@@ -558,18 +550,13 @@ function calcGroupTotal(staffList, timesheets, start, end) {
         total += rate;
         const lateMin = parseInt(t.late_min) || 0;
         if (lateMin > lateGrace) total -= (rate / 480) * lateMin;
-      } else {
-        total += rate * (parseFloat(t.hours_worked) || 0);
-      }
+      } else { total += rate * (parseFloat(t.hours_worked) || 0); }
       const otH = parseFloat(t.ot_hours) || 0;
       if (otH > 0 && t.ot_status === 'approved') total += otH * rate_ot;
     });
   });
-
   return Math.round(total);
 }
-
-// ─── RENDER FUNCTIONS ───
 
 function renderHeader() {
   const session = loadSession();
@@ -582,7 +569,6 @@ function renderOTAlert() {
   const pendingOTs = allTimesheets.filter(t => t.ot_status === 'pending');
   const section = document.getElementById('ot-alert-section');
   if (pendingOTs.length === 0) { section.innerHTML = ''; return; }
-
   section.innerHTML = `
     <div class="alert-banner alert-ot" onclick="window.location.href='/payroll.html'">
       <div class="alert-icon">⏰</div>
@@ -594,6 +580,7 @@ function renderOTAlert() {
     </div>`;
 }
 
+// ─── ปรับปรุง: ชื่อ และ สีเวลาออกงาน ───
 function renderAttendance() {
   const today = toDateStr(new Date());
   const todayTs = allTimesheets.filter(t => {
@@ -621,34 +608,45 @@ function renderAttendance() {
   } else {
     activeStaff.forEach(staff => {
       const ts = todayTs.find(t => t.staff_id === staff.staff_id);
+      
+      // ปรับชื่อเป็น "ชื่อจริง (ชื่อเล่น)"
+      const fullName = staff.name || '';
+      const nicknameStr = staff.nickname ? `(${staff.nickname})` : '';
+      const displayName = `${fullName} ${nicknameStr}`.trim();
       const initials = (staff.nickname || staff.name || '?').charAt(0);
+      
       const isPresent = !!ts;
       const lateMin = ts ? parseInt(ts.late_min) || 0 : 0;
       const isLate = staff.staff_type === 'fulltime' && lateMin >= 16;
 
+      // จัดการแสดงเวลา (ออกงานแล้วให้เป็นสีแดง)
       let timeLabel = 'ยังไม่เข้างาน';
       let timeClass = 'absent';
+      
       if (ts && ts.clock_in) {
-        timeLabel = ts.clock_in;
-        timeClass = isLate ? 'late' : 'present';
-        if (isLate) timeLabel += ` (สาย ${lateMin} นาที)`;
+        if (ts.clock_out) {
+            timeLabel = `${ts.clock_in} - ${ts.clock_out}`;
+            timeClass = 'out'; // สีแดง
+        } else {
+            timeLabel = ts.clock_in;
+            timeClass = isLate ? 'late' : 'present';
+            if (isLate) timeLabel += ` (สาย ${lateMin} นาที)`;
+        }
       }
 
-      // แก้ไข: เปลี่ยนจากแสดงรหัสสาขาเป็นชื่อสาขาจริง
       const branchLabel = branchNames[staff.branch_id] || staff.branch_id || '—';
 
       html += `
         <div class="attendance-item">
           <div class="att-avatar ${isPresent ? 'present' : 'absent'}">${initials}</div>
           <div class="att-info">
-            <div class="att-name">${staff.nickname || staff.name}</div>
-            <div class="att-branch">${branchLabel} · ${staff.shift === 'morning' ? 'กะเช้า' : 'กะดึก'}</div>
+            <div class="att-name">${displayName}</div>
+            <div class="att-branch">${branchLabel}</div>
           </div>
           <div class="att-time ${timeClass}">${timeLabel}</div>
         </div>`;
     });
   }
-
   html += '</div>';
   document.getElementById('attendance-card').innerHTML = html;
 }
@@ -669,9 +667,8 @@ function renderPayrollNext() {
     if (n <= 3) return 'days-soon';
     return 'days-normal';
   }
-
   function daysLabel(n) {
-    if (n <= 0) return 'วันนี้!';
+    if (n <= 0) return 'วันนี้!'; // แจ้งเตือนจ่ายวันนี้
     if (n === 1) return 'พรุ่งนี้';
     return `อีก ${n} วัน`;
   }
@@ -701,15 +698,22 @@ function renderPayrollNext() {
     </div>`;
 }
 
+// ─── ปรับปรุง: ซ่อนรายการเบิกที่เก่ากว่ารอบบิลปัจจุบัน ───
 function renderAdvances() {
   const list = document.getElementById('advances-list');
+  const periods = getCurrentPeriods();
+  
+  // หาวันที่เริ่มรอบบิลที่เก่าที่สุดในจอตอนนี้
+  const oldestStart = periods.ftStart < periods.ptStart ? periods.ftStart : periods.ptStart;
+
+  // กรองเอารายการเบิกที่: 1. ยัง pending และ 2. วันที่สิ้นสุดการหักเงิน (period_end) ยังไม่เก่ากว่ารอบที่เรากำลังดูอยู่
   const recent = allAdvances
-    .filter(a => a.status === 'pending')
+    .filter(a => a.status === 'pending' && a.period_end >= oldestStart)
     .sort((a, b) => b.date > a.date ? 1 : -1)
     .slice(0, 5);
 
   if (!recent.length) {
-    list.innerHTML = '<div class="advances-empty">ยังไม่มีรายการเบิก</div>';
+    list.innerHTML = '<div class="advances-empty">ยังไม่มีรายการเบิกของรอบนี้</div>';
     return;
   }
 
@@ -732,7 +736,6 @@ function renderAdvances() {
   }).join('');
 }
 
-// ─── ADVANCE MODAL ───
 function openAdvanceModal() {
   const staffSelect = document.getElementById('advance-staff');
   staffSelect.innerHTML = allStaff
@@ -740,40 +743,22 @@ function openAdvanceModal() {
     .map(s => `<option value="${s.staff_id}">${s.nickname || s.name}</option>`)
     .join('');
 
-  const periods = getCurrentPeriods();
   const now = new Date();
   const y = now.getFullYear(), m = now.getMonth();
-
   const periodOptions = [];
   for (let i = 0; i < 2; i++) {
-    const cm = m + i;
-    const cy = y + Math.floor(cm / 12);
-    const rm = cm % 12;
+    const cm = m + i; const cy = y + Math.floor(cm / 12); const rm = cm % 12;
     const lastDay = new Date(cy, rm+1, 0).getDate();
-    periodOptions.push({
-      label: `1–15 ${THAI_MONTHS[rm]} ${cy+543}`,
-      start: `${cy}-${String(rm+1).padStart(2,'0')}-01`,
-      end: `${cy}-${String(rm+1).padStart(2,'0')}-15`
-    });
-    periodOptions.push({
-      label: `16–${lastDay} ${THAI_MONTHS[rm]} ${cy+543}`,
-      start: `${cy}-${String(rm+1).padStart(2,'0')}-16`,
-      end: `${cy}-${String(rm+1).padStart(2,'0')}-${lastDay}`
-    });
+    periodOptions.push({ label: `1–15 ${THAI_MONTHS[rm]} ${cy+543}`, start: `${cy}-${String(rm+1).padStart(2,'0')}-01`, end: `${cy}-${String(rm+1).padStart(2,'0')}-15` });
+    periodOptions.push({ label: `16–${lastDay} ${THAI_MONTHS[rm]} ${cy+543}`, start: `${cy}-${String(rm+1).padStart(2,'0')}-16`, end: `${cy}-${String(rm+1).padStart(2,'0')}-${lastDay}` });
   }
-
-  document.getElementById('advance-period').innerHTML = periodOptions
-    .map(p => `<option value="${p.start}|${p.end}">${p.label}</option>`)
-    .join('');
-
+  document.getElementById('advance-period').innerHTML = periodOptions.map(p => `<option value="${p.start}|${p.end}">${p.label}</option>`).join('');
   document.getElementById('advance-amount').value = '';
   document.getElementById('advance-note').value = '';
   document.getElementById('advance-modal').classList.add('visible');
 }
 
-function closeAdvanceModal() {
-  document.getElementById('advance-modal').classList.remove('visible');
-}
+function closeAdvanceModal() { document.getElementById('advance-modal').classList.remove('visible'); }
 
 async function saveAdvance() {
   const staffId = document.getElementById('advance-staff').value;
@@ -786,40 +771,25 @@ async function saveAdvance() {
   if (!periodVal) { showToast('กรุณาเลือกรอบที่จะหัก', 'error'); return; }
 
   const [periodStart, periodEnd] = periodVal.split('|');
-
   const staff = allStaff.find(s => s.staff_id === staffId);
   const maxAmount = staff ? (parseFloat(staff.rate) || 0) * (staff.pay_type === 'daily' ? 15 : 8) : 0;
 
-  if (maxAmount > 0 && amount > maxAmount) {
-    showToast(`เบิกได้ไม่เกิน ${formatMoney(maxAmount)} บาท`, 'error');
-    return;
-  }
+  if (maxAmount > 0 && amount > maxAmount) { showToast(`เบิกได้ไม่เกิน ${formatMoney(maxAmount)} บาท`, 'error'); return; }
 
   showLoading(true);
   try {
-    const res = await apiPost({
-      action: 'saveAdvance',
-      staff_id: staffId,
-      amount, note,
-      period_start: periodStart,
-      period_end: periodEnd,
-      date: toDateStr(new Date())
-    });
-
+    const res = await apiPost({ action: 'saveAdvance', staff_id: staffId, amount, note, period_start: periodStart, period_end: periodEnd, date: toDateStr(new Date()) });
     if (res.success) {
       showToast(`✅ บันทึกเบิก ${formatMoney(amount)} เรียบร้อย`, 'success');
       closeAdvanceModal();
       const advRes = await apiGet('action=getAdvances&status=pending');
       allAdvances = advRes.success ? advRes.data : [];
       renderAdvances();
-    } else {
-      showToast(res.message || 'เกิดข้อผิดพลาด', 'error');
-    }
+    } else { showToast(res.message || 'เกิดข้อผิดพลาด', 'error'); }
   } catch { showToast('เชื่อมต่อไม่ได้', 'error'); }
   showLoading(false);
 }
 
-// ─── SESSION ───
 function loadSession() {
   try {
     const raw = localStorage.getItem(SESSION_KEY);
@@ -830,16 +800,9 @@ function loadSession() {
   } catch { return null; }
 }
 
-function logout() {
-  localStorage.removeItem(SESSION_KEY);
-  window.location.href = '/index.html';
-}
-
-// ─── API ───
+function logout() { localStorage.removeItem(SESSION_KEY); window.location.href = '/index.html'; }
 async function apiGet(p) { const r = await fetch(`${API_URL}?${p}`); return r.json(); }
 async function apiPost(b) { const r = await fetch(API_URL, { method: 'POST', body: JSON.stringify(b) }); return r.json(); }
-
-// ─── UI ───
 function showLoading(s) { document.getElementById('loading').classList.toggle('show', s); }
 function showToast(msg, type = '') {
   const t = document.getElementById('toast');
@@ -847,22 +810,48 @@ function showToast(msg, type = '') {
   setTimeout(() => t.classList.remove('show'), 3500);
 }
 
-// ─── BOOT ───
+// ─── ระบบปัดลงเพื่อปิด (Swipe to Dismiss) สำหรับ Modal ───
+document.addEventListener('DOMContentLoaded', () => {
+  const modalSheets = document.querySelectorAll('.modal-sheet');
+  modalSheets.forEach(sheet => {
+    let startY = 0, currentY = 0, isDragging = false;
+    sheet.addEventListener('touchstart', (e) => { 
+      if (sheet.scrollTop > 0) return; 
+      startY = e.touches[0].clientY; 
+      isDragging = true; 
+      sheet.style.transition = 'none'; 
+    }, { passive: true });
+    sheet.addEventListener('touchmove', (e) => { 
+      if (!isDragging) return; 
+      currentY = e.touches[0].clientY; 
+      const deltaY = currentY - startY; 
+      if (deltaY > 0) { e.preventDefault(); sheet.style.transform = `translateY(${deltaY}px)`; } 
+    }, { passive: false });
+    sheet.addEventListener('touchend', (e) => { 
+      if (!isDragging) return; 
+      isDragging = false; 
+      sheet.style.transition = 'transform 0.3s cubic-bezier(0.32, 0.72, 0, 1)'; 
+      const deltaY = currentY - startY; 
+      if (deltaY > 120) { 
+        sheet.closest('.modal-overlay').classList.remove('visible'); 
+        setTimeout(() => { sheet.style.transform = ''; }, 300); 
+      } else { sheet.style.transform = ''; } 
+    });
+  });
+});
+
 window.addEventListener('load', async () => {
   const session = loadSession();
   if (!session) { window.location.href = '/index.html'; return; }
   if (session.role !== 'admin') { window.location.href = '/clock.html'; return; }
 
-  renderHeader();
-  showLoading(true);
-
+  renderHeader(); showLoading(true);
   try {
     const today = toDateStr(new Date());
-    const monthStart = today.substring(0,8) + '01';
+    const monthStart = today.substring(0,8) + '01'; // ดึงย้อนหลังไปถึงต้นเดือน
 
     const [staffRes, settingsRes, tsRes, advRes] = await Promise.all([
-      apiGet('action=getStaff'),
-      apiGet('action=getSettings'),
+      apiGet('action=getStaff'), apiGet('action=getSettings'),
       apiGet(`action=getTimesheets&date_from=${monthStart}&date_to=${today}`),
       apiGet('action=getAdvances&status=pending')
     ]);
@@ -872,15 +861,8 @@ window.addEventListener('load', async () => {
     allTimesheets = tsRes.success ? tsRes.data : [];
     allAdvances = advRes.success ? advRes.data : [];
 
-    renderOTAlert();
-    renderAttendance();
-    renderPayrollNext();
-    renderAdvances();
-
-  } catch(e) {
-    showToast('โหลดข้อมูลไม่สำเร็จ', 'error');
-  }
-
+    renderOTAlert(); renderAttendance(); renderPayrollNext(); renderAdvances();
+  } catch(e) { showToast('โหลดข้อมูลไม่สำเร็จ', 'error'); }
   showLoading(false);
 });
 </script>
