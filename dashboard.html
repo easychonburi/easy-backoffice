@@ -456,6 +456,16 @@ let allAdvances = [];
 let settings = {};
 let allPayrollRuns = [];
 
+// Mapping รหัสสาขาเป็นชื่อ (ใช้สำหรับดึงชื่อแสดงผลแทนรหัส)
+const branchNames = {
+  'BR001': 'อมตะนคร',
+  'BR002': 'พระยาสัจจา',
+  'BR003': 'บางแสน',
+  'BR004': 'อ่าวอุดม',
+  'BR005': 'หนองตำลึง',
+  'BR006': 'วังหิน'
+};
+
 // ─── HELPERS ───
 function toDateStr(d) {
   return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
@@ -614,8 +624,6 @@ function renderAttendance() {
       const initials = (staff.nickname || staff.name || '?').charAt(0);
       const isPresent = !!ts;
       const lateMin = ts ? parseInt(ts.late_min) || 0 : 0;
-      
-      // 🔴 FIXED: เช็คว่าต้องเป็น fulltime ถึงจะขึ้นว่า late
       const isLate = staff.staff_type === 'fulltime' && lateMin >= 16;
 
       let timeLabel = 'ยังไม่เข้างาน';
@@ -626,12 +634,15 @@ function renderAttendance() {
         if (isLate) timeLabel += ` (สาย ${lateMin} นาที)`;
       }
 
+      // แก้ไข: เปลี่ยนจากแสดงรหัสสาขาเป็นชื่อสาขาจริง
+      const branchLabel = branchNames[staff.branch_id] || staff.branch_id || '—';
+
       html += `
         <div class="attendance-item">
           <div class="att-avatar ${isPresent ? 'present' : 'absent'}">${initials}</div>
           <div class="att-info">
             <div class="att-name">${staff.nickname || staff.name}</div>
-            <div class="att-branch">${staff.branch_id || '—'} · ${staff.shift === 'morning' ? 'กะเช้า' : 'กะดึก'}</div>
+            <div class="att-branch">${branchLabel} · ${staff.shift === 'morning' ? 'กะเช้า' : 'กะดึก'}</div>
           </div>
           <div class="att-time ${timeClass}">${timeLabel}</div>
         </div>`;
@@ -723,19 +734,16 @@ function renderAdvances() {
 
 // ─── ADVANCE MODAL ───
 function openAdvanceModal() {
-  // populate staff
   const staffSelect = document.getElementById('advance-staff');
   staffSelect.innerHTML = allStaff
     .filter(s => s.role !== 'admin')
     .map(s => `<option value="${s.staff_id}">${s.nickname || s.name}</option>`)
     .join('');
 
-  // populate periods
   const periods = getCurrentPeriods();
   const now = new Date();
   const y = now.getFullYear(), m = now.getMonth();
 
-  // สร้าง 4 รอบถัดไป
   const periodOptions = [];
   for (let i = 0; i < 2; i++) {
     const cm = m + i;
@@ -779,10 +787,7 @@ async function saveAdvance() {
 
   const [periodStart, periodEnd] = periodVal.split('|');
 
-  // เช็คไม่ให้เบิกเกินเงินเดือน
   const staff = allStaff.find(s => s.staff_id === staffId);
-  const periods = getCurrentPeriods();
-  const staffTs = allTimesheets.filter(t => t.staff_id === staffId);
   const maxAmount = staff ? (parseFloat(staff.rate) || 0) * (staff.pay_type === 'daily' ? 15 : 8) : 0;
 
   if (maxAmount > 0 && amount > maxAmount) {
@@ -804,7 +809,6 @@ async function saveAdvance() {
     if (res.success) {
       showToast(`✅ บันทึกเบิก ${formatMoney(amount)} เรียบร้อย`, 'success');
       closeAdvanceModal();
-      // reload advances
       const advRes = await apiGet('action=getAdvances&status=pending');
       allAdvances = advRes.success ? advRes.data : [];
       renderAdvances();
