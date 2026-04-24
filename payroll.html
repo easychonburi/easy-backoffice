@@ -1182,6 +1182,55 @@ window.addEventListener('load', async () => {
   } catch { showToast('โหลดข้อมูลไม่สำเร็จ', 'error'); }
   showLoading(false);
 });
+
+  // --- ระบบปัดลงเพื่อปิด (Swipe to Dismiss) สำหรับหน้า Payroll ---
+document.addEventListener('DOMContentLoaded', () => {
+  const modalSheets = document.querySelectorAll('.modal-sheet');
+  
+  modalSheets.forEach(sheet => {
+    let startY = 0;
+    let currentY = 0;
+    let isDragging = false;
+
+    sheet.addEventListener('touchstart', (e) => {
+      // ปัดลงได้เฉพาะตอนที่ตารางสกอร์ลอยู่บนสุดเท่านั้น
+      if (sheet.scrollTop > 0) return; 
+      startY = e.touches[0].clientY;
+      isDragging = true;
+      sheet.style.transition = 'none'; // ปิด animation ตอนลากนิ้ว
+    }, { passive: true });
+
+    sheet.addEventListener('touchmove', (e) => {
+      if (!isDragging) return;
+      currentY = e.touches[0].clientY;
+      const deltaY = currentY - startY;
+
+      if (deltaY > 0) { // ลากลงเท่านั้น
+        e.preventDefault();
+        sheet.style.transform = `translateY(${deltaY}px)`;
+      }
+    }, { passive: false });
+
+    sheet.addEventListener('touchend', (e) => {
+      if (!isDragging) return;
+      isDragging = false;
+      sheet.style.transition = 'transform 0.3s cubic-bezier(0.32, 0.72, 0, 1)'; // เปิด animation กลับมา
+
+      const deltaY = currentY - startY;
+      if (deltaY > 120) { 
+        // รูดลงเกิน 120px ให้ปิดหน้าต่าง
+        const overlay = sheet.closest('.modal-overlay');
+        if(overlay) overlay.classList.remove('visible');
+        
+        // รีเซ็ตตำแหน่งหลังปิดเสร็จ
+        setTimeout(() => { sheet.style.transform = ''; }, 300); 
+      } else {
+        // รูดไม่พอให้เด้งกลับที่เดิม
+        sheet.style.transform = ''; 
+      }
+    });
+  });
+});
 </script>
 </body>
 </html>
