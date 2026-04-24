@@ -17,14 +17,12 @@
     --text: #1F2937;
     --text-secondary: #6B7280;
     --green: #22C55E;
-    --green-dark: #16A34A;
-    --green-bg: #DCFCE7;
-    --danger: #FF5A4F;
-    --blue: #3B82F6;
-    --blue-bg: #EFF6FF;
     --shadow: 0 2px 12px rgba(0,0,0,0.08);
     --radius: 16px;
     --radius-sm: 10px;
+    --danger: #FF5A4F;
+    --blue: #3B82F6;
+    --blue-bg: #EFF6FF;
   }
 
   * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
@@ -38,27 +36,9 @@
   }
 
   /* --- HEADER --- */
-  .app-header {
-    background: var(--red);
-    padding: 48px 20px 24px;
-    border-radius: 0 0 28px 28px;
-    position: relative;
-  }
-
-  .header-top {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 16px;
-  }
-  
-  .back-btn {
-    background: rgba(255,255,255,0.2);
-    border: none; color: white;
-    font-family: 'Prompt', sans-serif; font-size: 13px;
-    padding: 6px 14px; border-radius: 20px; cursor: pointer;
-  }
-
+  .app-header { background: var(--red); padding: 48px 20px 24px; border-radius: 0 0 28px 28px; position: relative; }
+  .header-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
+  .back-btn { background: rgba(255,255,255,0.2); border: none; color: white; font-family: 'Prompt', sans-serif; font-size: 13px; padding: 6px 14px; border-radius: 20px; cursor: pointer; }
   .header-logo { font-size: 20px; font-weight: 700; color: var(--yellow); }
   .header-title { font-size: 24px; font-weight: 600; color: white; margin-bottom: 2px; }
   .header-sub { font-size: 13px; color: rgba(255,255,255,0.8); font-weight: 300; }
@@ -73,12 +53,12 @@
   .app-body { padding: 20px 16px; }
   .screen { display: none; }
   .screen.active { display: block; }
+  .card { background: var(--white); border-radius: var(--radius); box-shadow: var(--shadow); border: 1px solid var(--border); }
 
   /* --- MODE SELECT --- */
   .mode-btn {
-    background: var(--white); border-radius: var(--radius); padding: 24px 16px;
-    text-align: center; border: 1.5px solid var(--border); box-shadow: var(--shadow);
-    margin-bottom: 16px; cursor: pointer; transition: all 0.2s;
+    background: var(--white); border-radius: var(--radius); padding: 24px 16px; text-align: center; 
+    border: 1.5px solid var(--border); box-shadow: var(--shadow); margin-bottom: 16px; cursor: pointer; transition: all 0.2s;
   }
   .mode-btn:active { transform: scale(0.98); }
   .mode-icon { font-size: 40px; margin-bottom: 8px; }
@@ -88,42 +68,33 @@
   .cat-title { font-size: 16px; font-weight: 600; color: var(--text); margin: 24px 0 12px; display: flex; align-items: center; gap: 8px; }
   
   .item-card {
-    background: var(--white); border-radius: var(--radius-sm);
-    padding: 14px 16px; margin-bottom: 10px; border: 1px solid var(--border);
-    box-shadow: var(--shadow); transition: background-color 0.2s;
+    background: var(--white); border-radius: var(--radius-sm); padding: 14px 16px; margin-bottom: 10px; 
+    border: 1px solid var(--border); box-shadow: var(--shadow); transition: all 0.3s ease;
   }
-  .item-card.filled { background-color: #F0FDF4; border-color: #BBF7D0; } 
+  /* แก้ไข: เวลาช่องกรอกแล้ว ให้สีเฟดลง ไม่เด่น */
+  .item-card.filled { opacity: 0.45; background: var(--soft); border-color: transparent; box-shadow: none; }
 
   .item-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
   .item-name { font-size: 15px; font-weight: 500; color: var(--text); }
   
+  /* แก้ไข: สไตล์ปุ่ม "สั่งเพิ่ม" ให้ป๊อปและดูแพงขึ้น */
   .order-toggle { 
-    font-size: 12px; padding: 4px 10px; border-radius: 20px; font-weight: 500;
-    border: 1px solid #BFDBFE; color: var(--blue); cursor: pointer;
-    background: var(--blue-bg);
+    font-size: 13px; padding: 6px 14px; border-radius: 20px; font-weight: 600;
+    border: none; cursor: pointer; color: #854D0E; background: #FDE047;
+    box-shadow: 0 4px 12px rgba(253, 224, 71, 0.5);
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    transform: translateY(-2px);
   }
-  .order-toggle.active { background: var(--green-bg); color: var(--green-dark); border-color: var(--green); }
+  .order-toggle:active { transform: translateY(0); box-shadow: 0 2px 5px rgba(253, 224, 71, 0.4); }
+  .order-toggle.active { background: var(--green); color: white; box-shadow: 0 4px 12px rgba(34, 197, 94, 0.4); }
 
   /* --- INPUT AREA --- */
   .input-area { display: flex; align-items: center; gap: 10px; }
-  
-  .num-input {
-    width: 80px; padding: 10px; font-family: 'Prompt', sans-serif;
-    font-size: 18px; font-weight: 600; text-align: center;
-    border: 1.5px solid var(--border); border-radius: 8px;
-    background: var(--bg); outline: none; transition: border-color 0.2s;
-  }
+  .num-input { width: 80px; padding: 10px; font-family: 'Prompt', sans-serif; font-size: 18px; font-weight: 600; text-align: center; border: 1.5px solid var(--border); border-radius: 8px; background: var(--bg); outline: none; transition: border-color 0.2s; }
   .num-input:focus { border-color: var(--red); background: var(--white); }
-  
   .unit-text { font-size: 13px; color: var(--text-secondary); font-weight: 300; flex-shrink: 0; }
-
   .frac-btns { display: flex; gap: 6px; flex-wrap: nowrap; overflow-x: auto; padding-bottom: 2px;}
-  .frac-btn {
-    padding: 8px 12px; font-family: 'Prompt', sans-serif; font-size: 13px; font-weight: 500;
-    border: 1px solid var(--border); border-radius: 8px; background: var(--white);
-    color: var(--text); cursor: pointer; white-space: nowrap; transition: all 0.2s;
-  }
-  .frac-btn:active { background: var(--soft); transform: scale(0.95); }
+  .frac-btn { padding: 8px 12px; font-family: 'Prompt', sans-serif; font-size: 13px; font-weight: 500; border: 1px solid var(--border); border-radius: 8px; background: var(--white); color: var(--text); cursor: pointer; white-space: nowrap; transition: all 0.2s; }
   .frac-btn.selected { background: var(--blue-bg); color: var(--blue); border-color: var(--blue); }
 
   /* Custom Order */
@@ -135,61 +106,34 @@
   .del-btn { color: var(--danger); background: none; border: none; cursor: pointer; font-size: 12px; font-family: 'Prompt', sans-serif;}
 
   /* --- BOTTOM BAR --- */
-  .bottom-bar {
-    position: fixed; bottom: 0; left: 0; right: 0;
-    background: var(--white); padding: 16px 20px;
-    border-top: 1px solid var(--border); box-shadow: 0 -4px 12px rgba(0,0,0,0.05);
-    z-index: 50; display: none;
-  }
-  .btn-primary {
-    width: 100%; background: var(--green); color: white;
-    border: none; border-radius: var(--radius-sm); padding: 14px;
-    font-family: 'Prompt', sans-serif; font-size: 16px; font-weight: 600;
-    cursor: pointer; transition: transform 0.2s; box-shadow: 0 4px 16px rgba(34,197,94,0.3);
-  }
+  .bottom-bar { position: fixed; bottom: 0; left: 0; right: 0; background: var(--white); padding: 16px 20px; border-top: 1px solid var(--border); box-shadow: 0 -4px 12px rgba(0,0,0,0.05); z-index: 50; display: none; }
+  .btn-primary { width: 100%; background: var(--green); color: white; border: none; border-radius: var(--radius-sm); padding: 14px; font-family: 'Prompt', sans-serif; font-size: 16px; font-weight: 600; cursor: pointer; transition: transform 0.2s; box-shadow: 0 4px 16px rgba(34,197,94,0.3); }
   .btn-primary:active { transform: scale(0.98); }
 
   /* --- SUMMARY SHEET --- */
-  .summary-overlay {
-    position: fixed; inset: 0; background: rgba(0,0,0,0.5);
-    display: flex; align-items: flex-end; z-index: 100;
-    opacity: 0; pointer-events: none; transition: opacity 0.25s;
-  }
+  .summary-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); display: flex; align-items: flex-end; z-index: 100; opacity: 0; pointer-events: none; transition: opacity 0.25s; }
   .summary-overlay.visible { opacity: 1; pointer-events: all; }
-  
-  .summary-sheet {
-    background: var(--white); border-radius: 24px 24px 0 0;
-    padding: 24px 20px 40px; width: 100%; max-height: 85vh; overflow-y: auto;
-    transform: translateY(100%); transition: transform 0.3s cubic-bezier(0.32, 0.72, 0, 1);
-  }
+  .summary-sheet { background: var(--white); border-radius: 24px 24px 0 0; padding: 24px 20px 40px; width: 100%; max-height: 85vh; overflow-y: auto; transform: translateY(100%); transition: transform 0.3s cubic-bezier(0.32, 0.72, 0, 1); }
   .summary-overlay.visible .summary-sheet { transform: translateY(0); }
-  
   .sheet-handle { width: 36px; height: 4px; background: var(--border); border-radius: 2px; margin: 0 auto 20px; }
   .summary-title { font-size: 18px; font-weight: 600; text-align: center; margin-bottom: 16px; }
   .summary-list { margin-bottom: 24px; }
   .summary-item { padding: 10px 0; border-bottom: 1px solid var(--border); font-size: 14px; display:flex; justify-content: space-between;}
   .summary-item:last-child { border-bottom: none; }
 
-  .toast {
-    position: fixed; bottom: 90px; left: 50%; 
-    transform: translateX(-50%) translateY(100px);
-    background: var(--text); color: white; font-size: 13px; padding: 12px 20px;
-    border-radius: 24px; z-index: 300; 
-    transition: all 0.3s cubic-bezier(0.32, 0.72, 0, 1);
-    white-space: nowrap; max-width: 90vw; text-align: center;
-    opacity: 0;
-    pointer-events: none;
-  }
-  .toast.show { 
-    transform: translateX(-50%) translateY(0); 
-    opacity: 1;
-  }
+  /* --- CENTRAL MODAL (POPUP ยืนยัน) --- */
+  .central-modal-overlay { position: fixed; inset: 0; background: rgba(255,255,255,0.9); display: flex; align-items: center; justify-content: center; z-index: 9999; opacity: 0; pointer-events: none; transition: opacity 0.3s; }
+  .central-modal-overlay.show { opacity: 1; pointer-events: all; }
+  .central-modal-box { text-align: center; display: flex; flex-direction: column; align-items: center; gap: 16px; }
+  .central-spinner { width: 60px; height: 60px; border: 5px solid var(--border); border-top-color: var(--red); border-radius: 50%; animation: spin 0.8s linear infinite; }
+  .central-success { width: 60px; height: 60px; background: var(--green); color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 32px; animation: pop 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
+  @keyframes pop { 0% { transform: scale(0); } 100% { transform: scale(1); } }
+  .central-text { font-size: 18px; font-weight: 600; color: var(--text); }
 
-  .loading-overlay {
-    position: fixed; inset: 0; background: rgba(255,255,255,0.85);
-    display: flex; align-items: center; justify-content: center;
-    z-index: 200; opacity: 0; pointer-events: none; transition: opacity 0.2s;
-  }
+  /* --- OTHERS --- */
+  .toast { position: fixed; bottom: 90px; left: 50%; transform: translateX(-50%) translateY(100px); background: var(--text); color: white; font-size: 13px; padding: 12px 20px; border-radius: 24px; z-index: 300; transition: all 0.3s cubic-bezier(0.32, 0.72, 0, 1); white-space: nowrap; max-width: 90vw; text-align: center; opacity: 0; pointer-events: none; }
+  .toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
+  .loading-overlay { position: fixed; inset: 0; background: rgba(255,255,255,0.85); display: flex; align-items: center; justify-content: center; z-index: 200; opacity: 0; pointer-events: none; transition: opacity 0.2s; }
   .loading-overlay.show { opacity: 1; pointer-events: all; }
   .spinner { width: 36px; height: 36px; border: 3px solid var(--border); border-top-color: var(--red); border-radius: 50%; animation: spin 0.7s linear infinite; }
   @keyframes spin { to { transform: rotate(360deg); } }
@@ -205,20 +149,44 @@
     <div class="header-logo">EASY</div>
   </div>
   <div class="header-title" id="h-title">ระบบสต็อก</div>
-  <div class="header-sub" id="h-sub">สาขา: กำลังตรวจสอบ...</div>
+  <div class="header-sub" id="h-sub">กำลังตรวจสอบสิทธิ์...</div>
   
   <div class="progress-wrap" id="progress-container" style="display:none;">
-    <div class="progress-text">
-      <span id="prog-label">นับแล้ว 0/0</span>
-      <span id="prog-pct">0%</span>
-    </div>
+    <div class="progress-text"><span id="prog-label">นับแล้ว 0/0</span><span id="prog-pct">0%</span></div>
     <div class="progress-bg"><div class="progress-fill" id="prog-bar"></div></div>
   </div>
 </div>
 
 <div class="app-body">
   
-  <div id="screen-mode" class="screen active">
+  <div id="screen-admin" class="screen">
+    <div class="cat-title">🛠 ผู้ดูแลระบบ</div>
+    
+    <div class="card" style="margin-bottom: 20px; padding: 16px;">
+      <div style="font-size: 14px; font-weight: 500; margin-bottom: 8px;">1. ระบุสาขาที่ต้องการทำรายการ</div>
+      <select id="admin-branch-select" style="width: 100%; padding: 12px; border-radius: 8px; border: 1.5px solid var(--border); font-family: 'Prompt'; font-size: 15px; margin-bottom: 12px; background:var(--soft);">
+         <option value="BR001">อมตะนคร</option>
+         <option value="BR002">พระยาสัจจา</option>
+         <option value="BR003">บางแสน</option>
+         <option value="BR004">อ่าวอุดม</option>
+         <option value="BR005">หนองตำลึง (ครัวกลาง)</option>
+         <option value="BR006">วังหิน</option>
+      </select>
+      <button class="btn-primary" style="padding: 12px; font-size: 15px;" onclick="goToModeSelect()">▶ เริ่มเช็คสต็อก</button>
+    </div>
+
+    <div class="card" style="padding: 16px;">
+      <div style="font-size: 14px; font-weight: 600; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center;">
+        <span>📋 ประวัติสั่งเพิ่ม (วันนี้)</span>
+        <button onclick="loadAdminHistory()" style="border:none; background:var(--blue-bg); color:var(--blue); padding: 6px 12px; border-radius: 20px; font-family:'Prompt'; font-size: 12px; font-weight:500; cursor: pointer;">↻ รีเฟรช</button>
+      </div>
+      <div id="admin-history-list" style="font-size: 13px; color: var(--text-secondary);">
+         กำลังโหลด...
+      </div>
+    </div>
+  </div>
+
+  <div id="screen-mode" class="screen">
     <div class="mode-btn" onclick="selectMode('open')">
       <div class="mode-icon">☀️</div>
       <div class="mode-title" id="mode-open-label">เช็คสต็อกเปิดร้าน</div>
@@ -251,6 +219,13 @@
   </div>
 </div>
 
+<div class="central-modal-overlay" id="central-modal">
+  <div class="central-modal-box">
+    <div id="central-icon" class="central-spinner"></div>
+    <div id="central-text" class="central-text">กำลังบันทึก...</div>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
 <div class="loading-overlay" id="loading"><div class="spinner"></div></div>
 
@@ -276,13 +251,20 @@ window.addEventListener('load', async () => {
   if (!session) { window.location.href = '/index.html'; return; }
   currentStaff = session.staff;
   
-  let bName = branchNames[currentStaff.branch_id] || currentStaff.branch_id || 'ไม่ระบุ';
-  if(bName === 'หนองตำลึง' || currentStaff.branch_id === 'BR005') {
-      document.getElementById('mode-open-label').textContent = 'เช็คเฉพาะสิ่งที่ทำแล้ว (เปิดร้าน)';
-      bName = 'หนองตำลึง (ครัวกลาง)';
+  if (session.role === 'admin') {
+     document.getElementById('screen-admin').classList.add('active');
+     document.getElementById('h-sub').textContent = 'แอดมิน: เลือกระบุสาขา';
+     loadAdminHistory();
+  } else {
+     document.getElementById('screen-mode').classList.add('active');
+     let bName = branchNames[currentStaff.branch_id] || currentStaff.branch_id || 'ไม่ระบุ';
+     if(bName === 'หนองตำลึง' || currentStaff.branch_id === 'BR005') {
+         document.getElementById('mode-open-label').textContent = 'เช็คเฉพาะสิ่งที่ทำแล้ว (เปิดร้าน)';
+         bName = 'หนองตำลึง (ครัวกลาง)';
+     }
+     currentBranchName = bName;
+     document.getElementById('h-sub').textContent = `สาขา: ${bName}`;
   }
-  currentBranchName = bName;
-  document.getElementById('h-sub').textContent = `สาขา: ${bName}`;
 });
 
 function loadSession() {
@@ -297,22 +279,82 @@ function loadSession() {
 
 function goHome() {
   const session = loadSession();
-  if (session && session.role === 'admin') {
-    window.location.href = '/dashboard.html';
-  } else {
-    window.location.href = '/clock.html';
-  }
+  if (session && session.role === 'admin') window.location.href = '/dashboard.html';
+  else window.location.href = '/clock.html';
 }
 
 function goBack() {
-  document.getElementById('screen-stock').classList.remove('active');
-  document.getElementById('screen-mode').classList.add('active');
-  document.getElementById('btn-back').style.display = 'none';
-  document.getElementById('btn-home').style.display = 'block';
-  document.getElementById('progress-container').style.display = 'none';
-  document.getElementById('bottom-bar').style.display = 'none';
-  document.getElementById('h-title').textContent = 'ระบบสต็อก';
-  currentMode = '';
+  if (document.getElementById('screen-stock').classList.contains('active')) {
+      document.getElementById('screen-stock').classList.remove('active');
+      document.getElementById('screen-mode').classList.add('active');
+      document.getElementById('progress-container').style.display = 'none';
+      document.getElementById('bottom-bar').style.display = 'none';
+      document.getElementById('h-title').textContent = 'ระบบสต็อก';
+      currentMode = '';
+      
+      const session = loadSession();
+      if(session && session.role !== 'admin') {
+          document.getElementById('btn-back').style.display = 'none';
+          document.getElementById('btn-home').style.display = 'block';
+      }
+  } else if (document.getElementById('screen-mode').classList.contains('active')) {
+      document.getElementById('screen-mode').classList.remove('active');
+      document.getElementById('screen-admin').classList.add('active');
+      document.getElementById('btn-back').style.display = 'none';
+      document.getElementById('btn-home').style.display = 'block';
+      document.getElementById('h-sub').textContent = 'แอดมิน: เลือกระบุสาขา';
+  }
+}
+
+function goToModeSelect() {
+   const b = document.getElementById('admin-branch-select').value;
+   currentStaff.branch_id = b; // Override สำหรับครั้งนี้
+   let bName = branchNames[b] || b;
+   
+   const openLabel = document.getElementById('mode-open-label');
+   if(bName === 'หนองตำลึง' || b === 'BR005') {
+       openLabel.textContent = 'เช็คเฉพาะสิ่งที่ทำแล้ว (เปิดร้าน)';
+       bName = 'หนองตำลึง (ครัวกลาง)';
+   } else {
+       openLabel.textContent = 'เช็คสต็อกเปิดร้าน';
+   }
+   currentBranchName = bName;
+   document.getElementById('h-sub').textContent = `สาขา: ${bName}`;
+   
+   document.getElementById('screen-admin').classList.remove('active');
+   document.getElementById('screen-mode').classList.add('active');
+   document.getElementById('btn-home').style.display = 'none';
+   document.getElementById('btn-back').style.display = 'block'; 
+}
+
+async function loadAdminHistory() {
+   const container = document.getElementById('admin-history-list');
+   container.innerHTML = 'กำลังโหลดข้อมูลล่าสุด...';
+   try {
+       const res = await apiGet('action=getTodayStockOrders');
+       if (res.success && res.data.length > 0) {
+           let html = '';
+           res.data.forEach(log => {
+               const bName = branchNames[log.branch_id] || log.branch_id;
+               html += `
+                 <div style="border-bottom: 1px solid var(--border); padding: 12px 0;">
+                   <div style="display:flex; justify-content:space-between; margin-bottom:6px;">
+                     <span style="font-weight:600; color:var(--text); font-size:14px;">${bName}</span>
+                     <span style="font-size:12px; color:var(--blue); font-weight:500;">${log.time} น.</span>
+                   </div>
+                   <div style="padding-left:10px; border-left: 2px solid var(--red); margin-top:6px; color:var(--text);">
+                     ${log.orders.map(o => `<div style="margin-bottom:2px;">- ${o}</div>`).join('')}
+                   </div>
+                 </div>
+               `;
+           });
+           container.innerHTML = html;
+       } else {
+           container.innerHTML = '<div style="padding:10px 0;">ยังไม่มีสาขาไหนสั่งเพิ่มในวันนี้ครับ</div>';
+       }
+   } catch (e) {
+       container.innerHTML = '<span style="color:var(--danger)">โหลดข้อมูลไม่สำเร็จ กรุณาลองใหม่</span>';
+   }
 }
 
 async function selectMode(mode) {
@@ -323,9 +365,7 @@ async function selectMode(mode) {
   document.getElementById('btn-back').style.display = 'block';
   document.getElementById('h-title').textContent = mode === 'open' ? '☀️ เปิดร้าน' : '🌙 ปิดร้าน';
   
-  stockValues = {};
-  orderRequests = {};
-  customOrders = [];
+  stockValues = {}; orderRequests = {}; customOrders = [];
   
   showLoading(true);
   try {
@@ -396,7 +436,7 @@ function renderStockItems() {
     });
   });
   if (currentMode === 'close') {
-      html += `<div class="cat-title">✍️ สั่งอื่นๆ เพิ่มเติม</div><div class="item-card" style="background:var(--soft);"><div class="custom-order-row"><input type="text" id="custom-inp" class="custom-input" placeholder="เช่น โพสอิท, เทปใส"><button class="add-btn" onclick="addCustom()">เพิ่ม</button></div><div class="custom-list" id="custom-list"></div></div>`;
+      html += `<div class="cat-title">✍️ สั่งอื่นๆ เพิ่มเติม</div><div class="item-card"><div class="custom-order-row"><input type="text" id="custom-inp" class="custom-input" placeholder="เช่น โพสอิท, เทปใส"><button class="add-btn" onclick="addCustom()">เพิ่ม</button></div><div class="custom-list" id="custom-list"></div></div>`;
   }
   container.innerHTML = html;
 }
@@ -448,8 +488,15 @@ function saveValueAndUpdateUI(name, safeId, finalStr) {
 
 function toggleOrder(name, safeId) {
     const btn = document.getElementById(`btn_order_${safeId}`);
-    if(orderRequests[name]) { delete orderRequests[name]; btn.classList.remove('active'); btn.textContent = '+ สั่งเพิ่ม'; }
-    else { orderRequests[name] = true; btn.classList.add('active'); btn.textContent = '✓ สั่งแล้ว'; }
+    if(orderRequests[name]) { 
+        delete orderRequests[name]; 
+        btn.classList.remove('active'); 
+        btn.textContent = '+ สั่งเพิ่ม'; 
+    } else { 
+        orderRequests[name] = true; 
+        btn.classList.add('active'); 
+        btn.textContent = '✓ สั่งแล้ว'; 
+    }
     const itemDef = inventoryData.find(i => i.name === name);
     if(itemDef && itemDef.orderOnly) {
          if(orderRequests[name]) document.getElementById(`card_${safeId}`).classList.add('filled');
@@ -500,7 +547,15 @@ function closeSummary() { document.getElementById('summary-sheet').classList.rem
 
 async function confirmSubmit() {
     closeSummary();
-    showLoading(true);
+    const modal = document.getElementById('central-modal');
+    const icon = document.getElementById('central-icon');
+    const text = document.getElementById('central-text');
+    
+    modal.classList.add('show');
+    icon.className = 'central-spinner';
+    icon.innerHTML = '';
+    text.textContent = 'กำลังบันทึกข้อมูล...';
+    
     const pctStr = document.getElementById('prog-pct').textContent.replace('%','');
     const finalStocks = Object.keys(stockValues).map(name => {
         const iDef = inventoryData.find(i => i.name === name);
@@ -508,14 +563,22 @@ async function confirmSubmit() {
     });
     const finalOrders = [...Object.keys(orderRequests), ...customOrders.map(c => c.name)];
     const payload = { action: 'saveStockLog', branch_id: currentStaff.branch_id, mode: currentMode, staff_id: currentStaff.staff_id, progress: parseInt(pctStr) || 0, stocks: finalStocks, orders: finalOrders };
+    
     try {
         const res = await apiPost(payload);
         if(res.success) {
-            showToast('✅ บันทึกสต็อกสำเร็จ', 'success');
-            setTimeout(() => { goHome(); }, 1500);
-        } else { showToast(res.message || 'เกิดข้อผิดพลาด', 'error'); }
-    } catch(e) { showToast('เชื่อมต่อไม่สำเร็จ', 'error'); }
-    showLoading(false);
+            icon.className = 'central-success';
+            icon.innerHTML = '✓';
+            text.textContent = 'บันทึกสต็อกสำเร็จ!';
+            setTimeout(() => { goHome(); }, 2000); // ดีเลย์ให้ผู้ใช้เห็นว่าสำเร็จ 2 วินาที ค่อยกลับหน้าหลัก
+        } else {
+            modal.classList.remove('show');
+            showToast(res.message || 'เกิดข้อผิดพลาด', 'error');
+        }
+    } catch(e) { 
+        modal.classList.remove('show');
+        showToast('เชื่อมต่อไม่สำเร็จ', 'error'); 
+    }
 }
 
 async function apiGet(p) { const r = await fetch(`${API_URL}?${p}`); return r.json(); }
@@ -537,13 +600,34 @@ function getLocalFallbackItems(mode, bName) {
    return mode === 'open' ? openBase : closeBase;
 }
 
-// --- ระบบปัดลงเพื่อปิด (Swipe to Dismiss) ---
-const sheetOverlay = document.getElementById('summary-sheet');
-const sheetElement = sheetOverlay.querySelector('.summary-sheet');
-let startY = 0, currentY = 0, isDragging = false;
-sheetElement.addEventListener('touchstart', (e) => { if (sheetElement.scrollTop > 0) return; startY = e.touches[0].clientY; isDragging = true; sheetElement.style.transition = 'none'; }, { passive: true });
-sheetElement.addEventListener('touchmove', (e) => { if (!isDragging) return; currentY = e.touches[0].clientY; const deltaY = currentY - startY; if (deltaY > 0) { e.preventDefault(); sheetElement.style.transform = `translateY(${deltaY}px)`; } }, { passive: false });
-sheetElement.addEventListener('touchend', (e) => { if (!isDragging) return; isDragging = false; sheetElement.style.transition = ''; const deltaY = currentY - startY; if (deltaY > 120) { closeSummary(); setTimeout(() => { sheetElement.style.transform = ''; }, 300); } else { sheetElement.style.transform = ''; } });
+// --- ระบบปัดลงเพื่อปิด (Swipe to Dismiss) สำหรับ Modal ยืนยันสต็อก ---
+let startY = 0, currentY = 0, isDragging = false, activeSheet = null;
+document.addEventListener('touchstart', (e) => {
+  const dragArea = e.target.closest('.sheet-handle, .summary-title');
+  if (!dragArea) return; 
+  const sheet = dragArea.closest('.summary-sheet');
+  if (!sheet) return;
+  activeSheet = sheet; startY = e.touches[0].clientY; isDragging = true; activeSheet.style.transition = 'none'; 
+}, { passive: true });
+
+document.addEventListener('touchmove', (e) => {
+  if (!isDragging || !activeSheet) return;
+  currentY = e.touches[0].clientY;
+  const deltaY = currentY - startY;
+  if (deltaY > 0) { if (e.cancelable) e.preventDefault(); activeSheet.style.transform = `translateY(${deltaY}px)`; }
+}, { passive: false });
+
+document.addEventListener('touchend', (e) => {
+  if (!isDragging || !activeSheet) return;
+  isDragging = false;
+  activeSheet.style.transition = 'transform 0.3s cubic-bezier(0.32, 0.72, 0, 1)'; 
+  const deltaY = currentY - startY;
+  if (deltaY > 120) {
+    const overlay = activeSheet.closest('.summary-overlay');
+    if (overlay) overlay.classList.remove('visible');
+    setTimeout(() => { if (activeSheet) activeSheet.style.transform = ''; activeSheet = null; }, 300);
+  } else { activeSheet.style.transform = ''; activeSheet = null; }
+});
 </script>
 </body>
 </html>
