@@ -1183,53 +1183,52 @@ window.addEventListener('load', async () => {
   showLoading(false);
 });
 
-  // --- ระบบปัดลงเพื่อปิด (Swipe to Dismiss) สำหรับหน้า Payroll ---
-document.addEventListener('DOMContentLoaded', () => {
-  const modalSheets = document.querySelectorAll('.modal-sheet');
-  
-  modalSheets.forEach(sheet => {
-    let startY = 0;
-    let currentY = 0;
-    let isDragging = false;
+  // --- ระบบปัดลงเพื่อปิด (อัปเดตใหม่: จับเฉพาะขีดสีเทาด้านบนสุดเพื่อป้องกันการเลื่อนทับกับเนื้อหา) ---
+let startY = 0, currentY = 0, isDragging = false, activeSheet = null;
 
-    sheet.addEventListener('touchstart', (e) => {
-      // ปัดลงได้เฉพาะตอนที่ตารางสกอร์ลอยู่บนสุดเท่านั้น
-      if (sheet.scrollTop > 0) return; 
-      startY = e.touches[0].clientY;
-      isDragging = true;
-      sheet.style.transition = 'none'; // ปิด animation ตอนลากนิ้ว
-    }, { passive: true });
+document.addEventListener('touchstart', (e) => {
+  // เงื่อนไข: ให้ลากได้เฉพาะตอนจับที่ "ขีดสีเทา" หรือ "ชื่อหัวข้อ" ด้านบนสุดเท่านั้น
+  const dragArea = e.target.closest('.modal-handle, .sheet-handle, .modal-title, .summary-title');
+  if (!dragArea) return; // ถ้าจับตรงเนื้อหา จะไม่ทำงาน (จะได้ใช้นิ้วเลื่อนอ่านข้อมูลข้างในได้ปกติ)
 
-    sheet.addEventListener('touchmove', (e) => {
-      if (!isDragging) return;
-      currentY = e.touches[0].clientY;
-      const deltaY = currentY - startY;
+  const sheet = dragArea.closest('.modal-sheet, .summary-sheet');
+  if (!sheet) return;
 
-      if (deltaY > 0) { // ลากลงเท่านั้น
-        e.preventDefault();
-        sheet.style.transform = `translateY(${deltaY}px)`;
-      }
-    }, { passive: false });
+  activeSheet = sheet;
+  startY = e.touches[0].clientY;
+  isDragging = true;
+  activeSheet.style.transition = 'none'; // ปิดแอนิเมชันให้ลากตามนิ้วเนียนๆ
+}, { passive: true });
 
-    sheet.addEventListener('touchend', (e) => {
-      if (!isDragging) return;
-      isDragging = false;
-      sheet.style.transition = 'transform 0.3s cubic-bezier(0.32, 0.72, 0, 1)'; // เปิด animation กลับมา
+document.addEventListener('touchmove', (e) => {
+  if (!isDragging || !activeSheet) return;
+  currentY = e.touches[0].clientY;
+  const deltaY = currentY - startY;
 
-      const deltaY = currentY - startY;
-      if (deltaY > 120) { 
-        // รูดลงเกิน 120px ให้ปิดหน้าต่าง
-        const overlay = sheet.closest('.modal-overlay');
-        if(overlay) overlay.classList.remove('visible');
-        
-        // รีเซ็ตตำแหน่งหลังปิดเสร็จ
-        setTimeout(() => { sheet.style.transform = ''; }, 300); 
-      } else {
-        // รูดไม่พอให้เด้งกลับที่เดิม
-        sheet.style.transform = ''; 
-      }
-    });
-  });
+  if (deltaY > 0) { // อนุญาตให้ลากลงเท่านั้น
+    if (e.cancelable) e.preventDefault(); // ล็อกหน้าจอด้านหลังไม่ให้ขยับ
+    activeSheet.style.transform = `translateY(${deltaY}px)`;
+  }
+}, { passive: false });
+
+document.addEventListener('touchend', (e) => {
+  if (!isDragging || !activeSheet) return;
+  isDragging = false;
+  activeSheet.style.transition = 'transform 0.3s cubic-bezier(0.32, 0.72, 0, 1)'; // เปิดแอนิเมชันกลับมา
+
+  const deltaY = currentY - startY;
+  if (deltaY > 120) {
+    // ถ้ารูดลงมายาวพอ ให้ปิด Modal
+    const overlay = activeSheet.closest('.modal-overlay, .summary-overlay');
+    if (overlay) overlay.classList.remove('visible');
+    
+    // รีเซ็ตตำแหน่งหลังปิดเสร็จ (หน่วงเวลาให้มันไหลลงไปให้สุดก่อน)
+    setTimeout(() => { if (activeSheet) activeSheet.style.transform = ''; activeSheet = null; }, 300);
+  } else {
+    // ถ้ารูดลงมานิดเดียว ให้เด้งกลับไปตำแหน่งเดิม
+    activeSheet.style.transform = '';
+    activeSheet = null;
+  }
 });
 </script>
 </body>
