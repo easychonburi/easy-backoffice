@@ -580,7 +580,6 @@ function renderOTAlert() {
     </div>`;
 }
 
-// ─── ปรับปรุง: ชื่อ และ สีเวลาออกงาน ───
 function renderAttendance() {
   const today = toDateStr(new Date());
   const todayTs = allTimesheets.filter(t => {
@@ -609,7 +608,6 @@ function renderAttendance() {
     activeStaff.forEach(staff => {
       const ts = todayTs.find(t => t.staff_id === staff.staff_id);
       
-      // ปรับชื่อเป็น "ชื่อจริง (ชื่อเล่น)"
       const fullName = staff.name || '';
       const nicknameStr = staff.nickname ? `(${staff.nickname})` : '';
       const displayName = `${fullName} ${nicknameStr}`.trim();
@@ -619,18 +617,20 @@ function renderAttendance() {
       const lateMin = ts ? parseInt(ts.late_min) || 0 : 0;
       const isLate = staff.staff_type === 'fulltime' && lateMin >= 16;
 
-      // จัดการแสดงเวลา (ออกงานแล้วให้เป็นสีแดง)
+      // 🔴🟢 จุดที่แก้ไข: แยกสีเวลาเข้าเป็น "สีเขียว" และ ออกงานเป็น "สีแดง"
       let timeLabel = 'ยังไม่เข้างาน';
       let timeClass = 'absent';
       
       if (ts && ts.clock_in) {
         if (ts.clock_out) {
-            timeLabel = `${ts.clock_in} - ${ts.clock_out}`;
-            timeClass = 'out'; // สีแดง
+            // กรณีออกงานแล้ว
+            timeLabel = `<span style="color: var(--green-dark); font-weight: 600;">${ts.clock_in}</span> <span style="color: var(--text-secondary); font-weight: 300; margin: 0 4px;">-</span> <span style="color: var(--danger); font-weight: 600;">${ts.clock_out}</span>`;
+            timeClass = ''; 
         } else {
-            timeLabel = ts.clock_in;
-            timeClass = isLate ? 'late' : 'present';
-            if (isLate) timeLabel += ` (สาย ${lateMin} นาที)`;
+            // กรณีเพิ่งเข้างาน (ยังไม่ออก)
+            timeLabel = `<span style="color: var(--green-dark); font-weight: 600;">${ts.clock_in}</span>`;
+            timeClass = isLate ? 'late' : '';
+            if (isLate) timeLabel += ` <span style="color: var(--danger); font-size: 12px; margin-left: 4px;">(สาย ${lateMin} นาที)</span>`;
         }
       }
 
