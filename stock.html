@@ -64,7 +64,10 @@
   /* --- ITEM LIST --- */
   .cat-title { font-size: 16px; font-weight: 600; color: var(--text); margin: 24px 0 12px; display: flex; align-items: center; gap: 8px; }
   .item-card { background: var(--white); border-radius: var(--radius-sm); padding: 14px 16px; margin-bottom: 10px; border: 1px solid var(--border); box-shadow: var(--shadow); transition: all 0.3s ease; }
-  .item-card.filled { opacity: 0.45; background: var(--soft); border-color: transparent; box-shadow: none; }
+  
+  /* 🛠️ แก้ไข 1: เปลี่ยน opacity ให้ไม่จางมากไป ให้แค่ดูรู้ว่ากดแล้ว */
+  .item-card.filled { opacity: 0.8; background: var(--soft); border-color: transparent; box-shadow: none; }
+  
   .item-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
   .item-name { font-size: 15px; font-weight: 500; color: var(--text); }
   
@@ -108,22 +111,21 @@
   .central-modal-overlay { position: fixed; inset: 0; background: rgba(255,255,255,0.95); display: flex; align-items: center; justify-content: center; z-index: 9999; opacity: 0; pointer-events: none; transition: opacity 0.3s; }
   .central-modal-overlay.show { opacity: 1; pointer-events: all; }
   .central-modal-box { text-align: center; display: flex; flex-direction: column; align-items: center; gap: 16px; }
+  
+  /* 🛠️ แก้ไข 4: รูปหมุนโหลดดิ้งให้หมุนแบบสมูทๆ */
   .central-spinner { width: 60px; height: 60px; border: 5px solid var(--border); border-top-color: var(--red); border-radius: 50%; animation: spin 0.8s linear infinite; }
   .central-success { width: 60px; height: 60px; background: var(--green); color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 32px; animation: pop 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
   @keyframes pop { 0% { transform: scale(0); } 100% { transform: scale(1); } }
   .central-text { font-size: 18px; font-weight: 600; color: var(--text); }
 
-  /* --- WORK ORDER (ใบสั่งงานครัวกลาง) --- */
+  /* --- WORK ORDER SCREEN (ใบสั่งงานครัวกลาง) --- */
   .wo-overlay { position: fixed; inset: 0; background: var(--bg); z-index: 10000; opacity: 0; pointer-events: none; transition: opacity 0.3s; display: flex; flex-direction: column; }
   .wo-overlay.show { opacity: 1; pointer-events: all; }
   .wo-header { background: var(--blue); padding: 50px 20px 24px; color: white; text-align: center; border-radius: 0 0 32px 32px; box-shadow: var(--shadow); }
   .wo-title { font-size: 24px; font-weight: 600; margin-bottom: 6px; }
-  .wo-sub { font-size: 14px; font-weight: 300; opacity: 0.9; }
   .wo-body { padding: 20px; flex: 1; overflow-y: auto; }
   .wo-card { background: white; border-radius: 12px; padding: 18px 20px; margin-bottom: 12px; box-shadow: var(--shadow); border: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
   .wo-name { font-size: 16px; font-weight: 600; color: var(--text); }
-  .wo-qty { font-size: 22px; font-weight: 700; color: var(--blue); }
-  .wo-unit { font-size: 14px; color: var(--text-secondary); font-weight: 400; margin-left: 4px; }
   .wo-footer { padding: 20px; background: white; border-top: 1px solid var(--border); }
 
   /* --- OTHERS --- */
@@ -131,6 +133,9 @@
   .toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
   .loading-overlay { position: fixed; inset: 0; background: rgba(255,255,255,0.85); display: flex; align-items: center; justify-content: center; z-index: 200; opacity: 0; pointer-events: none; transition: opacity 0.2s; }
   .loading-overlay.show { opacity: 1; pointer-events: all; }
+  
+  /* ตัวเสริม Animation โหลดดิ้งให้ชัวร์ว่าหมุนแน่นอน */
+  @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
   .spinner { width: 36px; height: 36px; border: 3px solid var(--border); border-top-color: var(--red); border-radius: 50%; animation: spin 0.7s linear infinite; }
 
 </style>
@@ -186,7 +191,7 @@
     </div>
     <div class="mode-btn" onclick="selectMode('close')">
       <div class="mode-icon">🌙</div>
-      <div class="mode-title">เช็คสต็อกปิดร้าน</div>
+      <div class="mode-title" id="mode-close-label">เช็คสต็อกปิดร้าน</div>
     </div>
   </div>
 
@@ -215,7 +220,7 @@
 <div class="central-modal-overlay" id="central-modal">
   <div class="central-modal-box">
     <div id="central-icon" class="central-spinner"></div>
-    <div id="central-text" class="central-text">กำลังบันทึก...</div>
+    <div id="central-text" class="central-text">กำลังบันทึกข้อมูล...</div>
   </div>
 </div>
 
@@ -223,7 +228,6 @@
   <div class="wo-header">
     <div style="font-size: 48px; margin-bottom: 12px;">📋</div>
     <div class="wo-title">ใบสั่งงานประจำวัน</div>
-    <div class="wo-sub">ระบบคำนวณงานที่ต้องผลิตเพิ่มให้แล้ว</div>
   </div>
   <div class="wo-body" id="wo-list">
      </div>
@@ -264,8 +268,11 @@ window.addEventListener('load', async () => {
   } else {
      document.getElementById('screen-mode').classList.add('active');
      let bName = branchNames[currentStaff.branch_id] || currentStaff.branch_id || 'ไม่ระบุ';
+     
+     // 🛠️ แก้ไข 5: เปลี่ยนชื่อปุ่มครัวกลาง
      if(bName === 'หนองตำลึง' || currentStaff.branch_id === 'BR005') {
-         document.getElementById('mode-open-label').textContent = 'เช็คเฉพาะสิ่งที่ทำแล้ว (เปิดร้าน)';
+         document.getElementById('mode-open-label').textContent = 'เช็คสต๊อกรายการที่ทำแล้ว';
+         document.getElementById('mode-close-label').textContent = 'เช็คสต๊อกวัตถุดิบคงเหลือ';
          bName = 'หนองตำลึง (ครัวกลาง)';
      }
      currentBranchName = bName;
@@ -317,11 +324,16 @@ function goToModeSelect() {
    let bName = branchNames[b] || b;
    
    const openLabel = document.getElementById('mode-open-label');
+   const closeLabel = document.getElementById('mode-close-label');
+   
+   // 🛠️ แก้ไข 5: เปลี่ยนชื่อปุ่มครัวกลาง (สำหรับแอดมิน)
    if(bName === 'หนองตำลึง' || b === 'BR005') {
-       openLabel.textContent = 'เช็คเฉพาะสิ่งที่ทำแล้ว (เปิดร้าน)';
+       openLabel.textContent = 'เช็คสต๊อกรายการที่ทำแล้ว';
+       closeLabel.textContent = 'เช็คสต๊อกวัตถุดิบคงเหลือ';
        bName = 'หนองตำลึง (ครัวกลาง)';
    } else {
        openLabel.textContent = 'เช็คสต็อกเปิดร้าน';
+       closeLabel.textContent = 'เช็คสต็อกปิดร้าน';
    }
    currentBranchName = bName;
    document.getElementById('h-sub').textContent = `สาขา: ${bName}`;
@@ -349,6 +361,11 @@ async function loadAdminHistory() {
 }
 
 async function selectMode(mode) {
+  // 🛠️ แก้ไข 6: แจ้งเตือนสติให้พนักงานครัวกลาง
+  if (mode === 'open' && currentBranchName.includes('หนองตำลึง')) {
+      alert('⚠️ กรุณาเช็ค "เฉพาะสิ่งที่ทำเสร็จแล้ว" เท่านั้นนะครับ');
+  }
+
   currentMode = mode;
   document.getElementById('screen-mode').classList.remove('active');
   document.getElementById('screen-stock').classList.add('active');
@@ -362,22 +379,14 @@ async function selectMode(mode) {
   try {
     const res = await apiGet(`action=getStockItems&mode=${mode}&branch_id=${currentStaff.branch_id}`);
     if (res.success) {
-      let items = res.data;
-      if(items.base) {
-          if(currentBranchName.includes('หนองตำลึง')) inventoryData = items.special;
-          else inventoryData = items.base;
-      } else { inventoryData = items; }
+      inventoryData = res.data;
       renderStockItems();
       document.getElementById('progress-container').style.display = 'block';
       document.getElementById('bottom-bar').style.display = 'block';
       updateProgress();
     }
   } catch(e) {
-      inventoryData = getLocalFallbackItems(mode, currentBranchName);
-      renderStockItems();
-      document.getElementById('progress-container').style.display = 'block';
-      document.getElementById('bottom-bar').style.display = 'block';
-      updateProgress();
+      showToast('โหลดข้อมูลไม่สำเร็จ', 'error');
   }
   showLoading(false);
 }
@@ -456,7 +465,8 @@ function setFrac(name, safeId, fracVal) {
 }
 
 function saveValueAndUpdateUI(name, safeId, finalStr) {
-    if(finalStr === '' || finalStr === '0') {
+    // 💡 ยอมรับเลข 0 และไม่เด้งสีเทาหายไป เพื่อให้ส่งไปคำนวณงานได้
+    if(finalStr === '') {
         delete stockValues[name];
         document.getElementById(`card_${safeId}`).classList.remove('filled');
         document.getElementById(`val_${safeId}`).style.display = 'none';
@@ -500,7 +510,7 @@ function renderCustom() {
 function updateProgress() {
     let requiredItems = inventoryData.filter(i => !i.orderOnly);
     let actualTotal = requiredItems.length;
-    let actualCompleted = requiredItems.filter(i => stockValues[i.name]).length;
+    let actualCompleted = requiredItems.filter(i => stockValues[i.name] !== undefined).length;
     let pct = actualTotal === 0 ? 100 : Math.round((actualCompleted / actualTotal) * 100);
     if(pct > 100) pct = 100;
     document.getElementById('prog-label').textContent = `นับแล้ว ${actualCompleted}/${actualTotal} (เหลือ ${actualTotal-actualCompleted})`;
@@ -548,11 +558,10 @@ async function confirmSubmit() {
             icon.innerHTML = '✓';
             text.textContent = 'บันทึกสต็อกสำเร็จ!';
             
-            // --- เช็คว่ามี ใบสั่งงาน (Work Orders) คืนมาไหม ---
             if (res.workOrders && res.workOrders.length > 0) {
                 setTimeout(() => {
-                    modal.classList.remove('show'); // ปิดหน้าโหลดดิ้ง
-                    renderWorkOrders(res.workOrders); // เปิดหน้าใบสั่งงาน
+                    modal.classList.remove('show');
+                    renderWorkOrders(res.workOrders);
                 }, 1200);
             } else {
                 setTimeout(() => { goHome(); }, 2000); 
@@ -567,14 +576,15 @@ async function confirmSubmit() {
     }
 }
 
-// --- ฟังก์ชันสำหรับ Render หน้าใบสั่งงาน ---
+// 🛠️ แก้ไข 3: จัดเรียงตัวเลขหน้าใบสั่งงานให้ตรงกัน อ่านง่ายสบายตา
 function renderWorkOrders(orders) {
     const list = document.getElementById('wo-list');
     list.innerHTML = orders.map(o => `
        <div class="wo-card">
          <div class="wo-name">${o.name}</div>
-         <div style="text-align: right;">
-            <span class="wo-qty">+${o.qty}</span> <span class="wo-unit">${o.unit}</span>
+         <div style="display: flex; align-items: baseline; justify-content: flex-end;">
+            <span class="wo-qty" style="display: inline-block; width: 45px; text-align: right; color: var(--blue); font-size: 22px; font-weight: 700;">+${o.qty}</span> 
+            <span class="wo-unit" style="display: inline-block; width: 80px; text-align: left; padding-left: 8px; font-size: 14px; color: var(--text-secondary);">${o.unit}</span>
          </div>
        </div>
     `).join('');
@@ -588,49 +598,6 @@ function showToast(msg, type = '') {
   const t = document.getElementById('toast');
   t.textContent = msg; t.className = `toast ${type} show`;
   setTimeout(() => t.classList.remove('show'), 3500);
-}
-
-function getLocalFallbackItems(mode, bName) {
-   const openBase = [ 
-       { name: 'เส้นหมี่', unit: 'ห่อ', type:'fraction', category: 'fresh' }, 
-       { name: 'อกไก่', unit: 'กิโล', type:'free', category: 'fresh' }, 
-       { name: 'หมูกระจก', unit: 'ถุง', type:'fraction', category: 'fresh' }, 
-       { name: 'กล่อง 26 oz', unit: 'แถว', type:'fraction', category: 'packaging' }, 
-       { name: 'โค้ก', unit: 'ขวด', type:'free', category: 'packaging' } 
-   ];
-   
-   const closeBase = [ 
-       { name:'เส้นหมี่', unit:'ห่อ', category:'fresh', type:'fraction' }, 
-       { name:'อกไก่', unit:'กิโล', category:'fresh', type:'free' }, 
-       { name:'น้ำมันกระเทียมเจียว', unit:'แกลลอน', category:'seasoning', type:'fraction' }, 
-       { name:'ซอส', unit:'แกลลอน', category:'seasoning', type:'fraction' }, 
-       { name:'น้ำมะนาว', unit:'ขวด', category:'seasoning', orderOnly:true }, 
-       { name:'ถุงซีล 7×10', unit:'ห่อ', category:'packaging', type:'fraction' }, 
-       { name:'ตะเกียบ', unit:'', category:'packaging', orderOnly:true }, 
-       { name:'น้ำยาถูพื้น', unit:'', category:'cleaning', orderOnly:true } 
-   ];
-
-   if(bName.includes('หนองตำลึง')) {
-      if(mode === 'open') {
-          // 🎯 ปรับชื่อให้ตรงกับตาราง central_targets เป๊ะๆ
-          return [
-              { name:'อกไก่', unit:'ถุงเล็ก', type:'free', category: 'fresh' },
-              { name:'หมูกระจก', unit:'ถุง', type:'free', category: 'fresh' },
-              { name:'เก๊กฮวย', unit:'ขวด', type:'free', category: 'fresh' },
-              { name:'อัญชัน', unit:'ขวด', type:'free', category: 'fresh' },
-              { name:'ชาไทย', unit:'ขวด', type:'free', category: 'fresh' },
-              { name:'ซอส', unit:'แกลลอน', type:'fraction', category: 'seasoning' },
-              { name:'น้ำมันกระเทียมเจียว', unit:'แกลลอน', type:'fraction', category: 'seasoning' }
-          ];
-      } else {
-          return [
-              { name:'น้ำมันกระเทียมเจียว', unit:'แกลลอน', category:'seasoning', type:'free' }, 
-              { name:'ขวดน้ำ', unit:'', category:'packaging', orderOnly:true }
-          ];
-      }
-   }
-   
-   return mode === 'open' ? openBase : closeBase;
 }
 
 // --- Swipe to Dismiss (Modal สรุปยอด) ---
