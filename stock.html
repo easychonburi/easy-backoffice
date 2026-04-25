@@ -118,13 +118,13 @@
   @keyframes pop { 0% { transform: scale(0); } 100% { transform: scale(1); } }
   .central-text { font-size: 18px; font-weight: 600; color: var(--text); }
 
-  /* --- WORK ORDER SCREEN (ใบสั่งงานครัวกลาง) --- */
+/* --- WORK ORDER SCREEN (ใบสั่งงานครัวกลาง) --- */
   .wo-overlay { position: fixed; inset: 0; background: var(--bg); z-index: 10000; opacity: 0; pointer-events: none; transition: opacity 0.3s; display: flex; flex-direction: column; }
   .wo-overlay.show { opacity: 1; pointer-events: all; }
-  .wo-header { background: var(--blue); padding: 50px 20px 24px; color: white; text-align: center; border-radius: 0 0 32px 32px; box-shadow: var(--shadow); }
-  .wo-title { font-size: 24px; font-weight: 600; margin-bottom: 6px; }
-  .wo-body { padding: 20px; flex: 1; overflow-y: auto; }
-  .wo-card { background: white; border-radius: 12px; padding: 18px 20px; margin-bottom: 12px; box-shadow: var(--shadow); border: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
+  .wo-header { background: var(--blue); padding: 30px 20px 20px; color: white; display: flex; align-items: center; justify-content: center; gap: 12px; border-radius: 0 0 24px 24px; box-shadow: var(--shadow); }
+  .wo-title { font-size: 20px; font-weight: 600; margin-bottom: 0; }
+  .wo-body { padding: 16px 20px; flex: 1; overflow-y: auto; }
+  .wo-card { background: white; border-radius: 12px; padding: 16px 20px; margin-bottom: 10px; box-shadow: var(--shadow); border: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
   .wo-name { font-size: 16px; font-weight: 600; color: var(--text); }
   .wo-footer { padding: 20px; background: white; border-top: 1px solid var(--border); }
 
@@ -226,7 +226,7 @@
 
 <div class="wo-overlay" id="wo-modal">
   <div class="wo-header">
-    <div style="font-size: 48px; margin-bottom: 12px;">📋</div>
+    <div style="font-size: 28px;">📋</div>
     <div class="wo-title">ใบสั่งงานประจำวัน</div>
   </div>
   <div class="wo-body" id="wo-list">
