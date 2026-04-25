@@ -56,35 +56,19 @@
   .card { background: var(--white); border-radius: var(--radius); box-shadow: var(--shadow); border: 1px solid var(--border); }
 
   /* --- MODE SELECT --- */
-  .mode-btn {
-    background: var(--white); border-radius: var(--radius); padding: 24px 16px; text-align: center; 
-    border: 1.5px solid var(--border); box-shadow: var(--shadow); margin-bottom: 16px; cursor: pointer; transition: all 0.2s;
-  }
+  .mode-btn { background: var(--white); border-radius: var(--radius); padding: 24px 16px; text-align: center; border: 1.5px solid var(--border); box-shadow: var(--shadow); margin-bottom: 16px; cursor: pointer; transition: all 0.2s; }
   .mode-btn:active { transform: scale(0.98); }
   .mode-icon { font-size: 40px; margin-bottom: 8px; }
   .mode-title { font-size: 18px; font-weight: 600; color: var(--text); }
 
   /* --- ITEM LIST --- */
   .cat-title { font-size: 16px; font-weight: 600; color: var(--text); margin: 24px 0 12px; display: flex; align-items: center; gap: 8px; }
-  
-  .item-card {
-    background: var(--white); border-radius: var(--radius-sm); padding: 14px 16px; margin-bottom: 10px; 
-    border: 1px solid var(--border); box-shadow: var(--shadow); transition: all 0.3s ease;
-  }
-  /* แก้ไข: เวลาช่องกรอกแล้ว ให้สีเฟดลง ไม่เด่น */
+  .item-card { background: var(--white); border-radius: var(--radius-sm); padding: 14px 16px; margin-bottom: 10px; border: 1px solid var(--border); box-shadow: var(--shadow); transition: all 0.3s ease; }
   .item-card.filled { opacity: 0.45; background: var(--soft); border-color: transparent; box-shadow: none; }
-
   .item-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
   .item-name { font-size: 15px; font-weight: 500; color: var(--text); }
   
-  /* แก้ไข: สไตล์ปุ่ม "สั่งเพิ่ม" ให้ป๊อปและดูแพงขึ้น */
-  .order-toggle { 
-    font-size: 13px; padding: 6px 14px; border-radius: 20px; font-weight: 600;
-    border: none; cursor: pointer; color: #854D0E; background: #FDE047;
-    box-shadow: 0 4px 12px rgba(253, 224, 71, 0.5);
-    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-    transform: translateY(-2px);
-  }
+  .order-toggle { font-size: 13px; padding: 6px 14px; border-radius: 20px; font-weight: 600; border: none; cursor: pointer; color: #854D0E; background: #FDE047; box-shadow: 0 4px 12px rgba(253, 224, 71, 0.5); transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); transform: translateY(-2px); }
   .order-toggle:active { transform: translateY(0); box-shadow: 0 2px 5px rgba(253, 224, 71, 0.4); }
   .order-toggle.active { background: var(--green); color: white; box-shadow: 0 4px 12px rgba(34, 197, 94, 0.4); }
 
@@ -97,7 +81,6 @@
   .frac-btn { padding: 8px 12px; font-family: 'Prompt', sans-serif; font-size: 13px; font-weight: 500; border: 1px solid var(--border); border-radius: 8px; background: var(--white); color: var(--text); cursor: pointer; white-space: nowrap; transition: all 0.2s; }
   .frac-btn.selected { background: var(--blue-bg); color: var(--blue); border-color: var(--blue); }
 
-  /* Custom Order */
   .custom-order-row { display: flex; gap: 8px; margin-bottom: 12px; }
   .custom-input { flex: 1; padding: 12px; border: 1.5px solid var(--border); border-radius: 8px; font-family: 'Prompt', sans-serif; font-size: 14px; outline: none; }
   .add-btn { background: var(--blue); color: white; border: none; border-radius: 8px; padding: 0 16px; font-family: 'Prompt', sans-serif; cursor: pointer; font-weight: 500; }
@@ -122,7 +105,7 @@
   .summary-item:last-child { border-bottom: none; }
 
   /* --- CENTRAL MODAL (POPUP ยืนยัน) --- */
-  .central-modal-overlay { position: fixed; inset: 0; background: rgba(255,255,255,0.9); display: flex; align-items: center; justify-content: center; z-index: 9999; opacity: 0; pointer-events: none; transition: opacity 0.3s; }
+  .central-modal-overlay { position: fixed; inset: 0; background: rgba(255,255,255,0.95); display: flex; align-items: center; justify-content: center; z-index: 9999; opacity: 0; pointer-events: none; transition: opacity 0.3s; }
   .central-modal-overlay.show { opacity: 1; pointer-events: all; }
   .central-modal-box { text-align: center; display: flex; flex-direction: column; align-items: center; gap: 16px; }
   .central-spinner { width: 60px; height: 60px; border: 5px solid var(--border); border-top-color: var(--red); border-radius: 50%; animation: spin 0.8s linear infinite; }
@@ -130,13 +113,25 @@
   @keyframes pop { 0% { transform: scale(0); } 100% { transform: scale(1); } }
   .central-text { font-size: 18px; font-weight: 600; color: var(--text); }
 
+  /* --- WORK ORDER (ใบสั่งงานครัวกลาง) --- */
+  .wo-overlay { position: fixed; inset: 0; background: var(--bg); z-index: 10000; opacity: 0; pointer-events: none; transition: opacity 0.3s; display: flex; flex-direction: column; }
+  .wo-overlay.show { opacity: 1; pointer-events: all; }
+  .wo-header { background: var(--blue); padding: 50px 20px 24px; color: white; text-align: center; border-radius: 0 0 32px 32px; box-shadow: var(--shadow); }
+  .wo-title { font-size: 24px; font-weight: 600; margin-bottom: 6px; }
+  .wo-sub { font-size: 14px; font-weight: 300; opacity: 0.9; }
+  .wo-body { padding: 20px; flex: 1; overflow-y: auto; }
+  .wo-card { background: white; border-radius: 12px; padding: 18px 20px; margin-bottom: 12px; box-shadow: var(--shadow); border: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
+  .wo-name { font-size: 16px; font-weight: 600; color: var(--text); }
+  .wo-qty { font-size: 22px; font-weight: 700; color: var(--blue); }
+  .wo-unit { font-size: 14px; color: var(--text-secondary); font-weight: 400; margin-left: 4px; }
+  .wo-footer { padding: 20px; background: white; border-top: 1px solid var(--border); }
+
   /* --- OTHERS --- */
   .toast { position: fixed; bottom: 90px; left: 50%; transform: translateX(-50%) translateY(100px); background: var(--text); color: white; font-size: 13px; padding: 12px 20px; border-radius: 24px; z-index: 300; transition: all 0.3s cubic-bezier(0.32, 0.72, 0, 1); white-space: nowrap; max-width: 90vw; text-align: center; opacity: 0; pointer-events: none; }
   .toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
   .loading-overlay { position: fixed; inset: 0; background: rgba(255,255,255,0.85); display: flex; align-items: center; justify-content: center; z-index: 200; opacity: 0; pointer-events: none; transition: opacity 0.2s; }
   .loading-overlay.show { opacity: 1; pointer-events: all; }
   .spinner { width: 36px; height: 36px; border: 3px solid var(--border); border-top-color: var(--red); border-radius: 50%; animation: spin 0.7s linear infinite; }
-  @keyframes spin { to { transform: rotate(360deg); } }
 
 </style>
 </head>
@@ -180,9 +175,7 @@
         <span>📋 ประวัติสั่งเพิ่ม (วันนี้)</span>
         <button onclick="loadAdminHistory()" style="border:none; background:var(--blue-bg); color:var(--blue); padding: 6px 12px; border-radius: 20px; font-family:'Prompt'; font-size: 12px; font-weight:500; cursor: pointer;">↻ รีเฟรช</button>
       </div>
-      <div id="admin-history-list" style="font-size: 13px; color: var(--text-secondary);">
-         กำลังโหลด...
-      </div>
+      <div id="admin-history-list" style="font-size: 13px; color: var(--text-secondary);">กำลังโหลด...</div>
     </div>
   </div>
 
@@ -223,6 +216,19 @@
   <div class="central-modal-box">
     <div id="central-icon" class="central-spinner"></div>
     <div id="central-text" class="central-text">กำลังบันทึก...</div>
+  </div>
+</div>
+
+<div class="wo-overlay" id="wo-modal">
+  <div class="wo-header">
+    <div style="font-size: 48px; margin-bottom: 12px;">📋</div>
+    <div class="wo-title">ใบสั่งงานประจำวัน</div>
+    <div class="wo-sub">ระบบคำนวณงานที่ต้องผลิตเพิ่มให้แล้ว</div>
+  </div>
+  <div class="wo-body" id="wo-list">
+     </div>
+  <div class="wo-footer">
+    <button class="btn-primary" style="background: var(--blue); box-shadow: 0 4px 16px rgba(59,130,246,0.3);" onclick="goHome()">✓ รับทราบรายการงาน</button>
   </div>
 </div>
 
@@ -291,7 +297,6 @@ function goBack() {
       document.getElementById('bottom-bar').style.display = 'none';
       document.getElementById('h-title').textContent = 'ระบบสต็อก';
       currentMode = '';
-      
       const session = loadSession();
       if(session && session.role !== 'admin') {
           document.getElementById('btn-back').style.display = 'none';
@@ -308,7 +313,7 @@ function goBack() {
 
 function goToModeSelect() {
    const b = document.getElementById('admin-branch-select').value;
-   currentStaff.branch_id = b; // Override สำหรับครั้งนี้
+   currentStaff.branch_id = b; 
    let bName = branchNames[b] || b;
    
    const openLabel = document.getElementById('mode-open-label');
@@ -336,25 +341,11 @@ async function loadAdminHistory() {
            let html = '';
            res.data.forEach(log => {
                const bName = branchNames[log.branch_id] || log.branch_id;
-               html += `
-                 <div style="border-bottom: 1px solid var(--border); padding: 12px 0;">
-                   <div style="display:flex; justify-content:space-between; margin-bottom:6px;">
-                     <span style="font-weight:600; color:var(--text); font-size:14px;">${bName}</span>
-                     <span style="font-size:12px; color:var(--blue); font-weight:500;">${log.time} น.</span>
-                   </div>
-                   <div style="padding-left:10px; border-left: 2px solid var(--red); margin-top:6px; color:var(--text);">
-                     ${log.orders.map(o => `<div style="margin-bottom:2px;">- ${o}</div>`).join('')}
-                   </div>
-                 </div>
-               `;
+               html += `<div style="border-bottom: 1px solid var(--border); padding: 12px 0;"><div style="display:flex; justify-content:space-between; margin-bottom:6px;"><span style="font-weight:600; color:var(--text); font-size:14px;">${bName}</span><span style="font-size:12px; color:var(--blue); font-weight:500;">${log.time} น.</span></div><div style="padding-left:10px; border-left: 2px solid var(--red); margin-top:6px; color:var(--text);">${log.orders.map(o => `<div style="margin-bottom:2px;">- ${o}</div>`).join('')}</div></div>`;
            });
            container.innerHTML = html;
-       } else {
-           container.innerHTML = '<div style="padding:10px 0;">ยังไม่มีสาขาไหนสั่งเพิ่มในวันนี้ครับ</div>';
-       }
-   } catch (e) {
-       container.innerHTML = '<span style="color:var(--danger)">โหลดข้อมูลไม่สำเร็จ กรุณาลองใหม่</span>';
-   }
+       } else { container.innerHTML = '<div style="padding:10px 0;">ยังไม่มีสาขาไหนสั่งเพิ่มในวันนี้ครับ</div>'; }
+   } catch (e) { container.innerHTML = '<span style="color:var(--danger)">โหลดข้อมูลไม่สำเร็จ กรุณาลองใหม่</span>'; }
 }
 
 async function selectMode(mode) {
@@ -394,16 +385,14 @@ async function selectMode(mode) {
 function renderStockItems() {
   const container = document.getElementById('stock-container');
   container.innerHTML = '';
-  if(inventoryData.length === 0) {
-      container.innerHTML = '<div style="text-align:center; padding: 20px; color: var(--text-secondary);">ไม่มีรายการให้เช็ค</div>';
-      return;
-  }
+  if(inventoryData.length === 0) { container.innerHTML = '<div style="text-align:center; padding: 20px; color: var(--text-secondary);">ไม่มีรายการให้เช็ค</div>'; return; }
+  
   const cats = { 'fresh': { title: '🥬 หมวดวัตถุดิบสด', items: [] }, 'seasoning': { title: '🧂 หมวดเครื่องปรุง', items: [] }, 'packaging': { title: '📦 หมวดบรรจุภัณฑ์', items: [] }, 'cleaning': { title: '🧹 หมวดทำความสะอาด', items: [] }, 'other': { title: '📝 หมวดอื่นๆ', items: [] } };
   inventoryData.forEach(item => {
     const c = item.category || 'other';
-    if(cats[c]) cats[c].items.push(item);
-    else cats['other'].items.push(item);
+    if(cats[c]) cats[c].items.push(item); else cats['other'].items.push(item);
   });
+  
   let html = '';
   Object.keys(cats).forEach(key => {
     const group = cats[key];
@@ -411,13 +400,11 @@ function renderStockItems() {
     html += `<div class="cat-title">${group.title}</div>`;
     group.items.forEach(item => {
       const safeId = item.name.replace(/[^a-zA-Z0-9ก-๙]/g, '_');
-      html += `
-        <div class="item-card" id="card_${safeId}">
+      html += `<div class="item-card" id="card_${safeId}">
           <div class="item-header">
             <div class="item-name">${item.name}</div>
             ${currentMode === 'close' ? `<button class="order-toggle" id="btn_order_${safeId}" onclick="toggleOrder('${item.name}', '${safeId}')">+ สั่งเพิ่ม</button>` : ''}
-          </div>
-      `;
+          </div>`;
       if (!item.orderOnly) {
          html += `<div class="input-area">`;
          const step = item.type === 'free' ? 'any' : '1';
@@ -435,9 +422,7 @@ function renderStockItems() {
       html += `</div>`;
     });
   });
-  if (currentMode === 'close') {
-      html += `<div class="cat-title">✍️ สั่งอื่นๆ เพิ่มเติม</div><div class="item-card"><div class="custom-order-row"><input type="text" id="custom-inp" class="custom-input" placeholder="เช่น โพสอิท, เทปใส"><button class="add-btn" onclick="addCustom()">เพิ่ม</button></div><div class="custom-list" id="custom-list"></div></div>`;
-  }
+  if (currentMode === 'close') { html += `<div class="cat-title">✍️ สั่งอื่นๆ เพิ่มเติม</div><div class="item-card"><div class="custom-order-row"><input type="text" id="custom-inp" class="custom-input" placeholder="เช่น โพสอิท, เทปใส"><button class="add-btn" onclick="addCustom()">เพิ่ม</button></div><div class="custom-list" id="custom-list"></div></div>`; }
   container.innerHTML = html;
 }
 
@@ -488,15 +473,8 @@ function saveValueAndUpdateUI(name, safeId, finalStr) {
 
 function toggleOrder(name, safeId) {
     const btn = document.getElementById(`btn_order_${safeId}`);
-    if(orderRequests[name]) { 
-        delete orderRequests[name]; 
-        btn.classList.remove('active'); 
-        btn.textContent = '+ สั่งเพิ่ม'; 
-    } else { 
-        orderRequests[name] = true; 
-        btn.classList.add('active'); 
-        btn.textContent = '✓ สั่งแล้ว'; 
-    }
+    if(orderRequests[name]) { delete orderRequests[name]; btn.classList.remove('active'); btn.textContent = '+ สั่งเพิ่ม'; } 
+    else { orderRequests[name] = true; btn.classList.add('active'); btn.textContent = '✓ สั่งแล้ว'; }
     const itemDef = inventoryData.find(i => i.name === name);
     if(itemDef && itemDef.orderOnly) {
          if(orderRequests[name]) document.getElementById(`card_${safeId}`).classList.add('filled');
@@ -528,8 +506,7 @@ function updateProgress() {
     document.getElementById('prog-label').textContent = `นับแล้ว ${actualCompleted}/${actualTotal} (เหลือ ${actualTotal-actualCompleted})`;
     document.getElementById('prog-pct').textContent = `${pct}%`;
     document.getElementById('prog-bar').style.width = `${pct}%`;
-    if(pct === 100) document.getElementById('prog-bar').style.background = 'var(--green)';
-    else document.getElementById('prog-bar').style.background = 'var(--yellow)';
+    if(pct === 100) document.getElementById('prog-bar').style.background = 'var(--green)'; else document.getElementById('prog-bar').style.background = 'var(--yellow)';
 }
 
 function handleSave() {
@@ -570,7 +547,16 @@ async function confirmSubmit() {
             icon.className = 'central-success';
             icon.innerHTML = '✓';
             text.textContent = 'บันทึกสต็อกสำเร็จ!';
-            setTimeout(() => { goHome(); }, 2000); // ดีเลย์ให้ผู้ใช้เห็นว่าสำเร็จ 2 วินาที ค่อยกลับหน้าหลัก
+            
+            // --- เช็คว่ามี ใบสั่งงาน (Work Orders) คืนมาไหม ---
+            if (res.workOrders && res.workOrders.length > 0) {
+                setTimeout(() => {
+                    modal.classList.remove('show'); // ปิดหน้าโหลดดิ้ง
+                    renderWorkOrders(res.workOrders); // เปิดหน้าใบสั่งงาน
+                }, 1200);
+            } else {
+                setTimeout(() => { goHome(); }, 2000); 
+            }
         } else {
             modal.classList.remove('show');
             showToast(res.message || 'เกิดข้อผิดพลาด', 'error');
@@ -579,6 +565,20 @@ async function confirmSubmit() {
         modal.classList.remove('show');
         showToast('เชื่อมต่อไม่สำเร็จ', 'error'); 
     }
+}
+
+// --- ฟังก์ชันสำหรับ Render หน้าใบสั่งงาน ---
+function renderWorkOrders(orders) {
+    const list = document.getElementById('wo-list');
+    list.innerHTML = orders.map(o => `
+       <div class="wo-card">
+         <div class="wo-name">${o.name}</div>
+         <div style="text-align: right;">
+            <span class="wo-qty">+${o.qty}</span> <span class="wo-unit">${o.unit}</span>
+         </div>
+       </div>
+    `).join('');
+    document.getElementById('wo-modal').classList.add('show');
 }
 
 async function apiGet(p) { const r = await fetch(`${API_URL}?${p}`); return r.json(); }
@@ -591,16 +591,49 @@ function showToast(msg, type = '') {
 }
 
 function getLocalFallbackItems(mode, bName) {
-   const openBase = [ { name: 'เส้นหมี่', unit: 'ห่อ', type:'fraction', category: 'fresh' }, { name: 'อกไก่', unit: 'กิโล', type:'free', category: 'fresh' }, { name: 'หมูกระจก', unit: 'ถุง', type:'fraction', category: 'fresh' }, { name: 'กล่อง 26 oz', unit: 'แถว', type:'fraction', category: 'packaging' }, { name: 'โค้ก', unit: 'ขวด', type:'free', category: 'packaging' } ];
-   const closeBase = [ { name:'เส้นหมี่', unit:'ห่อ', category:'fresh', type:'fraction' }, { name:'อกไก่', unit:'กิโล', category:'fresh', type:'free' }, { name:'น้ำมันกระเทียมเจียว', unit:'แกลลอน', category:'seasoning', type:'fraction' }, { name:'ซอสดั้งเดิม', unit:'แกลลอน', category:'seasoning', type:'fraction' }, { name:'น้ำมะนาว', unit:'ขวด', category:'seasoning', orderOnly:true }, { name:'ถุงซีล 7×10', unit:'ห่อ', category:'packaging', type:'fraction' }, { name:'ตะเกียบ', unit:'', category:'packaging', orderOnly:true }, { name:'น้ำยาถูพื้น', unit:'', category:'cleaning', orderOnly:true } ];
+   const openBase = [ 
+       { name: 'เส้นหมี่', unit: 'ห่อ', type:'fraction', category: 'fresh' }, 
+       { name: 'อกไก่', unit: 'กิโล', type:'free', category: 'fresh' }, 
+       { name: 'หมูกระจก', unit: 'ถุง', type:'fraction', category: 'fresh' }, 
+       { name: 'กล่อง 26 oz', unit: 'แถว', type:'fraction', category: 'packaging' }, 
+       { name: 'โค้ก', unit: 'ขวด', type:'free', category: 'packaging' } 
+   ];
+   
+   const closeBase = [ 
+       { name:'เส้นหมี่', unit:'ห่อ', category:'fresh', type:'fraction' }, 
+       { name:'อกไก่', unit:'กิโล', category:'fresh', type:'free' }, 
+       { name:'น้ำมันกระเทียมเจียว', unit:'แกลลอน', category:'seasoning', type:'fraction' }, 
+       { name:'ซอส', unit:'แกลลอน', category:'seasoning', type:'fraction' }, 
+       { name:'น้ำมะนาว', unit:'ขวด', category:'seasoning', orderOnly:true }, 
+       { name:'ถุงซีล 7×10', unit:'ห่อ', category:'packaging', type:'fraction' }, 
+       { name:'ตะเกียบ', unit:'', category:'packaging', orderOnly:true }, 
+       { name:'น้ำยาถูพื้น', unit:'', category:'cleaning', orderOnly:true } 
+   ];
+
    if(bName.includes('หนองตำลึง')) {
-      if(mode === 'open') return [{ name:'อกไก่', unit:'ถุง', type:'free', category: 'fresh' }];
-      else return [{ name:'น้ำมัน', unit:'แกลลอน', category:'seasoning', type:'free' }, { name:'ขวดน้ำ', unit:'', category:'packaging', orderOnly:true }];
+      if(mode === 'open') {
+          // 🎯 ปรับชื่อให้ตรงกับตาราง central_targets เป๊ะๆ
+          return [
+              { name:'อกไก่', unit:'ถุงเล็ก', type:'free', category: 'fresh' },
+              { name:'หมูกระจก', unit:'ถุง', type:'free', category: 'fresh' },
+              { name:'เก๊กฮวย', unit:'ขวด', type:'free', category: 'fresh' },
+              { name:'อัญชัน', unit:'ขวด', type:'free', category: 'fresh' },
+              { name:'ชาไทย', unit:'ขวด', type:'free', category: 'fresh' },
+              { name:'ซอส', unit:'แกลลอน', type:'fraction', category: 'seasoning' },
+              { name:'น้ำมันกระเทียมเจียว', unit:'แกลลอน', type:'fraction', category: 'seasoning' }
+          ];
+      } else {
+          return [
+              { name:'น้ำมันกระเทียมเจียว', unit:'แกลลอน', category:'seasoning', type:'free' }, 
+              { name:'ขวดน้ำ', unit:'', category:'packaging', orderOnly:true }
+          ];
+      }
    }
+   
    return mode === 'open' ? openBase : closeBase;
 }
 
-// --- ระบบปัดลงเพื่อปิด (Swipe to Dismiss) สำหรับ Modal ยืนยันสต็อก ---
+// --- Swipe to Dismiss (Modal สรุปยอด) ---
 let startY = 0, currentY = 0, isDragging = false, activeSheet = null;
 document.addEventListener('touchstart', (e) => {
   const dragArea = e.target.closest('.sheet-handle, .summary-title');
