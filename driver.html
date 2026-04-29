@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>EASY Driver System</title>
+  <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Prompt', sans-serif; -webkit-tap-highlight-color: transparent; }
+    body { background-color: #F5F7FB; color: #333; min-height: 100vh; overflow-x: hidden; padding-bottom: 40px;}
+    .hidden { display: none !important; }
+
+    /* --- Headers --- */
+    .dashboard-header {
+      background-color: #ED1C24; border-bottom-left-radius: 32px; border-bottom-right-radius: 32px;
+      padding: 30px 20px 20px; color: white; display: flex; justify-content: space-between; align-items: flex-start;
+      margin-bottom: 20px; box-shadow: 0 4px 12px rgba(229,35,43,0.3);
+    }
+    .dashboard-header.blue { background-color: #3B82F6; box-shadow: 0 4px 12px rgba(59,130,246,0.3); }
+    .dashboard-header.orange { background-color: #F59E0B; box-shadow: 0 4px 12px rgba(245,158,11,0.3); }
+    .dashboard-header.dark { background-color: #1F2937; box-shadow: 0 4px 12px rgba(31,41,55,0.3); }
+
+    .header-left h1 { color: #FFC928; font-size: 1.8rem; font-weight: 800; line-height: 1; margin-bottom: 5px; }
+    .header-left h2 { font-size: 1.2rem; font-weight: 500; }
+
+    .container { padding: 0 16px; max-width: 520px; margin: 0 auto; }
+    .card { background: white; border: 1.5px solid #E5E7EB; border-radius: 16px; padding: 20px; margin-bottom: 16px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
+    
+    /* --- Clock & Actions --- */
+    .digital-clock { font-size: 2.8rem; font-weight: 700; text-align: center; color: #1F2937; margin: 10px 0; }
+    .action-row { display: flex; gap: 12px; margin-bottom: 20px; }
+    .action-btn { flex: 1; border: none; border-radius: 16px; padding: 20px 10px; color: white; cursor: pointer; text-align: center; transition: transform 0.2s; }
+    .action-btn:active { transform: scale(0.98); }
+    .btn-checkin { background-color: #22C55E; box-shadow: 0 4px 12px rgba(34,197,94,0.3); }
+    .btn-checkout { background-color: #EF4444; box-shadow: 0 4px 12px rgba(239,68,68,0.3); }
+    .btn-disabled { opacity: 0.5; pointer-events: none; box-shadow: none; filter: grayscale(50%); }
+    .action-btn span { display: block; font-size: 1.4rem; font-weight: 700; margin-top: 4px; }
+
+    /* --- Branch Shout & Items --- */
+    .branch-shout { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 16px; border-radius: 16px; background: #FFC928; color: #1F2937; margin-bottom: 16px; font-weight: 600; }
+    .branch-shout.blue { background: #EFF6FF; color: #1D4ED8; border: 1.5px solid #BFDBFE; }
+    .branch-shout.orange { background: #FFFBEB; color: #B45309; border: 1.5px solid #FDE68A; }
+    
+    .item-row { border: 1px solid #E5E7EB; border-radius: 12px; padding: 14px; margin-bottom: 10px; background: white; transition: 0.2s; }
+    .item-row.done { opacity: 0.6; background: #F9FAFB; border: 1px dashed #D1D5DB; }
+    .input-qty { width: 100%; padding: 12px; border: 1.5px solid #D1D5DB; border-radius: 8px; font-size: 1.1rem; text-align: center; margin-top: 10px; outline: none; }
+    .input-qty:focus { border-color: #3B82F6; }
+
+    /* --- Buttons --- */
+    .big-btn { width:100%; border:none; border-radius:12px; padding:16px; font-size:1.1rem; font-weight:600; cursor:pointer; margin-bottom: 10px; transition: 0.2s; }
+    .primary { background:#22C55E; color:#fff; box-shadow: 0 4px 12px rgba(34,197,94,0.25); }
+    .secondary { background:#FFC928; color:#1F2937; box-shadow: 0 4px 12px rgba(255,201,40,0.25); }
+    .blue { background:#3B82F6; color:#fff; box-shadow: 0 4px 12px rgba(59,130,246,0.25); }
+    .orange { background:#F59E0B; color:#fff; box-shadow: 0 4px 12px rgba(245,158,11,0.25); }
+    .dark { background:#1F2937; color:#fff; }
+
+    /* --- Badges --- */
+    .badge { padding: 4px 10px; border-radius: 20px; font-size: 0.8rem; font-weight: 600; }
+    .badge.done { background:#DCFCE7; color:#166534; }
+    .badge.todo { background:#FEF9C3; color:#854D0E; }
+    .badge.disabled { background:#F3F4F6; color:#9CA3AF; }
+
+    .overview-item{ display:flex; justify-content:space-between; align-items: center; padding:16px 0; border-bottom:1px solid #E5E7EB; cursor: pointer; }
+    .overview-item.disabled{ opacity: 0.4; pointer-events: none; }
+    .overview-name { font-weight:600; font-size:1.05rem; }
+
+    /* --- Photo Upload --- */
+    .photo-box { display: block; border: 2px dashed #D1D5DB; border-radius: 12px; padding: 30px 20px; text-align: center; margin-bottom: 16px; cursor: pointer; background: #F9FAFB; }
+    .photo-box.uploaded { border-color: #22C55E; background: #DCFCE7; }
+    .photo-preview { max-width: 100%; max-height: 300px; border-radius: 8px; object-fit: cover; }
+
+    #toast { position:fixed; left:50%; bottom:30px; transform:translateX(-50%); background:#1F2937; color:#fff; padding:12px 24px; border-radius:30px; font-size: 0.9rem; display:none; z-index:2000; box-shadow: 0 4px 12px rgba(0,0,0,0.15); white-space: nowrap;}
+    .loading-overlay { position: fixed; inset: 0; background: rgba(255,255,255,0.9); display: flex; align-items: center; justify-content: center; z-index: 9999; opacity: 0; pointer-events: none; transition: 0.2s; }
+    .loading-overlay.show { opacity: 1; pointer-events: all; }
+    .spinner { width: 40px; height: 40px; border: 4px solid #E5E7EB; border-top-color: #ED1C24; border-radius: 50%; animation: spin 0.8s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+  </style>
+</head>
+
+<body>
+  <div class="loading-overlay" id="loading"><div class="spinner"></div></div>
+
+  <section id="dashboard-section" class="hidden">
+    <div class="dashboard-header">
+      <div class="header-left">
+        <h1>EASY</h1>
+        <h2 id="userNameDisplay">สวัสดี...</h2>
+        <small style="color:#FFC928; font-weight: 500;">ตำแหน่ง: พนักงานจัดส่ง</small>
+      </div>
+      <div style="cursor:pointer; font-size: 1.5rem;" onclick="goHome()">🏠</div>
+    </div>
+
+    <div class="container">
+      <div class="card">
+        <div style="text-align:center; color: #6B7280; font-size: 0.9rem;">เวลาปัจจุบัน</div>
+        <div class="digital-clock" id="live-clock">00:00:00</div>
+      </div>
+
+      <div class="action-row">
+        <button id="btn-checkin-main" class="action-btn btn-checkin" onclick="clockAction('in')">
+          <small>บันทึก</small><span>เข้างาน</span>
+        </button>
+        <button id="btn-checkout-main" class="action-btn btn-checkout btn-disabled" onclick="clockAction('out')">
+          <small>บันทึก</small><span>ออกงาน</span>
+        </button>
+      </div>
+
+      <button id="btn-go-tasks" class="big-btn secondary hidden" onclick="showSection('tasks-section')">
+        📋 ไปหน้าสิ่งที่ต้องทำวันนี้ →
+      </button>
+    </div>
+  </section>
+
+  <section id="tasks-section" class="hidden">
+    <div class="dashboard-header" style="padding-bottom: 24px;">
+      <div style="display:flex; justify-content:space-between; align-items:center; width: 100%;">
+        <h1 style="color:#FFC928; margin:0; font-size: 1.5rem;">สิ่งที่ต้องทำวันนี้</h1>
+        <button onclick="showSection('dashboard-section')" style="background:none; border:none; color:#fff; font-size: 0.9rem; cursor:pointer;">← บันทึกเวลา</button>
+      </div>
+    </div>
+
+    <div class="container">
+      <div class="card">
+        <div style="display:flex; justify-content:space-between; margin-bottom: 6px;">
+          <strong style="font-size: 1.1rem;">1) จัดของขึ้นรถ</strong>
+          <span id="badge-pack" class="badge todo">รอจัด</span>
+        </div>
+        <p style="font-size:0.85rem; color:#6B7280; margin-bottom:12px;">จัดของให้ครบตามรายชื่อสาขา</p>
+        <button id="btn-start-pack" class="big-btn primary" onclick="goPackingOverview()">เริ่มจัดของ</button>
+      </div>
+
+      <div class="card" id="task-deliver-card" style="opacity:0.5;">
+        <div style="display:flex; justify-content:space-between; margin-bottom: 6px;">
+          <strong style="font-size: 1.1rem;">2) ส่งของตามสาขา</strong>
+          <span id="badge-deliver" class="badge disabled">ล็อก</span>
+        </div>
+        <p style="font-size:0.85rem; color:#6B7280; margin-bottom:12px;" id="text-deliver-desc">(เปิดเมื่อจัดของเสร็จ)</p>
+        <button id="btn-start-deliver" class="big-btn blue hidden" onclick="goDeliveryOverview()">เริ่มส่งของ</button>
+      </div>
+
+      <div class="card" id="task-pickup-card" style="opacity:0.5;">
+        <div style="display:flex; justify-content:space-between; margin-bottom: 6px;">
+          <strong style="font-size: 1.1rem;">3) รับของกลับครัวกลาง</strong>
+          <span id="badge-pickup" class="badge disabled">ล็อก</span>
+        </div>
+        <p style="font-size:0.85rem; color:#6B7280; margin-bottom:12px;" id="text-pickup-desc">(เปิดเมื่อส่งของเสร็จ)</p>
+        <button id="btn-start-pickup" class="big-btn orange hidden" onclick="goPickupOverview()">ดูรายการรับของ</button>
+      </div>
+
+      <div class="card" id="task-stock-card" style="opacity:0.5;">
+        <div style="display:flex; justify-content:space-between; margin-bottom: 6px;">
+          <strong style="font-size: 1.1rem;">4) เช็คสต็อกคงเหลือ</strong>
+          <span id="badge-stock" class="badge disabled">ล็อก</span>
+        </div>
+        <p style="font-size:0.85rem; color:#6B7280; margin-bottom:12px;" id="text-stock-desc">(เปิดเมื่อรับของเสร็จ)</p>
+        <button id="btn-start-stock" class="big-btn dark hidden" onclick="goReturnStock()">เช็คสต็อกก่อนคืน</button>
+      </div>
+
+      <div class="card" id="task-return-card" style="opacity:0.5; margin-bottom: 40px;">
+        <div style="display:flex; justify-content:space-between; margin-bottom: 6px;">
+          <strong style="font-size: 1.1rem;">5) ยืนยันจบงาน</strong>
+          <span id="badge-return" class="badge disabled">ล็อก</span>
+        </div>
+        <p style="font-size:0.85rem; color:#6B7280; margin-bottom:12px;" id="text-return-desc">(เปิดเมื่อเช็คสต็อกเสร็จ)</p>
+        <button id="btn-start-return" class="big-btn primary hidden" onclick="finishAllTasks()">ปิดจ๊อบวันนี้ ✅</button>
+      </div>
+    </div>
+  </section>
+
+  <section id="packing-overview-section" class="hidden">
+    <div class="dashboard-header" style="padding-bottom: 24px;"><h1 style="color:#FFC928; margin:0;">สาขาที่ต้องจัด</h1><button onclick="showSection('tasks-section')" style="background:none; border:none; color:#fff;">← กลับ</button></div>
+    <div class="container"><div class="card"><div id="branch-overview-list"></div></div><button class="big-btn primary" onclick="startPackingList()">เริ่มจัดของ</button></div>
+  </section>
+
+  <section id="packing-section" class="hidden">
+    <div class="dashboard-header" style="padding-bottom: 24px;"><h1 style="color:#FFC928; margin:0;">จัดของขึ้นรถ</h1></div>
+    <div class="container">
+      <div class="branch-shout"><div style="font-size: 1.2rem;">📍 สาขา<span id="packing-title"></span></div></div>
+      <div id="packing-list-container"></div>
+      <button id="btn-next-branch" class="big-btn primary hidden" onclick="finishBranch()">เรียบร้อย → ไปต่อ</button>
+    </div>
+  </section>
+
+  <section id="delivery-overview-section" class="hidden">
+    <div class="dashboard-header blue" style="padding-bottom: 24px;"><h1 style="color:#fff; margin:0;">เส้นทางส่งของ</h1><button onclick="showSection('tasks-section')" style="background:none; border:none; color:#fff;">← กลับ</button></div>
+    <div class="container"><div class="card"><div id="delivery-overview-list"></div></div></div>
+  </section>
+
+  <section id="delivery-action-section" class="hidden">
+    <div class="dashboard-header blue" style="padding-bottom: 24px;"><h1 style="color:#fff; margin:0;">ถ่ายรูปยืนยัน</h1><button onclick="showSection('delivery-overview-section')" style="background:none; border:none; color:#fff;">← กลับ</button></div>
+    <div class="container">
+      <div class="branch-shout blue"><div style="font-size: 1.2rem;">🚚 สาขา<span id="delivery-title"></span></div></div>
+      <div class="card">
+        <label id="photo-upload-label" for="real-photo-upload" class="photo-box">
+          <input type="file" id="real-photo-upload" accept="image/*" capture="environment" style="display:none;" onchange="handlePhotoUpload(event)">
+          <div id="photo-placeholder"><div style="font-size:2.5rem;">📸</div><div>กดเพื่อถ่ายรูป</div></div>
+          <div id="photo-preview-container" class="hidden"><img id="photo-preview-img" class="photo-preview" src=""><div style="color:#22C55E; margin-top:10px;">พร้อมส่ง ✅</div></div>
+        </label>
+      </div>
+      <button id="btn-confirm-delivery" class="big-btn primary btn-disabled" onclick="finishDelivery()">ยืนยันส่งของ ✅</button>
+    </div>
+  </section>
+
+  <section id="pickup-overview-section" class="hidden">
+    <div class="dashboard-header orange" style="padding-bottom: 24px;"><h1 style="color:#fff; margin:0;">จุดรับของ</h1><button onclick="showSection('tasks-section')" style="background:none; border:none; color:#fff;">← กลับ</button></div>
+    <div class="container"><div class="card"><div id="pickup-overview-list"></div></div></div>
+  </section>
+
+  <section id="pickup-section" class="hidden">
+    <div class="dashboard-header orange" style="padding-bottom: 24px;"><h1 style="color:#fff; margin:0;">รายการรับ</h1><button onclick="showSection('pickup-overview-section')" style="background:none; border:none; color:#fff;">← กลับ</button></div>
+    <div class="container">
+      <div class="branch-shout orange"><div style="font-size: 1.2rem;">🛒 <span id="pickup-title"></span></div></div>
+      <div id="pickup-list-container"></div>
+      <button id="btn-next-pickup" class="big-btn primary" onclick="finishPickup()">รับครบแล้ว ✅</button>
+    </div>
+  </section>
+
+  <section id="return-stock-section" class="hidden">
+    <div class="dashboard-header dark" style="padding-bottom: 24px;">
+      <h1 style="color:#fff; margin:0;">เช็คสต็อกก่อนคืน</h1>
+      <button onclick="showSection('tasks-section')" style="background:none; border:none; color:#fff;">← กลับ</button>
+    </div>
+    <div class="container">
+      <div class="card">
+        <p style="font-size:0.85rem; color:#EF4444; margin-bottom:15px; font-weight: 500;">* ระบุจำนวนของที่เหลือนำมาคืน เพื่อให้ระบบคำนวณยอดสั่งซื้อพรุ่งนี้</p>
+        <div id="return-items-list"></div>
+      </div>
+      <button id="btn-submit-return" class="big-btn primary" onclick="submitReturnStock()">บันทึกข้อมูลสต็อก 💾</button>
+    </div>
+  </section>
+
+  <div id="toast"></div>
+
+  <script>
+    // ⚠️ ต้องเปลี่ยน URL นีัเป็นของโปรเจกต์วิวนะครับ
+    const API_URL = 'https://script.google.com/macros/s/AKfycbxxTjC7xOGHlgyStVBf6SimoU5RA7xX3VPwxIUtfGlpMNO89OQPDaRewKDDEmWGK4kk/exec';
+    const SESSION_KEY = 'easy_session';
+    const DRIVER_STATE_KEY = 'easyDriverState_v3';
+
+    let currentStaff = null;
+    let BRANCHES = [];
+    let PICKUP_LOCS = [];
+    let PICKUP_ITEMS_MAP = {};
+
+    let state = {
+      checkedIn: false,
+      currentBranchIdx: 0,
+      currentDeliveryBranch: "",
+      currentPickupLoc: "",
+      packingData: {},
+      deliveryData: {},
+      pickupData: {},
+      stockChecked: false, // ด่าน 4
+      returnStatus: 'locked', // ด่าน 5
+      lastDate: ""
+    };
+
+    let currentPhotoBase64 = "";
+
+    const RETURN_ITEMS_SCHEMA = [
+      { name: 'เส้นหมี่', unit: 'ห่อ' }, { name: 'ผักกาดหอม', unit: 'ถุง' }, { name: 'ไก่สด', unit: 'ถุง' },
+      { name: 'ถุงหิ้วพลาสติก 8x16', unit: 'ห่อ' }, { name: 'ถุงหิ้วพลาสติก 6x14', unit: 'ห่อ' },
+      { name: 'ถุงซีล 7x10', unit: 'ห่อ' }, { name: 'ถุงซีล 9x11.5', unit: 'ห่อ' }
+    ];
+
+    window.onload = async () => {
+      const session = loadSession();
+      if (!session) { window.location.href = '/index.html'; return; }
+      currentStaff = session.staff;
+      document.getElementById('userNameDisplay').innerText = `สวัสดี ${currentStaff.nickname || currentStaff.name}`;
+      
+      loadState();
+      setInterval(() => { document.getElementById('live-clock').innerText = new Date().toLocaleTimeString('th-TH'); }, 1000);
+      
+      restoreUIFromState();
+      if(state.checkedIn && !state.stockChecked) {
+         showLoading(true);
+         await fetchDynamicOrders();
+         await fetchPickupData();
+         showLoading(false);
+      }
+    };
+
+    function loadSession() {
+      try { const r = localStorage.getItem(SESSION_KEY); if(!r) return null; const d = JSON.parse(r); if(Date.now() > d.expires) return null; return d; } catch { return null; }
+    }
+    function saveState() { localStorage.setItem(DRIVER_STATE_KEY, JSON.stringify(state)); }
+    function loadState() {
+      const saved = localStorage.getItem(DRIVER_STATE_KEY);
+      if (saved) { try { state = JSON.parse(saved); } catch(e) { state = {}; } }
+      const today = new Date().toLocaleDateString('th-TH');
+      if (state.lastDate !== today) {
+        state.packingData = {}; state.deliveryData = {}; state.pickupData = {}; state.stockChecked = false; state.returnStatus = 'locked'; state.checkedIn = false; state.lastDate = today; saveState();
+      }
+      BRANCHES = Object.keys(state.packingData || {});
+    }
+
+    function showSection(id) { document.querySelectorAll('section').forEach(s => s.classList.add('hidden')); document.getElementById(id).classList.remove('hidden'); window.scrollTo(0,0); }
+    function showLoading(s) { document.getElementById('loading').classList.toggle('show', s); }
+    function showToast(m) { const t = document.getElementById('toast'); t.innerText = m; t.style.display = 'block'; setTimeout(() => t.style.display = 'none', 3000); }
+    function goHome() { window.location.href = '/clock.html'; }
+
+    // --- ควบคุม UI (5 ด่าน) ---
+    function restoreUIFromState() {
+      if (state.checkedIn) {
+        document.getElementById('btn-checkin-main').classList.add('btn-disabled');
+        document.getElementById('btn-go-tasks').classList.remove('hidden');
+        showSection('tasks-section');
+      } else {
+        showSection('dashboard-section');
+      }
+
+      const packDone = BRANCHES.length > 0 ? BRANCHES.every(b => (state.packingData[b] || []).every(i => i.status !== 'pending')) : false;
+      const deliverDone = BRANCHES.length > 0 ? BRANCHES.every(b => state.deliveryData[b] === 'done') : false;
+      const pickupDone = PICKUP_LOCS.length === 0 ? true : PICKUP_LOCS.every(l => state.pickupData[l] === 'done');
+      
+      if (packDone && BRANCHES.length > 0) { setDone('badge-pack', 'btn-start-pack'); unlockCard('task-deliver-card', 'badge-deliver', 'btn-start-deliver'); }
+      if (deliverDone && packDone && BRANCHES.length > 0) { setDone('badge-deliver', 'btn-start-deliver'); unlockCard('task-pickup-card', 'badge-pickup', 'btn-start-pickup'); }
+      if (pickupDone && deliverDone && BRANCHES.length > 0) { setDone('badge-pickup', 'btn-start-pickup'); unlockCard('task-stock-card', 'badge-stock', 'btn-start-stock'); }
+      if (state.stockChecked) { setDone('badge-stock', 'btn-start-stock'); unlockCard('task-return-card', 'badge-return', 'btn-start-return'); }
+      
+      if (state.returnStatus === 'done') {
+        setDone('badge-return', 'btn-start-return');
+        document.getElementById('btn-checkout-main').classList.remove('btn-disabled');
+        showSection('dashboard-section');
+      }
+    }
+
+    function setDone(badgeId, btnId) { document.getElementById(badgeId).className = "badge done"; document.getElementById(badgeId).innerText = "เสร็จแล้ว ✅"; document.getElementById(btnId).classList.replace('primary', 'secondary'); document.getElementById(btnId).classList.replace('blue', 'secondary'); document.getElementById(btnId).classList.replace('orange', 'secondary'); document.getElementById(btnId).classList.replace('dark', 'secondary');}
+    function unlockCard(cardId, badgeId, btnId) { document.getElementById(cardId).style.opacity = "1";
