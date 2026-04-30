@@ -521,10 +521,23 @@ function periodLabel(start, end) {
 // ─── PERIOD ───
 function getCurrentPeriods() {
   const now = new Date();
-  const y = now.getFullYear(), m = now.getMonth(), d = now.getDate(), dow = now.getDay();
+  const y = now.getFullYear(), m = now.getMonth(), d = now.getDate();
+  const dow = now.getDay();
 
   let ftStart, ftEnd, ftPayDate;
-  if (d <= 15) {
+  // พนักงานประจำ (ถ้าวันนี้เป็นวันที่ 16 พอดี ให้ยังคงแสดงยอดของวันที่ 1-15 อยู่)
+  if (d === 16) {
+    ftStart = toDateStr(new Date(y, m, 1));
+    ftEnd = toDateStr(new Date(y, m, 15));
+    ftPayDate = toDateStr(new Date(y, m, 16));
+  } else if (d === 1) { // ถ้าวันนี้เป็นวันที่ 1 พอดี ให้ยังคงแสดงยอดของวันที่ 16-สิ้นเดือนก่อนอยู่
+    let lastM = m - 1; let lastY = y;
+    if (lastM < 0) { lastM = 11; lastY--; }
+    let lastDay = new Date(lastY, lastM + 1, 0).getDate();
+    ftStart = toDateStr(new Date(lastY, lastM, 16));
+    ftEnd = toDateStr(new Date(lastY, lastM, lastDay));
+    ftPayDate = toDateStr(new Date(y, m, 1));
+  } else if (d > 1 && d < 16) {
     ftStart = toDateStr(new Date(y, m, 1));
     ftEnd = toDateStr(new Date(y, m, 15));
     ftPayDate = toDateStr(new Date(y, m, 16));
@@ -535,15 +548,23 @@ function getCurrentPeriods() {
     ftPayDate = toDateStr(new Date(y, m+1, 1));
   }
 
-  const mondayOffset = dow === 0 ? -6 : 1 - dow;
-  const mon = new Date(now); mon.setDate(now.getDate() + mondayOffset);
-  const sun = new Date(mon); sun.setDate(mon.getDate() + 6);
-  const nextMon = new Date(mon); nextMon.setDate(mon.getDate() + 7);
+  // พาร์ทไทม์ (ถ้าวันนี้เป็นวันจันทร์ ให้ยังคงแสดงยอดของจันทร์-อาทิตย์ที่แล้วอยู่)
+  let ptMon = new Date(now);
+  if (dow === 1) {
+    ptMon.setDate(now.getDate() - 7);
+  } else {
+    const mondayOffset = dow === 0 ? -6 : 1 - dow;
+    ptMon.setDate(now.getDate() + mondayOffset);
+  }
+  const ptSun = new Date(ptMon);
+  ptSun.setDate(ptMon.getDate() + 6);
+  const ptPay = new Date(ptMon);
+  ptPay.setDate(ptMon.getDate() + 7);
 
   return {
     ftStart, ftEnd, ftPayDate,
     ftIsPayDay: toDateStr(now) === ftPayDate || toDateStr(now) === addDays(ftPayDate, 1),
-    ptStart: toDateStr(mon), ptEnd: toDateStr(sun), ptPayDate: toDateStr(nextMon),
+    ptStart: toDateStr(ptMon), ptEnd: toDateStr(ptSun), ptPayDate: toDateStr(ptPay),
     ptIsPayDay: dow === 1
   };
 }
