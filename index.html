@@ -232,6 +232,8 @@ function showWelcome(staff) {
 function redirectByRole(role) {
   if (role === 'admin') {
     window.location.href = '/dashboard.html';
+  } else if (role === 'driver') {
+    window.location.href = '/driver.html';
   } else {
     window.location.href = '/clock.html';
   }
