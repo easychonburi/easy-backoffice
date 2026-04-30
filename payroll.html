@@ -499,6 +499,13 @@ function thaiDate(dateStr) {
   return `${d.getDate()} ${THAI_MONTHS[d.getMonth()]} ${d.getFullYear()+543}`;
 }
 
+const THAI_DAYS = ['อาทิตย์','จันทร์','อังคาร','พุธ','พฤหัสบดี','ศุกร์','เสาร์'];
+function thaiDateFull(dateStr) {
+  if (!dateStr) return '—';
+  const d = new Date(dateStr + 'T00:00:00');
+  return `วัน${THAI_DAYS[d.getDay()]}ที่ ${d.getDate()} ${THAI_MONTHS[d.getMonth()]} ${d.getFullYear()+543}`;
+}
+
 function formatMoney(n) {
   return '฿' + Number(n||0).toLocaleString('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
@@ -1023,8 +1030,8 @@ function renderDetailBody() {
     payroll.details.forEach(d => {
       html += `
         <div class="ts-item">
-          <div class="ts-top">
-            <span class="ts-date">${thaiDate(d.date)}</span>
+         <div class="ts-top">
+            <span class="ts-date">${thaiDateFull(d.date)}</span>
             <span class="ts-day-total">${formatMoney(d.day_total)}</span>
           </div>
           <div class="ts-chips">
