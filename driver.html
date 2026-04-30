@@ -327,4 +327,123 @@
     }
 
     function setDone(badgeId, btnId) { document.getElementById(badgeId).className = "badge done"; document.getElementById(badgeId).innerText = "เสร็จแล้ว ✅"; document.getElementById(btnId).classList.replace('primary', 'secondary'); document.getElementById(btnId).classList.replace('blue', 'secondary'); document.getElementById(btnId).classList.replace('orange', 'secondary'); document.getElementById(btnId).classList.replace('dark', 'secondary');}
-    function unlockCard(cardId, badgeId, btnId) { document.getElementById(cardId).style.opacity = "1";
+    function unlockCard(cardId, badgeId, btnId) { document.getElementById(cardId).style.opacity = "1"; document.getElementById(badgeId).className = "badge todo"; document.getElementById(badgeId).innerText = "รอทำ"; document.getElementById(btnId).classList.remove('hidden'); }
+
+    // --- Clock In / Out ---
+    async function clockAction(type) {
+      showLoading(true);
+      const payload = { action: type === 'in' ? 'clockIn' : 'clockOut', staff_id: currentStaff.staff_id, lat: "13.0", lng: "100.0", branch_id: "BR005", date: new Date().toLocaleDateString('en-CA') };
+      try {
+        const res = await fetch(API_URL, { method: 'POST', body: JSON.stringify(payload) });
+        const json = await res.json();
+        if(json.success) {
+          if(type === 'in') { state.checkedIn = true; saveState(); await fetchDynamicOrders(); await fetchPickupData(); restoreUIFromState(); } 
+          else { alert("เลิกงานเรียบร้อย กลับบ้านปลอดภัยครับ! 🎉"); localStorage.removeItem(DRIVER_STATE_KEY); goHome(); }
+        } else { showToast(json.message); }
+      } catch(e) { showToast("เชื่อมต่อไม่สำเร็จ"); }
+      showLoading(false);
+    }
+
+    // --- ดึงข้อมูล API ---
+    async function fetchDynamicOrders() {
+      try {
+        const res = await fetch(`${API_URL}?action=getDriverOrders`); const json = await res.json();
+        if(json.success && json.data) {
+          for (let branch in json.data) {
+            if (!state.packingData[branch]) { state.packingData[branch] = []; if (!BRANCHES.includes(branch)) BRANCHES.push(branch); }
+            json.data[branch].forEach(item => { if (!state.packingData[branch].some(i => i.name === item)) { state.packingData[branch].push({ name: item, status: 'pending', actualQty: '' }); } });
+          }
+          saveState(); restoreUIFromState();
+        }
+      } catch (e) {}
+    }
+
+    async function fetchPickupData() {
+      try {
+        const res = await fetch(`${API_URL}?action=getPickups`); const json = await res.json();
+        if (json.success && json.data) {
+          PICKUP_ITEMS_MAP = json.data; PICKUP_LOCS = Object.keys(json.data);
+          PICKUP_LOCS.forEach(loc => { if (!state.pickupData[loc]) state.pickupData[loc] = 'pending'; });
+          saveState(); restoreUIFromState();
+        }
+      } catch (e) {}
+    }
+
+    // --- ด่าน 1: จัดของ ---
+    function goPackingOverview() { if (BRANCHES.length === 0) { showToast("ไม่มีสาขาที่สั่งของครับ"); return; }
+      document.getElementById('branch-overview-list').innerHTML = BRANCHES.map((b, i) => { const done = (state.packingData[b] || []).every(item => item.status !== 'pending'); return `<div class="overview-item" onclick="startPackingListForBranch(${i})"><span class="overview-name">${i+1}. สาขา${b}</span><span class="badge ${done ? 'done' : 'todo'}">${done ? 'เสร็จ' : 'รอจัด'}</span></div>`; }).join(''); showSection('packing-overview-section');
+    }
+    function startPackingListForBranch(idx) { state.currentBranchIdx = idx; renderPackingList(); showSection('packing-section'); }
+    function startPackingList() { if (BRANCHES.length === 0) return; state.currentBranchIdx = BRANCHES.findIndex(b => (state.packingData[b] || []).some(i => i.status === 'pending')); if(state.currentBranchIdx === -1) state.currentBranchIdx = 0; renderPackingList(); showSection('packing-section'); }
+    function renderPackingList() {
+      const bName = BRANCHES[state.currentBranchIdx]; document.getElementById('packing-title').innerText = " " + bName;
+      document.getElementById('packing-list-container').innerHTML = (state.packingData[bName] || []).map((item) => {
+        const match = item.name.match(/^(.*?)\s+(\d+\s+.*)$/); const n = match ? match[1].trim() : item.name; const q = match ? match[2].trim() : '';
+        const rowDone = (item.status === 'ok') || (item.status === 'no') || (item.status === 'partial' && String(item.actualQty || '').trim().length > 0);
+        return `<div class="item-row ${rowDone ? 'done' : ''}"><div style="display:flex; justify-content:space-between; margin-bottom:8px;"><strong style="font-size:1.1rem;">${n}</strong><strong style="color:#EF4444;">${q}</strong></div>
+                <div style="display:flex; gap:8px; margin-bottom: 8px;">
+                  <button style="flex:1; padding:8px; border-radius:8px; border:1px solid #D1D5DB; background:${item.status==='ok'?'#DCFCE7':'#fff'}; color:${item.status==='ok'?'#166534':'#333'}" onclick="updateItem('${item.name}','ok')">ครบ</button>
+                  <button style="flex:1; padding:8px; border-radius:8px; border:1px solid #D1D5DB; background:${item.status==='partial'?'#FEF9C3':'#fff'}; color:${item.status==='partial'?'#854D0E':'#333'}" onclick="updateItem('${item.name}','partial')">ขาด</button>
+                  <button style="flex:1; padding:8px; border-radius:8px; border:1px solid #D1D5DB; background:${item.status==='no'?'#FEE2E2':'#fff'}; color:${item.status==='no'?'#991B1B':'#333'}" onclick="updateItem('${item.name}','no')">ไม่มี</button>
+                </div>
+                ${item.status === 'partial' ? `<input type="number" class="input-qty" value="${item.actualQty || ''}" placeholder="ระบุจำนวนที่จัดได้..." oninput="updateItemQty(this,'${item.name}',this.value)">` : ''}</div>`;
+      }).join('');
+      document.getElementById('btn-next-branch').classList.toggle('hidden', !(state.packingData[bName] || []).every(i => i.status !== 'pending'));
+    }
+    function updateItem(name, status) { const bName = BRANCHES[state.currentBranchIdx]; const item = (state.packingData[bName] || []).find(i => i.name === name); if(item) { item.status = status; if(status !== 'partial') item.actualQty = ''; saveState(); renderPackingList(); } }
+    function updateItemQty(el, name, qty) { const bName = BRANCHES[state.currentBranchIdx]; const item = (state.packingData[bName] || []).find(i => i.name === name); if(item) { item.actualQty = qty; saveState(); renderPackingList(); } }
+    function finishBranch() { if (state.currentBranchIdx < BRANCHES.length - 1) { state.currentBranchIdx++; renderPackingList(); window.scrollTo(0,0); } else { saveState(); restoreUIFromState(); showSection('tasks-section'); } }
+
+    // --- ด่าน 2: ส่งของ ---
+    function goDeliveryOverview() { document.getElementById('delivery-overview-list').innerHTML = BRANCHES.map((b, i) => { const done = state.deliveryData[b] === 'done'; return `<div class="overview-item ${done ? 'disabled' : ''}" onclick="${done ? '' : `openDeliveryAction('${b}')`}"><span class="overview-name">${i+1}. สาขา${b}</span><span class="badge ${done ? 'done' : 'todo'}">${done ? 'ส่งแล้ว' : 'รอส่ง'}</span></div>`; }).join(''); showSection('delivery-overview-section'); }
+    function openDeliveryAction(b) { state.currentDeliveryBranch = b; document.getElementById('delivery-title').innerText = " " + b; currentPhotoBase64 = ""; document.getElementById('real-photo-upload').value = ""; document.getElementById('photo-placeholder').classList.remove('hidden'); document.getElementById('photo-preview-container').classList.add('hidden'); document.getElementById('btn-confirm-delivery').classList.add('btn-disabled'); document.getElementById('btn-confirm-delivery').innerText = "ยืนยันส่งของ ✅"; showSection('delivery-action-section'); }
+    function handlePhotoUpload(e) { const f = e.target.files[0]; if(!f) return; const btn = document.getElementById('btn-confirm-delivery'); btn.innerText = "⏳ แปลงรูป..."; btn.classList.add('btn-disabled'); document.getElementById('photo-preview-img').src = URL.createObjectURL(f); document.getElementById('photo-placeholder').classList.add('hidden'); document.getElementById('photo-preview-container').classList.remove('hidden'); const r = new FileReader(); r.onload = function(ev) { const img = new Image(); img.onload = function() { const c = document.createElement('canvas'); const scale = Math.min(1, 500 / img.width); c.width = Math.round(img.width * scale); c.height = Math.round(img.height * scale); const ctx = c.getContext('2d'); ctx.drawImage(img, 0, 0, c.width, c.height); currentPhotoBase64 = c.toDataURL('image/jpeg', 0.5).split(',')[1]; btn.classList.remove('btn-disabled'); btn.innerText = "ยืนยันส่งของ ✅"; }; img.src = ev.target.result; }; r.readAsDataURL(f); }
+    async function finishDelivery() {
+      const btn = document.getElementById('btn-confirm-delivery'); if(btn.classList.contains('btn-disabled')) return;
+      btn.innerText = "⏳ ส่งรูปเข้า Telegram..."; btn.classList.add('btn-disabled');
+      try { const res = await fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: "uploadDriverPhoto", name: currentStaff.nickname, branch: state.currentDeliveryBranch, imageBase64: currentPhotoBase64 }) }); const json = await res.json(); if(json.success) { state.deliveryData[state.currentDeliveryBranch] = 'done'; saveState(); goDeliveryOverview(); restoreUIFromState(); showToast("ส่งของสำเร็จ!"); } else throw new Error(json.message); } catch(e) { alert("ล้มเหลว: " + e.message); btn.innerText = "ลองใหม่"; btn.classList.remove('btn-disabled'); }
+    }
+
+    // --- ด่าน 3: รับของ ---
+    function goPickupOverview() { if(PICKUP_LOCS.length === 0) { showToast("ไม่มีจุดรับของ"); return; } document.getElementById('pickup-overview-list').innerHTML = PICKUP_LOCS.map((l) => { const done = state.pickupData[l] === 'done'; return `<div class="overview-item ${done ? 'disabled' : ''}" onclick="${done ? '' : `openPickupAction('${l}')`}"><span class="overview-name">${l}</span><span class="badge ${done ? 'done' : 'todo'}">${done ? 'รับแล้ว' : 'รอรับ'}</span></div>`; }).join(''); showSection('pickup-overview-section'); }
+    function openPickupAction(l) { state.currentPickupLoc = l; document.getElementById('pickup-title').innerText = l; const items = PICKUP_ITEMS_MAP[l] || []; document.getElementById('pickup-list-container').innerHTML = `<div class="card">${items.map(raw => { const m = raw.match(/^(.*?)\s+(\d+\s+.*)$/); return `<div style="display:flex; justify-content:space-between; padding:10px 0; border-bottom:1px solid #eee;"><strong>${m?m[1]:raw}</strong><strong style="color:#EF4444;">${m?m[2]:''}</strong></div>`; }).join('')}</div>`; showSection('pickup-section'); }
+    function finishPickup() { state.pickupData[state.currentPickupLoc] = 'done'; saveState(); if (PICKUP_LOCS.every(loc => state.pickupData[loc] === 'done')) { restoreUIFromState(); showSection('tasks-section'); } else goPickupOverview(); }
+
+    // --- ด่าน 4: เช็คสต็อกคืน ---
+    function goReturnStock() {
+      const html = RETURN_ITEMS_SCHEMA.map((item, idx) => `
+        <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #E5E7EB; padding:12px 0;">
+          <div style="font-weight:600; font-size:1.05rem;">${item.name}</div>
+          <div style="display:flex; align-items:center; gap:8px;">
+            <input type="number" id="ret_qty_${idx}" class="input-qty" style="width:70px; margin:0; padding:8px;" placeholder="0">
+            <span style="font-size:0.85rem; color:#6B7280; width: 25px;">${item.unit}</span>
+          </div>
+        </div>
+      `).join('');
+      document.getElementById('return-items-list').innerHTML = html;
+      showSection('return-stock-section');
+    }
+
+    async function submitReturnStock() {
+      const btn = document.getElementById('btn-submit-return');
+      btn.innerText = "⏳ กำลังบันทึกข้อมูล..."; btn.classList.add('btn-disabled');
+
+      const itemsToReturn = RETURN_ITEMS_SCHEMA.map((item, idx) => ({ name: item.name, unit: item.unit, qty: document.getElementById(`ret_qty_${idx}`).value || 0 }));
+      try {
+        const res = await fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: "submitDriverReturn", date: new Date().toLocaleDateString('en-CA'), items: itemsToReturn }) });
+        const json = await res.json();
+        if(json.success) {
+          state.stockChecked = true; saveState(); restoreUIFromState(); showToast("บันทึกสต็อกสำเร็จ!");
+        } else throw new Error(json.message);
+      } catch(e) { alert("บันทึกไม่สำเร็จ: " + e.message); btn.innerText = "บันทึกข้อมูลสต็อก 💾"; btn.classList.remove('btn-disabled'); }
+    }
+
+    // --- ด่าน 5: จบงาน ---
+    function finishAllTasks() {
+      if(confirm("ยืนยันว่าคืนของครบทุกอย่างเรียบร้อยแล้วใช่ไหมครับ?")) {
+         state.returnStatus = 'done'; saveState(); restoreUIFromState(); showToast("เคลียร์งานวันนี้ครบ 100%!");
+      }
+    }
+  </script>
+</body>
+</html>
