@@ -971,11 +971,14 @@ window.addEventListener('load', async () => {
   renderHeader(); showLoading(true);
   try {
     const today = toDateStr(new Date());
-    const monthStart = today.substring(0,8) + '01'; // ดึงย้อนหลังไปถึงต้นเดือน
+    // ดึงย้อนหลัง 25 วัน เพื่อให้ครอบคลุมรอบจ่ายเงินที่แล้ว
+    const dateCalc = new Date();
+    dateCalc.setDate(dateCalc.getDate() - 25);
+    const dateFrom = toDateStr(dateCalc);
 
     const [staffRes, settingsRes, tsRes, advRes] = await Promise.all([
       apiGet('action=getStaff'), apiGet('action=getSettings'),
-      apiGet(`action=getTimesheets&date_from=${monthStart}&date_to=${today}`),
+      apiGet(`action=getTimesheets&date_from=${dateFrom}&date_to=${today}`),
       apiGet('action=getAdvances&status=pending')
     ]);
 
