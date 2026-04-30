@@ -343,6 +343,45 @@
     animation: spin 0.7s linear infinite;
   }
   @keyframes spin { to { transform: rotate(360deg); } }
+  /* ─── PURCHASE SHEET ─── */
+  .purchase-overlay {
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,0.5);
+    z-index: 100; opacity: 0; pointer-events: none; transition: opacity 0.25s;
+    display: flex; align-items: flex-end;
+  }
+  .purchase-overlay.visible { opacity: 1; pointer-events: all; }
+  .purchase-sheet {
+    background: var(--white); border-radius: 24px 24px 0 0;
+    padding: 0 0 40px; width: 100%;
+    max-height: 85vh; overflow-y: auto;
+    transform: translateY(100%);
+    transition: transform 0.3s cubic-bezier(0.32, 0.72, 0, 1);
+  }
+  .purchase-overlay.visible .purchase-sheet { transform: translateY(0); }
+  .purchase-sheet-handle { width: 36px; height: 4px; background: var(--border); border-radius: 2px; margin: 16px auto 0; }
+  .purchase-sheet-header { padding: 16px 20px 12px; border-bottom: 1px solid var(--border); }
+  .purchase-sheet-title { font-size: 17px; font-weight: 600; color: var(--text); }
+  .purchase-sheet-sub { font-size: 12px; color: var(--text-secondary); font-weight: 300; margin-top: 2px; }
+  .purchase-list { padding: 12px 16px; display: flex; flex-direction: column; gap: 10px; }
+  .purchase-card {
+    background: var(--soft); border: 1px solid var(--border);
+    border-radius: var(--radius-sm); padding: 12px 14px;
+    display: flex; align-items: center; gap: 12px;
+  }
+  .purchase-card-info { flex: 1; }
+  .purchase-card-date { font-size: 11px; color: var(--text-secondary); font-weight: 300; margin-bottom: 4px; }
+  .purchase-item-list { display: flex; flex-direction: column; gap: 3px; }
+  .purchase-item-row { font-size: 13px; color: var(--text); font-weight: 400; }
+  .purchase-item-qty { font-weight: 600; color: var(--blue); }
+  .approve-btn {
+    border: none; background: var(--green); color: white;
+    font-family: 'Prompt', sans-serif; font-size: 12px; font-weight: 500;
+    padding: 8px 14px; border-radius: 8px; cursor: pointer;
+    flex-shrink: 0; transition: all 0.2s;
+  }
+  .approve-btn:active { transform: scale(0.95); }
+  .purchase-empty { text-align: center; padding: 32px 20px; font-size: 13px; color: var(--text-secondary); font-weight: 300; }
 </style>
 </head>
 <body>
@@ -402,11 +441,11 @@
         <div class="shortcut-label">Inventory</div>
         <div class="shortcut-sub">จัดการสต็อก</div>
       </a>
-      <a class="shortcut-btn" href="#" onclick="showToast('Coming soon', '')">
-        <div class="shortcut-icon">🚚</div>
-        <div class="shortcut-label">Driver</div>
-        <div class="shortcut-sub">งานขนส่ง</div>
-      </a>
+      <a class="shortcut-btn" href="#" onclick="openPurchaseSheet(); return false;">
+  <div class="shortcut-icon">🚚</div>
+  <div class="shortcut-label">Driver</div>
+  <div class="shortcut-sub" id="driver-badge">ใบสั่งซื้อ</div>
+</a>
       <a class="shortcut-btn" href="#" onclick="showToast('Coming soon', '')">
         <div class="shortcut-icon">📊</div>
         <div class="shortcut-label">รายงาน</div>
@@ -438,6 +477,18 @@
       <button class="modal-btn secondary" onclick="closeAdvanceModal()">ยกเลิก</button>
       <button class="modal-btn primary" onclick="saveAdvance()">บันทึก</button>
     </div>
+  </div>
+</div>
+
+  <!-- PURCHASE SHEET -->
+<div class="purchase-overlay" id="purchase-overlay" onclick="closePurchaseSheet(event)">
+  <div class="purchase-sheet">
+    <div class="purchase-sheet-handle"></div>
+    <div class="purchase-sheet-header">
+      <div class="purchase-sheet-title">🚚 ใบสั่งซื้อรออนุมัติ</div>
+      <div class="purchase-sheet-sub" id="purchase-sheet-sub">กำลังโหลด...</div>
+    </div>
+    <div class="purchase-list" id="purchase-list"></div>
   </div>
 </div>
 
@@ -839,6 +890,78 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 });
+
+  // ─── PURCHASE SHEET ───
+async function openPurchaseSheet() {
+  document.getElementById('purchase-overlay').classList.add('visible');
+  document.getElementById('purchase-sheet-sub').textContent = 'กำลังโหลด...';
+  document.getElementById('purchase-list').innerHTML = '<div class="purchase-empty">กำลังโหลด...</div>';
+  await fetchPendingPurchases();
+}
+
+function closePurchaseSheet(e) {
+  if (e.target === document.getElementById('purchase-overlay')) {
+    document.getElementById('purchase-overlay').classList.remove('visible');
+  }
+}
+
+async function fetchPendingPurchases() {
+  try {
+    const res = await apiGet('action=getPendingPurchases');
+    const list = document.getElementById('purchase-list');
+    const sub = document.getElementById('purchase-sheet-sub');
+
+    if (!res.success || !res.data.length) {
+      sub.textContent = 'ไม่มีรายการรออนุมัติ';
+      list.innerHTML = '<div class="purchase-empty">✅ ไม่มีใบสั่งซื้อค้างอยู่</div>';
+      document.getElementById('driver-badge').textContent = 'ใบสั่งซื้อ';
+      return;
+    }
+
+    sub.textContent = `รออนุมัติ ${res.data.length} รายการ`;
+    document.getElementById('driver-badge').textContent = `⚠️ ${res.data.length} รายการ`;
+
+    list.innerHTML = res.data.map(p => {
+      const items = JSON.parse(p.items_json || '[]');
+      const itemsHtml = items.map(i =>
+        `<div class="purchase-item-row">• ${i.name} <span class="purchase-item-qty">+${i.qty} ${i.unit}</span></div>`
+      ).join('');
+      return `
+        <div class="purchase-card">
+          <div class="purchase-card-info">
+            <div class="purchase-card-date">📅 ${p.date}</div>
+            <div class="purchase-item-list">${itemsHtml}</div>
+          </div>
+          <button class="approve-btn" onclick="approvePurchase('${p.date}', this)">✓ อนุมัติ</button>
+        </div>`;
+    }).join('');
+
+  } catch {
+    document.getElementById('purchase-list').innerHTML = '<div class="purchase-empty">โหลดไม่สำเร็จ</div>';
+  }
+}
+
+async function approvePurchase(date, btn) {
+  btn.disabled = true;
+  btn.textContent = '...';
+  try {
+    const res = await apiPost({ action: 'approvePurchase', date });
+    if (res.success) {
+      btn.textContent = '✅';
+      btn.style.background = 'var(--green-dark)';
+      showToast('✅ อนุมัติใบสั่งซื้อแล้ว', 'success');
+      setTimeout(fetchPendingPurchases, 800);
+    } else {
+      btn.disabled = false;
+      btn.textContent = '✓ อนุมัติ';
+      showToast(res.message || 'เกิดข้อผิดพลาด', 'error');
+    }
+  } catch {
+    btn.disabled = false;
+    btn.textContent = '✓ อนุมัติ';
+    showToast('เชื่อมต่อไม่ได้', 'error');
+  }
+}
 
 window.addEventListener('load', async () => {
   const session = loadSession();
