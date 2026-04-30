@@ -74,6 +74,10 @@
     .loading-overlay.show { opacity: 1; pointer-events: all; }
     .spinner { width: 40px; height: 40px; border: 4px solid #E5E7EB; border-top-color: #ED1C24; border-radius: 50%; animation: spin 0.8s linear infinite; }
     @keyframes spin { to { transform: rotate(360deg); } }
+  #menuOverlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 9999; display: flex; justify-content: flex-end; padding: 70px 16px; opacity: 0; pointer-events: none; transition: opacity 0.2s; }
+    #menuOverlay.show { opacity: 1; pointer-events: all; }
+    .menu-box { background: #fff; border-radius: 16px; padding: 16px; width: 250px; box-shadow: 0 8px 24px rgba(0,0,0,0.2); transform: translateY(-20px); transition: transform 0.2s; }
+    #menuOverlay.show .menu-box { transform: translateY(0); }
   </style>
 </head>
 
@@ -87,7 +91,7 @@
         <h2 id="userNameDisplay">สวัสดี...</h2>
         <small style="color:#FFC928; font-weight: 500;">ตำแหน่ง: พนักงานจัดส่ง</small>
       </div>
-      <div style="cursor:pointer; font-size: 1.5rem;" onclick="goHome()">🏠</div>
+      <div style="cursor:pointer; font-size: 1.8rem; line-height: 1;" onclick="toggleMenu()">☰</div>
     </div>
 
     <div class="container">
@@ -229,6 +233,14 @@
     </div>
   </section>
 
+  <div id="menuOverlay" onclick="toggleMenu()">
+    <div class="menu-box" onclick="event.stopPropagation()">
+      <button class="big-btn secondary" style="margin-bottom: 12px; font-size: 1rem;" onclick="toggleMenu(); showSection('tasks-section');">📋 สิ่งที่ต้องทำ</button>
+      <button class="big-btn secondary" style="margin-bottom: 12px; font-size: 1rem;" onclick="toggleMenu(); showSection('dashboard-section');">🕒 หน้าบันทึกเวลา</button>
+      <button class="big-btn" style="background:#FEE2E2; color:#EF4444; margin-bottom: 0; font-size: 1rem; box-shadow: none;" onclick="clearDriverState()">🗑️ ล้างข้อมูลเริ่มใหม่</button>
+    </div>
+  </div>
+
   <div id="toast"></div>
 
   <script>
@@ -298,7 +310,7 @@
     function showSection(id) { document.querySelectorAll('section').forEach(s => s.classList.add('hidden')); document.getElementById(id).classList.remove('hidden'); window.scrollTo(0,0); }
     function showLoading(s) { document.getElementById('loading').classList.toggle('show', s); }
     function showToast(m) { const t = document.getElementById('toast'); t.innerText = m; t.style.display = 'block'; setTimeout(() => t.style.display = 'none', 3000); }
-    function goHome() { window.location.href = '/clock.html'; }
+    function goHome() { window.location.href = '/driver.html'; }
 
     // --- ควบคุม UI (5 ด่าน) ---
     function restoreUIFromState() {
@@ -332,7 +344,7 @@
     // --- Clock In / Out ---
     async function clockAction(type) {
       showLoading(true);
-      const payload = { action: type === 'in' ? 'clockIn' : 'clockOut', staff_id: currentStaff.staff_id, lat: "13.0", lng: "100.0", branch_id: "BR005", date: new Date().toLocaleDateString('en-CA') };
+      const payload = { action: type === 'in' ? 'clockIn' : 'clockOut', staff_id: currentStaff.staff_id, lat: "13.41045", lng: "101.055621", branch_id: "BR005", date: new Date().toLocaleDateString('en-CA') };
       try {
         const res = await fetch(API_URL, { method: 'POST', body: JSON.stringify(payload) });
         const json = await res.json();
@@ -439,9 +451,20 @@
     }
 
     // --- ด่าน 5: จบงาน ---
-    function finishAllTasks() {
-      if(confirm("ยืนยันว่าคืนของครบทุกอย่างเรียบร้อยแล้วใช่ไหมครับ?")) {
+  function finishAllTasks() {
+      if(confirm("ยืนยันส่งของกลับครัวกลางและคืนรถ")) {
          state.returnStatus = 'done'; saveState(); restoreUIFromState(); showToast("เคลียร์งานวันนี้ครบ 100%!");
+      }
+    }
+
+    function toggleMenu() {
+      document.getElementById('menuOverlay').classList.toggle('show');
+    }
+
+    function clearDriverState() {
+      if(confirm("แน่ใจหรือไม่ว่าจะล้างข้อมูลของวันนี้ทั้งหมด? (ระบบจะเริ่มใหม่จากศูนย์)")) {
+        localStorage.removeItem(DRIVER_STATE_KEY);
+        window.location.reload();
       }
     }
   </script>
