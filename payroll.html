@@ -419,7 +419,7 @@
     animation: spin 0.7s linear infinite;
   }
   @keyframes spin { to { transform: rotate(360deg); } }
-</style>
+<script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
 </head>
 <body>
 
@@ -459,13 +459,15 @@
 <div class="detail-overlay" id="detail-overlay" onclick="closeDetailOutside(event)">
   <div class="detail-sheet">
     <div class="sheet-handle"></div>
-    <div class="sheet-header">
+   <div class="sheet-header">
       <div class="sheet-avatar" id="d-avatar">—</div>
-      <div>
+      <div style="flex: 1;">
         <div class="sheet-name" id="d-name">—</div>
         <div class="sheet-meta" id="d-meta">—</div>
       </div>
+      <button onclick="exportToImage(event)" style="background: #3B82F6; color: white; border: none; padding: 6px 12px; border-radius: 8px; font-size: 0.85rem; cursor: pointer; font-family: 'Prompt'; font-weight: 500;">📸 บันทึกรูป</button>
     </div>
+  
     <div class="sheet-body" id="detail-body"></div>
   </div>
 </div>
@@ -1259,6 +1261,42 @@ document.addEventListener('touchend', (e) => {
     activeSheet = null;
   }
 });
+
+    async function exportToImage(event) {
+  // ชี้ไปที่กรอบหน้าต่างรายละเอียด
+  const element = document.querySelector('#detail-overlay .detail-sheet');
+  const btn = event.target;
+  const originalText = btn.innerText;
+  
+  btn.innerText = "⏳ รอสักครู่...";
+  btn.disabled = true;
+
+  try {
+    const canvas = await html2canvas(element, {
+      scale: 2, // ให้รูปชัดขึ้น
+      useCORS: true,
+      logging: false,
+      backgroundColor: "#F5F7FB", // สีพื้นหลังให้เนียนตา
+      // สั่งให้ระบบ "ซ่อน" พวกปุ่มกดต่างๆ ไม่ให้ติดไปในรูปด้วย
+      ignoreElements: (el) => el.tagName === 'BUTTON'
+    });
+
+    const link = document.createElement('a');
+    // ดึงชื่อพนักงานมาตั้งเป็นชื่อไฟล์รูป
+    const name = document.getElementById('d-name').innerText;
+    link.download = `สรุปยอด_${name}.png`;
+    link.href = canvas.toDataURL('image/png');
+    link.click();
+    
+    showToast("บันทึกรูปภาพเรียบร้อย!", "success");
+  } catch (err) {
+    console.error(err);
+    showToast("เกิดข้อผิดพลาดในการสร้างรูป", "error");
+  } finally {
+    btn.innerText = originalText;
+    btn.disabled = false;
+  }
+}
 </script>
 </body>
 </html>
