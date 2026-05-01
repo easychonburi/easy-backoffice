@@ -1262,7 +1262,7 @@ document.addEventListener('touchend', (e) => {
   }
 });
 
-    async function exportToImage(event) {
+async function exportToImage(event) {
   // ชี้ไปที่กรอบหน้าต่างรายละเอียด
   const element = document.querySelector('#detail-overlay .detail-sheet');
   const btn = event.target;
@@ -1271,18 +1271,24 @@ document.addEventListener('touchend', (e) => {
   btn.innerText = "⏳ รอสักครู่...";
   btn.disabled = true;
 
+  // 1. เก็บค่าเดิม และปลดล็อคความสูงหน้าต่างชั่วคราวเพื่อให้ถ่ายติดทั้งหมด
+  const origMaxHeight = element.style.maxHeight;
+  const origOverflow = element.style.overflow;
+  element.style.maxHeight = 'none';
+  element.style.overflow = 'visible';
+
   try {
     const canvas = await html2canvas(element, {
-      scale: 2, // ให้รูปชัดขึ้น
+      scale: 2, 
       useCORS: true,
       logging: false,
-      backgroundColor: "#F5F7FB", // สีพื้นหลังให้เนียนตา
-      // สั่งให้ระบบ "ซ่อน" พวกปุ่มกดต่างๆ ไม่ให้ติดไปในรูปด้วย
+      backgroundColor: "#F5F7FB", 
+      // 2. บอกระบบให้ใช้ความสูงที่แท้จริงของเนื้อหาทั้งหมด
+      windowHeight: element.scrollHeight,
       ignoreElements: (el) => el.tagName === 'BUTTON'
     });
 
     const link = document.createElement('a');
-    // ดึงชื่อพนักงานมาตั้งเป็นชื่อไฟล์รูป
     const name = document.getElementById('d-name').innerText;
     link.download = `สรุปยอด_${name}.png`;
     link.href = canvas.toDataURL('image/png');
@@ -1293,6 +1299,10 @@ document.addEventListener('touchend', (e) => {
     console.error(err);
     showToast("เกิดข้อผิดพลาดในการสร้างรูป", "error");
   } finally {
+    // 3. คืนค่าความสูงหน้าต่างกลับให้มีแถบเลื่อนเหมือนเดิม
+    element.style.maxHeight = origMaxHeight;
+    element.style.overflow = origOverflow;
+
     btn.innerText = originalText;
     btn.disabled = false;
   }
