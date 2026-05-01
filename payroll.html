@@ -633,7 +633,8 @@ function calcPayroll(staff, timesheets, periodStart, periodEnd) {
   });
 
   const rate = parseFloat(staff.rate) || 0;
-  const otRatePerHour = parseFloat(settings.ot_rate_per_hour) || 50;
+  // ดึงเรท OT จากหน้า staff มาใช้เป็นหลัก ถ้าไม่มีค่อยใช้ค่ากลาง
+  const otRatePerHour = parseFloat(staff.ot_rate) || parseFloat(settings.ot_rate_per_hour) || 50;
   const lateGrace = parseInt(settings.late_grace_min) || 15;
 
   let basePay = 0, otPay = 0, lateDeduct = 0;
