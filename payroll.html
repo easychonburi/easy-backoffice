@@ -1263,7 +1263,7 @@ document.addEventListener('touchend', (e) => {
 });
 
 async function exportToImage(event) {
-  // ชี้ไปที่กรอบหน้าต่างรายละเอียด
+  const overlay = document.getElementById('detail-overlay');
   const element = document.querySelector('#detail-overlay .detail-sheet');
   const btn = event.target;
   const originalText = btn.innerText;
@@ -1271,11 +1271,23 @@ async function exportToImage(event) {
   btn.innerText = "⏳ รอสักครู่...";
   btn.disabled = true;
 
-  // 1. เก็บค่าเดิม และปลดล็อคความสูงหน้าต่างชั่วคราวเพื่อให้ถ่ายติดทั้งหมด
+  // 1. เก็บค่าเดิมของตัวลูกและตัวแม่
   const origMaxHeight = element.style.maxHeight;
   const origOverflow = element.style.overflow;
+  const origPosition = element.style.position;
+  const origTransform = element.style.transform;
+  const origOverlayPos = overlay.style.position;
+
+  // 2. ปลดล็อคขั้นสุดสำหรับมือถือ (ปล่อยให้ทะลุจอชั่วคราว)
   element.style.maxHeight = 'none';
   element.style.overflow = 'visible';
+  element.style.position = 'relative'; // ปลดล็อคไม่ให้ยึดติดขอบล่าง
+  element.style.transform = 'none';
+  overlay.style.position = 'absolute'; // ปลดล็อคตัวแม่ไม่ให้ตัดขอบจอ
+  
+  // 3. ดันจอขึ้นบนสุดป้องกันแคนวาสแหว่ง
+  element.scrollTop = 0;
+  window.scrollTo(0, 0);
 
   try {
     const canvas = await html2canvas(element, {
@@ -1283,8 +1295,7 @@ async function exportToImage(event) {
       useCORS: true,
       logging: false,
       backgroundColor: "#F5F7FB", 
-      // 2. บอกระบบให้ใช้ความสูงที่แท้จริงของเนื้อหาทั้งหมด
-      windowHeight: element.scrollHeight,
+      windowHeight: element.scrollHeight, // บังคับอ่านความสูงจริงทั้งหมด
       ignoreElements: (el) => el.tagName === 'BUTTON'
     });
 
@@ -1299,9 +1310,12 @@ async function exportToImage(event) {
     console.error(err);
     showToast("เกิดข้อผิดพลาดในการสร้างรูป", "error");
   } finally {
-    // 3. คืนค่าความสูงหน้าต่างกลับให้มีแถบเลื่อนเหมือนเดิม
+    // 4. หดทุกอย่างกลับเข้าที่เดิมเนียนๆ
     element.style.maxHeight = origMaxHeight;
     element.style.overflow = origOverflow;
+    element.style.position = origPosition;
+    element.style.transform = origTransform;
+    overlay.style.position = origOverlayPos;
 
     btn.innerText = originalText;
     btn.disabled = false;
