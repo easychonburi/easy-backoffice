@@ -891,7 +891,7 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 });
 
-  // ─── PURCHASE SHEET ───
+ // ─── PURCHASE SHEET ───
 async function openPurchaseSheet() {
   document.getElementById('purchase-overlay').classList.add('visible');
   document.getElementById('purchase-sheet-sub').textContent = 'กำลังโหลด...';
@@ -905,27 +905,30 @@ function closePurchaseSheet(e) {
   }
 }
 
-// ลิสต์สถานที่สำหรับให้วิวเลือกให้คนขับไปรับของ (เพิ่มลดเองได้เลยครับ)
-const PICKUP_LOCATIONS = ['แม็คโคร', 'ตลาดสด', 'ร้านแพคเกจจิ้ง', 'ร้านแก๊ส', 'ร้านอื่นๆ', 'หนองตำลึง'];
-
-let currentOrderItems = []; // เก็บรายการที่วิวจะสั่ง
+let currentOrderItems = []; 
 const PICKUP_LOCATIONS = ['แม็คโคร', 'ตลาดสด', 'ร้านแพคเกจจิ้ง', 'ร้านแก๊ส', 'ร้านอื่นๆ', 'หนองตำลึง'];
 
 async function fetchPendingPurchases() {
   try {
     const res = await apiGet('action=getPendingPurchases');
-    const list = document.getElementById('purchase-list');
     
-    // เตรียมข้อมูลพื้นฐาน (ถ้ามี)
+    // รีเซ็ตค่าก่อน
+    currentOrderItems = [];
+    
     if (res.success && res.data.length > 0) {
-      const p = res.data[0]; // หยิบบิลล่าสุดมา
+      const p = res.data[0]; 
       currentOrderItems = JSON.parse(p.items_json || '[]').map(i => ({
         name: i.name,
-        remaining: i.remaining || 0,
-        qty: '', // ให้วิวกรอกเอง
+        remaining: i.remaining !== undefined ? i.remaining : (i.qty || 0),
+        qty: '', 
         unit: i.unit || '',
         location: ''
       }));
+      document.getElementById('purchase-sheet-sub').textContent = `ดึงยอดคงเหลือล่าสุดของวันนี้แล้ว`;
+      document.getElementById('driver-badge').textContent = `⚠️ มีข้อมูลใหม่`;
+    } else {
+      document.getElementById('purchase-sheet-sub').textContent = `ไม่มีข้อมูลสต็อกค้างในระบบ`;
+      document.getElementById('driver-badge').textContent = `ใบสั่งซื้อ`;
     }
 
     renderOrderList();
@@ -940,30 +943,30 @@ function renderOrderList() {
 
   let html = `
     <div style="margin-bottom:16px;">
-      <button onclick="addNewManualItem()" style="width:100%; padding:12px; border:2px dashed var(--border); border-radius:12px; background:white; color:var(--blue); font-family:'Prompt'; font-weight:600; cursor:pointer;">
+      <button onclick="addNewManualItem()" style="width:100%; padding:12px; border:2px dashed var(--border); border-radius:12px; background:white; color:var(--blue); font-family:'Prompt'; font-weight:600; cursor:pointer; transition: 0.2s;">
         ➕ เพิ่มรายการสั่งของเอง
       </button>
     </div>
   `;
 
   if (currentOrderItems.length === 0) {
-    html += '<div class="purchase-empty">ไม่มีรายการจากระบบ (กดเพิ่มเองได้ที่ปุ่มด้านบน)</div>';
+    html += '<div class="purchase-empty">ไม่มีรายการจากระบบ (กดเพิ่มรายการเองได้ที่ปุ่มด้านบน)</div>';
   } else {
     html += currentOrderItems.map((i, idx) => `
       <div style="display:flex; align-items:center; gap:10px; margin-bottom:10px; background:#fff; padding:12px; border-radius:12px; border:1px solid var(--border);">
         <div style="flex:1;">
           <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
-            <input type="text" value="${i.name}" onchange="updateItemField(${idx}, 'name', this.value)" style="font-weight:600; border:none; border-bottom:1px solid transparent; width:60%; outline:none;" placeholder="ชื่อของ...">
-            <span style="font-size:11px; color:var(--text-secondary);">คงเหลือ: ${i.remaining || 0}</span>
+            <input type="text" value="${i.name}" onchange="updateItemField(${idx}, 'name', this.value)" style="font-weight:600; font-family:'Prompt'; font-size:14px; border:none; border-bottom:1px solid transparent; width:60%; outline:none;" placeholder="ชื่อของ...">
+            <span style="font-size:12px; color:var(--text-secondary); background:var(--bg); padding:2px 8px; border-radius:12px;">คงเหลือ: <strong style="color:var(--orange);">${i.remaining || 0}</strong></span>
           </div>
           <div style="display:flex; gap:6px; align-items:center;">
-            <input type="number" value="${i.qty}" onchange="updateItemField(${idx}, 'qty', this.value)" placeholder="กี่ชิ้น" style="width:60px; padding:6px; border:1px solid var(--border); border-radius:6px; text-align:center; font-size:13px;">
-            <input type="text" value="${i.unit}" onchange="updateItemField(${idx}, 'unit', this.value)" placeholder="หน่วย" style="width:50px; padding:6px; border:1px solid var(--border); border-radius:6px; text-align:center; font-size:13px;">
-            <select onchange="updateItemField(${idx}, 'location', this.value)" style="flex:1; padding:6px; border:1px solid var(--border); border-radius:6px; font-size:13px; background:var(--soft);">
-              <option value="">รับที่ไหน...</option>
+            <input type="number" value="${i.qty}" onchange="updateItemField(${idx}, 'qty', this.value)" placeholder="จำนวน" style="width:65px; padding:6px; border:1px solid var(--border); border-radius:6px; text-align:center; font-family:'Prompt'; font-size:13px; outline:none;">
+            <input type="text" value="${i.unit}" onchange="updateItemField(${idx}, 'unit', this.value)" placeholder="หน่วย" style="width:55px; padding:6px; border:1px solid var(--border); border-radius:6px; text-align:center; font-family:'Prompt'; font-size:13px; outline:none;">
+            <select onchange="updateItemField(${idx}, 'location', this.value)" style="flex:1; padding:6px; border:1px solid var(--border); border-radius:6px; font-family:'Prompt'; font-size:13px; background:var(--soft); outline:none;">
+              <option value="">จุดรับของ...</option>
               ${PICKUP_LOCATIONS.map(l => `<option value="${l}" ${i.location === l ? 'selected' : ''}>${l}</option>`).join('')}
             </select>
-            <button onclick="removeItem(${idx})" style="color:var(--red); border:none; background:none; padding:5px;">✕</button>
+            <button onclick="removeItem(${idx})" style="color:var(--danger); border:none; background:var(--danger-bg); padding:6px 10px; border-radius:6px; cursor:pointer;">✕</button>
           </div>
         </div>
       </div>
@@ -994,29 +997,33 @@ function removeItem(idx) {
 }
 
 async function sendToDriver() {
+  // กรองเฉพาะรายการที่วิวกรอกจำนวนและเลือกสถานที่ครบแล้ว (ถ้าอันไหนเว้นว่างไว้ ระบบจะข้ามไป ไม่ส่งให้คนขับ)
   const finalItems = currentOrderItems.filter(i => i.name && i.qty && i.location);
   
   if (finalItems.length === 0) {
-    alert("กรุณากรอกชื่อของ จำนวน และสถานที่รับให้ครบถ้วนครับ");
-    return;
+    if(!confirm('คุณยังไม่ได้กรอกของที่จะสั่งเลย (ช่องจำนวนหรือจุดรับว่างอยู่) ยืนยันที่จะเคลียร์ข้อมูลทิ้งใช่หรือไม่?')) return;
   }
 
-  if (!confirm(`ยืนยันส่งรายการของ ${finalItems.length} อย่าง ให้คนขับใช่หรือไม่?`)) return;
-
   const btn = document.querySelector('.approve-btn');
-  btn.disabled = true;
-  btn.textContent = '⏳ กำลังส่งงาน...';
+  if(btn) {
+      btn.disabled = true;
+      btn.textContent = '⏳ กำลังส่งงาน...';
+  }
 
   try {
+    // ใช้ action: 'approvePurchase' เหมือนเดิม โค้ดหลังบ้านจะได้ทำงานเชื่อมกันได้
     const res = await apiPost({ action: 'approvePurchase', items: finalItems });
     if (res.success) {
-      showToast('✅ ส่งงานให้คนขับเรียบร้อย!', 'success');
-      currentOrderItems = [];
-      fetchPendingPurchases();
+      showToast('✅ สั่งงานคนขับเรียบร้อย!', 'success');
+      document.getElementById('purchase-overlay').classList.remove('visible');
+      document.getElementById('driver-badge').textContent = 'ใบสั่งซื้อ';
+      currentOrderItems = []; // เคลียร์ของออก
+    } else {
+        if(btn) { btn.disabled = false; btn.textContent = '🚀 ส่งงานให้คนขับไปรับของ'; }
+        showToast(res.message || 'เกิดข้อผิดพลาด', 'error');
     }
   } catch (e) {
-    btn.disabled = false;
-    btn.textContent = '🚀 ส่งงานให้คนขับไปรับของ';
+    if(btn) { btn.disabled = false; btn.textContent = '🚀 ส่งงานให้คนขับไปรับของ'; }
     showToast('เกิดข้อผิดพลาดในการส่งข้อมูล', 'error');
   }
 }
@@ -1029,21 +1036,26 @@ window.addEventListener('load', async () => {
   renderHeader(); showLoading(true);
   try {
     const today = toDateStr(new Date());
-    // ดึงย้อนหลัง 25 วัน เพื่อให้ครอบคลุมรอบจ่ายเงินที่แล้ว
     const dateCalc = new Date();
     dateCalc.setDate(dateCalc.getDate() - 25);
     const dateFrom = toDateStr(dateCalc);
 
-    const [staffRes, settingsRes, tsRes, advRes] = await Promise.all([
+    const [staffRes, settingsRes, tsRes, advRes, pendingRes] = await Promise.all([
       apiGet('action=getStaff'), apiGet('action=getSettings'),
       apiGet(`action=getTimesheets&date_from=${dateFrom}&date_to=${today}`),
-      apiGet('action=getAdvances&status=pending')
+      apiGet('action=getAdvances&status=pending'),
+      apiGet('action=getPendingPurchases') // เพิ่มให้เช็คสถานะใบสั่งซื้อตั้งแต่เปิดเว็บ
     ]);
 
     allStaff = staffRes.success ? staffRes.data : [];
     settings = settingsRes.success ? settingsRes.data : {};
     allTimesheets = tsRes.success ? tsRes.data : [];
     allAdvances = advRes.success ? advRes.data : [];
+
+    // เปลี่ยนแจ้งเตือนไอคอนรถบรรทุกหน้าแรก
+    if(pendingRes.success && pendingRes.data.length > 0) {
+        document.getElementById('driver-badge').textContent = `⚠️ มีข้อมูลใหม่`;
+    }
 
     renderOTAlert(); renderAttendance(); renderPayrollNext(); renderAdvances();
   } catch(e) { showToast('โหลดข้อมูลไม่สำเร็จ', 'error'); }
