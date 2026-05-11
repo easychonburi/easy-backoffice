@@ -908,113 +908,116 @@ function closePurchaseSheet(e) {
 // ลิสต์สถานที่สำหรับให้วิวเลือกให้คนขับไปรับของ (เพิ่มลดเองได้เลยครับ)
 const PICKUP_LOCATIONS = ['แม็คโคร', 'ตลาดสด', 'ร้านแพคเกจจิ้ง', 'ร้านแก๊ส', 'ร้านอื่นๆ', 'หนองตำลึง'];
 
+let currentOrderItems = []; // เก็บรายการที่วิวจะสั่ง
+const PICKUP_LOCATIONS = ['แม็คโคร', 'ตลาดสด', 'ร้านแพคเกจจิ้ง', 'ร้านแก๊ส', 'ร้านอื่นๆ', 'หนองตำลึง'];
+
 async function fetchPendingPurchases() {
   try {
     const res = await apiGet('action=getPendingPurchases');
     const list = document.getElementById('purchase-list');
-    const sub = document.getElementById('purchase-sheet-sub');
-
-    if (!res.success || !res.data.length) {
-      sub.textContent = 'ไม่มีรายการรอพิจารณา';
-      list.innerHTML = '<div class="purchase-empty">✅ ไม่มีใบสต็อกค้างอยู่</div>';
-      document.getElementById('driver-badge').textContent = 'ใบสั่งซื้อ';
-      return;
+    
+    // เตรียมข้อมูลพื้นฐาน (ถ้ามี)
+    if (res.success && res.data.length > 0) {
+      const p = res.data[0]; // หยิบบิลล่าสุดมา
+      currentOrderItems = JSON.parse(p.items_json || '[]').map(i => ({
+        name: i.name,
+        remaining: i.remaining || 0,
+        qty: '', // ให้วิวกรอกเอง
+        unit: i.unit || '',
+        location: ''
+      }));
     }
 
-    sub.textContent = `รอพิจารณา ${res.data.length} รายการ`;
-    document.getElementById('driver-badge').textContent = `⚠️ ${res.data.length} บิล`;
-
-    list.innerHTML = res.data.map(p => {
-      const items = JSON.parse(p.items_json || '[]');
-      const locOptions = PICKUP_LOCATIONS.map(l => `<option value="${l}">${l}</option>`).join('');
-
-      const itemsHtml = items.map((i, idx) => `
-        <div style="display:flex; align-items:center; gap:10px; margin-bottom:10px; background:#fff; padding:12px; border-radius:10px; border:1px solid var(--border);">
-          <input type="checkbox" id="chk_${p.date}_${idx}" style="width:20px; height:20px; accent-color:var(--red); flex-shrink:0;">
-          <div style="flex:1; min-width:0;">
-            <div style="display:flex; justify-content:space-between; align-items:flex-start;">
-              <div style="font-size:14px; font-weight:500; color:var(--text);" id="name_${p.date}_${idx}">${i.name}</div>
-              <div style="font-size:12px; color:var(--text-secondary); background:var(--bg); padding:2px 8px; border-radius:12px;">คงเหลือ: <strong style="color:var(--orange);">${i.remaining !== undefined ? i.remaining : (i.qty || 0)}</strong> ${i.unit}</div>
-            </div>
-            <div style="display:flex; gap:8px; margin-top:8px; align-items:center;">
-              <input type="number" id="qty_${p.date}_${idx}" placeholder="จำนวน" style="width:70px; padding:6px; border:1.5px solid var(--border); border-radius:6px; text-align:center; font-family:'Prompt'; font-size:13px; outline:none;">
-              <span style="font-size:13px; color:var(--text-secondary); flex-shrink:0;" id="unit_${p.date}_${idx}">${i.unit}</span>
-              <select id="loc_${p.date}_${idx}" style="flex:1; padding:6px; border:1.5px solid var(--border); border-radius:6px; font-family:'Prompt'; font-size:13px; outline:none; background:var(--soft);">
-                <option value="">เลือกจุดรับ...</option>
-                ${locOptions}
-              </select>
-            </div>
-          </div>
-        </div>
-      `).join('');
-
-      return `
-        <div class="purchase-card" style="flex-direction:column; align-items:stretch; background:var(--soft); padding:16px;">
-          <div class="purchase-card-date" style="font-size:14px; font-weight:600; color:var(--text); margin-bottom:12px; border-bottom:1px dashed var(--border); padding-bottom:8px;">
-            📅 ข้อมูลสต็อกวันที่: ${p.date}
-          </div>
-          <div id="items_container_${p.date}">
-            ${itemsHtml}
-          </div>
-          <button class="approve-btn" style="margin-top:12px; width:100%; padding:14px; font-size:15px; background:var(--blue); box-shadow: 0 4px 12px rgba(59,130,246,0.3);" onclick="approvePurchase('${p.date}', this, ${items.length})">
-            🚀 ส่งงานให้คนขับไปรับของ
-          </button>
-        </div>`;
-    }).join('');
-
+    renderOrderList();
   } catch {
     document.getElementById('purchase-list').innerHTML = '<div class="purchase-empty">โหลดไม่สำเร็จ</div>';
   }
 }
 
-async function approvePurchase(date, btn, itemCount) {
-  const selectedItems = [];
+function renderOrderList() {
+  const list = document.getElementById('purchase-list');
+  const locOptions = PICKUP_LOCATIONS.map(l => `<option value="${l}">${l}</option>`).join('');
+
+  let html = `
+    <div style="margin-bottom:16px;">
+      <button onclick="addNewManualItem()" style="width:100%; padding:12px; border:2px dashed var(--border); border-radius:12px; background:white; color:var(--blue); font-family:'Prompt'; font-weight:600; cursor:pointer;">
+        ➕ เพิ่มรายการสั่งของเอง
+      </button>
+    </div>
+  `;
+
+  if (currentOrderItems.length === 0) {
+    html += '<div class="purchase-empty">ไม่มีรายการจากระบบ (กดเพิ่มเองได้ที่ปุ่มด้านบน)</div>';
+  } else {
+    html += currentOrderItems.map((i, idx) => `
+      <div style="display:flex; align-items:center; gap:10px; margin-bottom:10px; background:#fff; padding:12px; border-radius:12px; border:1px solid var(--border);">
+        <div style="flex:1;">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+            <input type="text" value="${i.name}" onchange="updateItemField(${idx}, 'name', this.value)" style="font-weight:600; border:none; border-bottom:1px solid transparent; width:60%; outline:none;" placeholder="ชื่อของ...">
+            <span style="font-size:11px; color:var(--text-secondary);">คงเหลือ: ${i.remaining || 0}</span>
+          </div>
+          <div style="display:flex; gap:6px; align-items:center;">
+            <input type="number" value="${i.qty}" onchange="updateItemField(${idx}, 'qty', this.value)" placeholder="กี่ชิ้น" style="width:60px; padding:6px; border:1px solid var(--border); border-radius:6px; text-align:center; font-size:13px;">
+            <input type="text" value="${i.unit}" onchange="updateItemField(${idx}, 'unit', this.value)" placeholder="หน่วย" style="width:50px; padding:6px; border:1px solid var(--border); border-radius:6px; text-align:center; font-size:13px;">
+            <select onchange="updateItemField(${idx}, 'location', this.value)" style="flex:1; padding:6px; border:1px solid var(--border); border-radius:6px; font-size:13px; background:var(--soft);">
+              <option value="">รับที่ไหน...</option>
+              ${PICKUP_LOCATIONS.map(l => `<option value="${l}" ${i.location === l ? 'selected' : ''}>${l}</option>`).join('')}
+            </select>
+            <button onclick="removeItem(${idx})" style="color:var(--red); border:none; background:none; padding:5px;">✕</button>
+          </div>
+        </div>
+      </div>
+    `).join('');
+
+    html += `
+      <button class="approve-btn" style="margin-top:20px; width:100%; padding:16px; font-size:16px; background:var(--blue); box-shadow: 0 4px 16px rgba(59,130,246,0.3);" onclick="sendToDriver()">
+        🚀 ส่งงานให้คนขับไปรับของ
+      </button>
+    `;
+  }
   
-  // กวาดข้อมูลเฉพาะของที่วิวติ๊กเลือก
-  for(let i=0; i<itemCount; i++) {
-     const chk = document.getElementById(`chk_${date}_${i}`);
-     if(chk && chk.checked) {
-         const name = document.getElementById(`name_${date}_${i}`).innerText;
-         const qty = document.getElementById(`qty_${date}_${i}`).value;
-         const unit = document.getElementById(`unit_${date}_${i}`).innerText;
-         const loc = document.getElementById(`loc_${date}_${i}`).value;
-         
-         if(!qty || qty <= 0) {
-             showToast(`กรุณาระบุจำนวนสั่งซื้อของ: ${name}`, 'error');
-             return;
-         }
-         if(!loc) {
-             showToast(`กรุณาเลือกจุดรับของสำหรับ: ${name}`, 'error');
-             return;
-         }
-         
-         selectedItems.push({ name, qty, unit, location: loc });
-     }
+  list.innerHTML = html;
+}
+
+function addNewManualItem() {
+  currentOrderItems.unshift({ name: '', remaining: 0, qty: '', unit: '', location: '' });
+  renderOrderList();
+}
+
+function updateItemField(idx, field, val) {
+  currentOrderItems[idx][field] = val;
+}
+
+function removeItem(idx) {
+  currentOrderItems.splice(idx, 1);
+  renderOrderList();
+}
+
+async function sendToDriver() {
+  const finalItems = currentOrderItems.filter(i => i.name && i.qty && i.location);
+  
+  if (finalItems.length === 0) {
+    alert("กรุณากรอกชื่อของ จำนวน และสถานที่รับให้ครบถ้วนครับ");
+    return;
   }
 
-  // ถ้าวิวไม่ได้ติ๊กของเลย แต่อยากเคลียร์บิลทิ้ง
-  if(selectedItems.length === 0) {
-     if(!confirm('คุณไม่ได้เลือกสั่งของเลย ยืนยันที่จะปิดจ๊อบนี้โดยไม่สั่งของใช่หรือไม่?')) return;
-  }
+  if (!confirm(`ยืนยันส่งรายการของ ${finalItems.length} อย่าง ให้คนขับใช่หรือไม่?`)) return;
 
+  const btn = document.querySelector('.approve-btn');
   btn.disabled = true;
   btn.textContent = '⏳ กำลังส่งงาน...';
+
   try {
-    const res = await apiPost({ action: 'approvePurchase', date: date, items: selectedItems });
+    const res = await apiPost({ action: 'approvePurchase', items: finalItems });
     if (res.success) {
-      btn.textContent = '✅ ส่งงานแล้ว';
-      btn.style.background = 'var(--green-dark)';
-      showToast('✅ สั่งงานคนขับเรียบร้อย!', 'success');
-      setTimeout(fetchPendingPurchases, 1200);
-    } else {
-      btn.disabled = false;
-      btn.textContent = '🚀 ส่งงานให้คนขับไปรับของ';
-      showToast(res.message || 'เกิดข้อผิดพลาด', 'error');
+      showToast('✅ ส่งงานให้คนขับเรียบร้อย!', 'success');
+      currentOrderItems = [];
+      fetchPendingPurchases();
     }
-  } catch {
+  } catch (e) {
     btn.disabled = false;
     btn.textContent = '🚀 ส่งงานให้คนขับไปรับของ';
-    showToast('เชื่อมต่อไม่ได้', 'error');
+    showToast('เกิดข้อผิดพลาดในการส่งข้อมูล', 'error');
   }
 }
 
