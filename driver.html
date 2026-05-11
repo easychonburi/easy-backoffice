@@ -280,7 +280,7 @@
     ];
 
     // โหลดครั้งแรก ดึงข้อมูลเลย
-    window.onload = async () => {
+  window.onload = async () => {
       const session = loadSession();
       if (!session) { window.location.href = '/index.html'; return; }
       currentStaff = session.staff;
@@ -289,14 +289,21 @@
       loadState();
       setInterval(() => { document.getElementById('live-clock').innerText = new Date().toLocaleTimeString('th-TH'); }, 1000);
       
-      // ดึงข้อมูลออเดอร์ทันทีที่เปิดแอป ไม่ต้องรอเข้างาน
+      // 🛠️ แก้บัคหน้าขาว: สั่งให้แสดงหน้าจอตามสถานะเข้างาน
+      if (state.checkedIn) {
+        showSection('tasks-section');
+      } else {
+        showSection('dashboard-section');
+      }
+
+      restoreUIFromState();
+
       if(!state.stockChecked) {
          showLoading(true);
          await fetchDynamicOrders();
          await fetchPickupData();
          showLoading(false);
       }
-      restoreUIFromState();
     };
 
     function loadSession() {
@@ -341,9 +348,10 @@
       if (pickupDone && deliverDone && BRANCHES.length > 0) { setDone('badge-pickup', 'btn-start-pickup'); unlockCard('task-stock-card', 'badge-stock', 'btn-start-stock'); }
       if (state.stockChecked) { setDone('badge-stock', 'btn-start-stock'); unlockCard('task-return-card', 'badge-return', 'btn-start-return'); }
       
-      if (state.returnStatus === 'done') {
+     if (state.returnStatus === 'done') {
         setDone('badge-return', 'btn-start-return');
         document.getElementById('btn-checkout-main').classList.remove('btn-disabled');
+        showSection('dashboard-section'); // 🛠️ เพิ่มให้เด้งไปหน้ากดออกงาน
       }
 
       disableActionButtonsIfNotCheckedIn();
