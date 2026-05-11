@@ -470,13 +470,17 @@
       } catch (e) {}
     }
 
-    async function fetchPickupData() {
+   async function fetchPickupData() {
       try {
-        const res = await fetch(`${API_URL}?action=getPickups`); const json = await res.json();
+        // ดึงงานที่ "วิว" เป็นคนอนุมัติมาจากหลังบ้าน
+        const res = await fetch(`${API_URL}?action=getPickups`); 
+        const json = await res.json();
         if (json.success && json.data) {
-          PICKUP_ITEMS_MAP = json.data; PICKUP_LOCS = Object.keys(json.data);
+          PICKUP_ITEMS_MAP = json.data; 
+          PICKUP_LOCS = Object.keys(json.data);
           PICKUP_LOCS.forEach(loc => { if (!state.pickupData[loc]) state.pickupData[loc] = 'pending'; });
-          saveState(); restoreUIFromState();
+          saveState(); 
+          restoreUIFromState();
         }
       } catch (e) {}
     }
