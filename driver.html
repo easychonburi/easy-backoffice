@@ -396,14 +396,21 @@
     }
 
     // ฟังก์ชันดึงประวัติล่าสุด (เหมือนหน้า clock.html)
-    async function fetchHistory() {
+   async function fetchHistory() {
       try {
-        const res = await fetch(`${API_URL}?action=getStaffHistory&staff_id=${currentStaff.staff_id}`);
+        // ขอข้อมูลเข้างานจากระบบ Timesheets แทน
+        const res = await fetch(`${API_URL}?action=getTimesheets&staff_id=${currentStaff.staff_id}`);
         const json = await res.json();
-        if (json.success) { renderHistory(json.data); }
-      } catch (e) { console.error("History fail", e); }
+        if (json.success && json.data) { 
+           // จัดเรียงวันที่ใหม่สุดขึ้นก่อน และตัดมาแค่ 4 รายการ
+           const sortedData = json.data.sort((a,b) => new Date(b.created_at || b.date) - new Date(a.created_at || a.date)).slice(0, 4);
+           renderHistory(sortedData); 
+        } else {
+           renderHistory([]);
+        }
+      } catch (e) { document.getElementById('history-container').innerHTML = '<div style="text-align:center; color:#999; padding:20px;">โหลดประวัติไม่สำเร็จ</div>'; }
     }
-
+    
     function renderHistory(data) {
       const container = document.getElementById('history-container');
       if (!data || data.length === 0) { container.innerHTML = '<div style="text-align:center; color:#999; padding:20px;">ยังไม่มีประวัติการทำงาน</div>'; return; }
@@ -506,7 +513,25 @@
     async function finishDelivery() {
       const btn = document.getElementById('btn-confirm-delivery'); if(btn.classList.contains('btn-disabled')) return;
       btn.innerText = "⏳ ส่งรูปเข้า Telegram..."; btn.classList.add('btn-disabled');
-      try { const res = await fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: "uploadDriverPhoto", name: currentStaff.nickname, branch: state.currentDeliveryBranch, imageBase64: currentPhotoBase64 }) }); const json = await res.json(); if(json.success) { state.deliveryData[state.currentDeliveryBranch] = 'done'; saveState(); goDeliveryOverview(); restoreUIFromState(); showToast("ส่งของสำเร็จ!"); } else throw new Error(json.message); } catch(e) { alert("ล้มเหลว: " + e.message); btn.innerText = "ลองใหม่"; btn.classList.remove('btn-disabled'); }
+      try { 
+        const res = await fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: "uploadDriverPhoto", name: currentStaff.nickname, branch: state.currentDeliveryBranch, imageBase64: currentPhotoBase64 }) }); 
+        const json = await res.json(); 
+        if(json.success) { 
+          state.deliveryData[state.currentDeliveryBranch] = 'done'; 
+          saveState(); 
+          restoreUIFromState(); 
+          
+          // เช็คว่าส่งครบทุกสาขาหรือยัง
+          const allDone = BRANCHES.every(b => state.deliveryData[b] === 'done');
+          if (allDone) {
+            showSection('tasks-section');
+            showToast("ส่งของครบทุกสาขาแล้ว!");
+          } else {
+            goDeliveryOverview(); 
+            showToast("ส่งของสำเร็จ!"); 
+          }
+        } else throw new Error(json.message); 
+      } catch(e) { alert("ล้มเหลว: " + e.message); btn.innerText = "ลองใหม่"; btn.classList.remove('btn-disabled'); }
     }
 
     // --- ด่าน 3: รับของ ---
@@ -529,7 +554,7 @@
       showSection('return-stock-section');
     }
 
-    async function submitReturnStock() {
+   async function submitReturnStock() {
       const btn = document.getElementById('btn-submit-return');
       btn.innerText = "⏳ กำลังบันทึกข้อมูล..."; btn.classList.add('btn-disabled');
 
@@ -538,7 +563,10 @@
         const res = await fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: "submitDriverReturn", date: new Date().toLocaleDateString('en-CA'), items: itemsToReturn }) });
         const json = await res.json();
         if(json.success) {
-          state.stockChecked = true; saveState(); restoreUIFromState(); showToast("บันทึกสต็อกสำเร็จ!");
+          state.stockChecked = true; saveState(); restoreUIFromState(); 
+          btn.innerText = "บันทึกข้อมูลสต็อก 💾"; btn.classList.remove('btn-disabled'); // คืนค่าปุ่ม
+          showSection('tasks-section'); // เด้งไปหน้าหลักเพื่อกดจบงาน
+          showToast("บันทึกสต็อกสำเร็จ!");
         } else throw new Error(json.message);
       } catch(e) { alert("บันทึกไม่สำเร็จ: " + e.message); btn.innerText = "บันทึกข้อมูลสต็อก 💾"; btn.classList.remove('btn-disabled'); }
     }
