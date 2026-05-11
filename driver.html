@@ -247,11 +247,12 @@
     </div>
   </section>
 
-  <div id="menuOverlay" onclick="toggleMenu()">
+ <div id="menuOverlay" onclick="toggleMenu()">
     <div class="menu-box" onclick="event.stopPropagation()">
       <button class="big-btn secondary" style="margin-bottom: 12px; font-size: 1rem;" onclick="toggleMenu(); showSection('tasks-section');">📋 สิ่งที่ต้องทำวันนี้</button>
       <button class="big-btn secondary" style="margin-bottom: 12px; font-size: 1rem;" onclick="toggleMenu(); showSection('dashboard-section');">🕒 หน้าบันทึกเวลา</button>
-      <button class="big-btn" style="background:#FEE2E2; color:#EF4444; margin-bottom: 0; font-size: 1rem; box-shadow: none;" onclick="driverLogout()">🚪 ออกจากระบบ</button>
+      <button class="big-btn" style="background:#FEE2E2; color:#EF4444; margin-bottom: 12px; font-size: 1rem; box-shadow: none;" onclick="driverLogout()">🚪 ออกจากระบบ</button>
+      <button class="big-btn" style="background:#FFEDD5; color:#C2410C; margin-bottom: 0; font-size: 1rem; box-shadow: none;" onclick="clearDriverState()">🔄 ล้างข้อมูลของวันนี้</button>
     </div>
   </div>
 
@@ -554,10 +555,17 @@
     }
 
     // ฟังก์ชันออกจากระบบ (ใหม่)
-    function driverLogout() {
+   function driverLogout() {
       if(confirm("ต้องการออกจากระบบใช่หรือไม่?")) {
         localStorage.removeItem(SESSION_KEY);
         window.location.href = '/index.html';
+      }
+    }
+
+    function clearDriverState() {
+      if(confirm("แน่ใจหรือไม่ว่าจะล้างข้อมูลของวันนี้ทั้งหมด?")) {
+        localStorage.removeItem(DRIVER_STATE_KEY);
+        window.location.reload();
       }
     }
   </script>
