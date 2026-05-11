@@ -532,24 +532,48 @@ function handleSave() {
 
 function closeSummary() { document.getElementById('summary-sheet').classList.remove('visible'); }
 
+// ลิสต์จำนวนตายตัว (ฝังไว้แอบต่อท้ายชื่อของ ก่อนส่งไปให้คนขับ)
+const FIXED_ORDER_QTY = {
+  "เส้นหมี่": "2 ห่อ", "อกไก่": "2 ถุง", "หมูกระจก": "2 ห่อ", "ผักกาดหอม": "1 ถุง",
+  "ใบพาสเล่ย์": "1 ถุง", "ลูกชิ้นปลา": "1 ถุง", "ไข่กุ้ง": "1 ถุง",
+  "น้ำมันกระเทียมเจียว": "1 แกลลอน", "กระเทียมเจียว": "1 ถุง", "ซอสดั้งเดิม": "1 แกลลอน",
+  "น้ำมะนาว": "1 ขวด", "พริกป่น": "1 ถุง", "น้ำตาล": "1 ถุง", "น้ำปลา": "1 ขวด", "รสดี": "1 ถุง",
+  "กล่อง 26 oz": "2 แถว", "กล่อง 32 oz": "2 แถว", "ถุงซีล 7×10": "2 ห่อ", "ถุงซีล 9×11.5": "2 ห่อ",
+  "ถุงหิ้วพลาสติก 6×14": "1 ห่อ", "ถุงหิ้วพลาสติก 8×16": "1 ห่อ",
+  "สติ๊กเกอร์ ดั้งเดิม": "3 แผ่น", "สติ๊กเกอร์ แซ่บ": "3 แผ่น",
+  "กระดาษใบเสร็จ": "1 ม้วน", "กระดาษใบเสร็จ (ใหญ่)": "1 ม้วน", "กระดาษใบเสร็จ (เล็ก)": "1 ม้วน",
+  "ตะเกียบ": "2 ถุง",
+  "โค้ก": "6 กระป๋อง", "น้ำส้ม": "6 กระป๋อง", "น้ำแดง": "6 กระป๋อง", "สไปร์ท": "6 กระป๋อง",
+  "เก๊กฮวย": "1 ถุง", "อัญชัน": "1 ถุง", "ชาไทย": "1 ถุง", "ชาเขียวมะลิ": "1 ถุง",
+  "ถุงขยะ": "1 แพ็ค", "ทิชชู่เปียก": "1 แพ็ค", "ทิชชู่แห้ง": "1 แพ็ค",
+  "น้ำยาถูพื้น": "1 แพ็ค", "น้ำยาซักผ้า": "1 แพ็ค", "น้ำยาล้างจาน": "1 แพ็ค",
+  "ฟองน้ำล้างจาน": "1 แพ็ค", "ถุงมือ": "1 แพ็ค", "หมวกคลุมผม": "1 แพ็ค"
+};
+
 async function confirmSubmit() {
-    closeSummary();
-    const modal = document.getElementById('central-modal');
-    const icon = document.getElementById('central-icon');
-    const text = document.getElementById('central-text');
+    closeSummary();
+    const modal = document.getElementById('central-modal');
+    const icon = document.getElementById('central-icon');
+    const text = document.getElementById('central-text');
+    
+    modal.classList.add('show');
+    icon.className = 'central-spinner';
+    icon.innerHTML = '';
+    text.textContent = 'กำลังบันทึกข้อมูล...';
+    
+    const pctStr = document.getElementById('prog-pct').textContent.replace('%','');
+    const finalStocks = Object.keys(stockValues).map(name => {
+        const iDef = inventoryData.find(i => i.name === name);
+        return { name: name, value: stockValues[name], unit: iDef ? iDef.unit : '' };
+    });
     
-    modal.classList.add('show');
-    icon.className = 'central-spinner';
-    icon.innerHTML = '';
-    text.textContent = 'กำลังบันทึกข้อมูล...';
-    
-    const pctStr = document.getElementById('prog-pct').textContent.replace('%','');
-    const finalStocks = Object.keys(stockValues).map(name => {
-        const iDef = inventoryData.find(i => i.name === name);
-        return { name: name, value: stockValues[name], unit: iDef ? iDef.unit : '' };
+    // 🎯 แปลงร่าง! เอาชื่อของมาประกบกับจำนวน Fixed ก่อนส่งเข้าหลังบ้าน
+    const formattedOrders = Object.keys(orderRequests).map(name => {
+        return FIXED_ORDER_QTY[name] ? `${name} ${FIXED_ORDER_QTY[name]}` : name;
     });
-    const finalOrders = [...Object.keys(orderRequests), ...customOrders.map(c => c.name)];
-    const payload = { action: 'saveStockLog', branch_id: currentStaff.branch_id, mode: currentMode, staff_id: currentStaff.staff_id, progress: parseInt(pctStr) || 0, stocks: finalStocks, orders: finalOrders };
+    const finalOrders = [...formattedOrders, ...customOrders.map(c => c.name)];
+
+    const payload = { action: 'saveStockLog', branch_id: currentStaff.branch_id, mode: currentMode, staff_id: currentStaff.staff_id, progress: parseInt(pctStr) || 0, stocks: finalStocks, orders: finalOrders };
     
     try {
         const res = await apiPost(payload);
