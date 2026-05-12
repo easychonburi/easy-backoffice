@@ -343,7 +343,8 @@
     animation: spin 0.7s linear infinite;
   }
   @keyframes spin { to { transform: rotate(360deg); } }
-  /* ─── PURCHASE SHEET ─── */
+  
+/* ─── PURCHASE SHEET (ปรับปรุงใหม่: เต็มจอ & Responsive) ─── */
   .purchase-overlay {
     position: fixed; inset: 0;
     background: rgba(0,0,0,0.5);
@@ -351,37 +352,54 @@
     display: flex; align-items: flex-end;
   }
   .purchase-overlay.visible { opacity: 1; pointer-events: all; }
+
   .purchase-sheet {
-    background: var(--white); border-radius: 24px 24px 0 0;
-    padding: 0 0 40px; width: 100%;
-    max-height: 85vh; overflow-y: auto;
+    background: var(--bg); /* ใช้สีพื้นหลังเดียวกับแอป */
+    width: 100%;
+    height: 100%; /* ปรับให้สูงเต็มจอ */
+    max-height: 100vh;
+    overflow-y: auto;
     transform: translateY(100%);
     transition: transform 0.3s cubic-bezier(0.32, 0.72, 0, 1);
+    display: flex;
+    flex-direction: column;
   }
   .purchase-overlay.visible .purchase-sheet { transform: translateY(0); }
-  .purchase-sheet-handle { width: 36px; height: 4px; background: var(--border); border-radius: 2px; margin: 16px auto 0; }
-  .purchase-sheet-header { padding: 16px 20px 12px; border-bottom: 1px solid var(--border); }
-  .purchase-sheet-title { font-size: 17px; font-weight: 600; color: var(--text); }
-  .purchase-sheet-sub { font-size: 12px; color: var(--text-secondary); font-weight: 300; margin-top: 2px; }
-  .purchase-list { padding: 12px 16px; display: flex; flex-direction: column; gap: 10px; }
-  .purchase-card {
-    background: var(--soft); border: 1px solid var(--border);
-    border-radius: var(--radius-sm); padding: 12px 14px;
-    display: flex; align-items: center; gap: 12px;
+
+  .purchase-sheet-header { 
+    padding: 20px; 
+    background: white; 
+    border-bottom: 1px solid var(--border);
+    position: sticky; top: 0; z-index: 10;
+    display: flex; justify-content: space-between; align-items: center;
   }
-  .purchase-card-info { flex: 1; }
-  .purchase-card-date { font-size: 11px; color: var(--text-secondary); font-weight: 300; margin-bottom: 4px; }
-  .purchase-item-list { display: flex; flex-direction: column; gap: 3px; }
-  .purchase-item-row { font-size: 13px; color: var(--text); font-weight: 400; }
-  .purchase-item-qty { font-weight: 600; color: var(--blue); }
-  .approve-btn {
-    border: none; background: var(--green); color: white;
-    font-family: 'Prompt', sans-serif; font-size: 12px; font-weight: 500;
-    padding: 8px 14px; border-radius: 8px; cursor: pointer;
-    flex-shrink: 0; transition: all 0.2s;
+  .purchase-list { padding: 16px; flex: 1; }
+
+  /* การ์ดรายการใน Step 2 */
+  .order-item-card {
+    background: white;
+    border-radius: 12px;
+    padding: 16px;
+    margin-bottom: 12px;
+    border: 1px solid var(--border);
+    box-shadow: 0 2px 4px rgba(0,0,0,0.02);
   }
-  .approve-btn:active { transform: scale(0.95); }
-  .purchase-empty { text-align: center; padding: 32px 20px; font-size: 13px; color: var(--text-secondary); font-weight: 300; }
+  .input-group {
+    display: flex;
+    gap: 8px;
+    margin-top: 10px;
+  }
+  .input-group input {
+    flex: 1;
+    min-width: 0; /* ป้องกัน Input ดันจนล้นจอ */
+    padding: 10px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    font-family: 'Prompt';
+    font-size: 14px;
+  }
+  .purchase-empty { text-align: center; padding: 40px 20px; color: var(--text-secondary); font-weight: 300; }
+  .close-sheet-btn { background: none; border: none; font-size: 20px; color: var(--text); cursor: pointer; padding: 5px; }
 </style>
 </head>
 <body>
@@ -891,208 +909,201 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 });
 
- // ─── PURCHASE SHEET ───
+// ─── PURCHASE SHEET (ระบบใหม่: 2 ขั้นตอน เลือกของก่อน -> ระบุจุดรับ) ───
+let purchaseStep = 1; // 1: หน้าเลือกของ, 2: หน้าสรุปและเลือกสถานที่
+let systemItems = []; // รายการที่ระบบคำนวณมาให้
+let selectedOrderItems = []; // รายการที่วิวกด "สั่งเพิ่ม"
+const PICKUP_LOCATIONS = ['Makro', 'Go Wholesale', 'ตลาด', 'เมืองชลเบเกอรี่', 'CMS', 'อื่นๆ'];
+
 async function openPurchaseSheet() {
   document.getElementById('purchase-overlay').classList.add('visible');
-  document.getElementById('purchase-sheet-sub').textContent = 'กำลังโหลด...';
-  document.getElementById('purchase-list').innerHTML = '<div class="purchase-empty">กำลังโหลด...</div>';
+  purchaseStep = 1;
+  selectedOrderItems = []; // เริ่มใหม่ทุกครั้งที่เปิด
   await fetchPendingPurchases();
 }
 
 function closePurchaseSheet(e) {
-  if (e.target === document.getElementById('purchase-overlay')) {
+  // ปิดเมื่อกดย้อนกลับ หรือคลิกพื้นหลัง
+  if (e.target === document.getElementById('purchase-overlay') || e === 'force') {
     document.getElementById('purchase-overlay').classList.remove('visible');
   }
 }
 
-// 🛠️ อัปเดตรายชื่อสถานที่ใหม่ตามที่ต้องการ
-const PICKUP_LOCATIONS = ['Makro', 'Go Wholesale', 'ตลาด', 'เมืองชลเบเกอรี่', 'CMS', 'อื่นๆ'];
-
-let systemRemainingItems = []; // เก็บยอดคงเหลือจากระบบไว้อ้างอิง
-let orderGroups = []; // เก็บข้อมูลใบสั่งซื้อที่แยกตามสถานที่
-
 async function fetchPendingPurchases() {
   try {
     const res = await apiGet('action=getPendingPurchases');
-    systemRemainingItems = [];
-    
-    if (res.success && res.data.length > 0) {
-      const p = res.data[0]; 
-      systemRemainingItems = JSON.parse(p.items_json || '[]');
-      document.getElementById('purchase-sheet-sub').textContent = `ดึงยอดคงเหลือล่าสุดของวันนี้แล้ว`;
-      document.getElementById('driver-badge').textContent = `⚠️ มีข้อมูลใหม่`;
-    } else {
-      document.getElementById('purchase-sheet-sub').textContent = `ไม่มีข้อมูลสต็อกค้างในระบบ`;
-      document.getElementById('driver-badge').textContent = `ใบสั่งซื้อ`;
-    }
-
-    // ถ้าเปิดมาแล้วไม่มีรายการตั้งต้น ให้สร้างกล่องว่างๆ รอไว้ 1 อัน
-    if (orderGroups.length === 0) {
-        orderGroups.push({ locType: '', locCustom: '', items: [{ name: '', qty: '', unit: '' }] });
-    }
-
+    // ดึงข้อมูลสต็อกล่าสุดมาเก็บไว้
+    systemItems = (res.success && res.data.length > 0) ? JSON.parse(res.data[0].items_json || '[]') : [];
     renderPurchaseSheet();
   } catch {
-    document.getElementById('purchase-list').innerHTML = '<div class="purchase-empty">โหลดไม่สำเร็จ</div>';
+    document.getElementById('purchase-list').innerHTML = '<div class="purchase-empty">โหลดข้อมูลไม่สำเร็จ</div>';
   }
 }
 
 function renderPurchaseSheet() {
   const list = document.getElementById('purchase-list');
-  let html = '';
-
-  // --- 1. ส่วนแสดงยอดคงเหลืออ้างอิง ---
-  if (systemRemainingItems.length > 0) {
-    html += `
-      <div style="margin-bottom: 24px; background: white; padding: 14px; border-radius: 12px; border: 1px solid var(--border);">
-        <div style="font-size: 13px; font-weight: 600; color: var(--text-secondary); margin-bottom: 12px;">📊 ยอดคงเหลือจากระบบ (ใช้ดูประกอบการตัดสินใจ)</div>
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
-          ${systemRemainingItems.map(i => `
-            <div style="display: flex; justify-content: space-between; font-size: 13px; background: var(--soft); padding: 8px 10px; border-radius: 8px; border: 1px solid var(--border);">
-              <span style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 60%;">${i.name}</span>
-              <strong style="color: var(--orange);">${i.remaining || 0} ${i.unit || ''}</strong>
-            </div>
-          `).join('')}
-        </div>
-      </div>
-    `;
+  const headerTitle = document.querySelector('.purchase-sheet-title');
+  const sub = document.getElementById('purchase-sheet-sub');
+  
+  if (purchaseStep === 1) {
+    headerTitle.textContent = "สั่งของเข้าครัวกลาง";
+    sub.textContent = "ขั้นตอนที่ 1: เลือกรายการจากสต็อก";
+    renderStep1(list);
+  } else {
+    headerTitle.textContent = "ระบุรายละเอียด";
+    sub.textContent = "ขั้นตอนที่ 2: ใส่จำนวนและจุดรับ";
+    renderStep2(list);
   }
+}
 
-  // --- 2. ส่วนสร้างใบสั่งงาน (แยกตามสถานที่) ---
-  html += `<div style="font-size: 15px; font-weight: 600; margin-bottom: 12px; color: var(--text);">🛒 จัดการใบสั่งของ (แยกตามจุดรับ)</div>`;
-
-  orderGroups.forEach((group, gIdx) => {
-    const locOptions = PICKUP_LOCATIONS.map(l => `<option value="${l}" ${group.locType === l ? 'selected' : ''}>${l}</option>`).join('');
-    
-    // วนลูปโชว์รายการของภายใต้สถานที่นั้นๆ
-    const itemsHtml = group.items.map((item, iIdx) => `
-      <div style="display: flex; gap: 6px; align-items: center; margin-bottom: 8px;">
-        <input type="text" value="${item.name}" oninput="updateItem(${gIdx}, ${iIdx}, 'name', this.value)" placeholder="ชื่อของ" style="flex: 2; padding: 10px; border: 1px solid var(--border); border-radius: 8px; font-family: 'Prompt'; font-size: 14px; outline: none;">
-        <input type="number" step="0.5" value="${item.qty}" oninput="updateItem(${gIdx}, ${iIdx}, 'qty', this.value)" placeholder="จำนวน" style="flex: 1; padding: 10px; border: 1px solid var(--border); border-radius: 8px; text-align: center; font-family: 'Prompt'; font-size: 14px; outline: none;">
-        <input type="text" value="${item.unit}" oninput="updateItem(${gIdx}, ${iIdx}, 'unit', this.value)" placeholder="หน่วย" style="flex: 1; padding: 10px; border: 1px solid var(--border); border-radius: 8px; text-align: center; font-family: 'Prompt'; font-size: 14px; outline: none;">
-        <button onclick="removeItem(${gIdx}, ${iIdx})" style="background: var(--danger-bg); color: var(--danger); border: none; padding: 10px 12px; border-radius: 8px; cursor: pointer;">✕</button>
-      </div>
-    `).join('');
-
-    // กล่องสำหรับ 1 สถานที่
-    html += `
-      <div style="background: #fff; padding: 16px; border-radius: 12px; border: 1.5px solid var(--border); margin-bottom: 16px; box-shadow: 0 4px 12px rgba(0,0,0,0.03);">
-        
-        <div style="display: flex; gap: 8px; margin-bottom: 12px; align-items: center;">
-          <div style="font-size: 18px;">📍</div>
-          <select onchange="updateGroupLoc(${gIdx}, this.value)" style="flex: 1; padding: 10px; border: 1.5px solid var(--blue); border-radius: 8px; font-family: 'Prompt'; font-size: 15px; font-weight: 500; color: var(--blue); outline: none; background: var(--blue-bg);">
-            <option value="">-- เลือกสถานที่รับของ --</option>
-            ${locOptions}
-          </select>
-          <button onclick="removeGroup(${gIdx})" style="background: none; border: none; color: var(--text-secondary); font-size: 13px; cursor: pointer; text-decoration: underline;">ลบจุดรับนี้</button>
-        </div>
-        
-        ${group.locType === 'อื่นๆ' ? `
-          <input type="text" value="${group.locCustom}" oninput="updateGroupCustom(${gIdx}, this.value)" placeholder="พิมพ์ชื่อจุดรับของเอง..." style="width: 100%; padding: 10px; border: 1.5px solid var(--blue); border-radius: 8px; font-family: 'Prompt'; font-size: 14px; margin-bottom: 12px; outline: none; border-left: 4px solid var(--blue);">
-        ` : ''}
-
-        <div style="background: var(--soft); padding: 12px; border-radius: 10px;">
-          ${itemsHtml}
-          <button onclick="addItem(${gIdx})" style="width: 100%; padding: 10px; border: 1.5px dashed var(--blue); border-radius: 8px; background: white; color: var(--blue); font-family: 'Prompt'; font-size: 14px; font-weight: 500; cursor: pointer; margin-top: 4px;">
-            + เพิ่มรายการของในจุดนี้
-          </button>
-        </div>
-      </div>
-    `;
-  });
-
-  html += `
-    <button onclick="addGroup()" style="width: 100%; padding: 14px; border: 2px dashed #9CA3AF; border-radius: 12px; background: white; color: var(--text-secondary); font-family: 'Prompt'; font-size: 15px; font-weight: 600; cursor: pointer; margin-bottom: 24px;">
-      ➕ เพิ่มจุดรับของใหม่
-    </button>
-
-    <button class="approve-btn" id="btn-submit-order" style="width: 100%; padding: 16px; font-size: 16px; background: var(--green); box-shadow: 0 4px 16px rgba(34,197,94,0.3);" onclick="sendToDriver()">
-      🚀 ส่งใบสั่งงานให้คนขับทั้งหมด
-    </button>
+// --- Step 1: แสดงรายการสต็อกปัจจุบันให้กดเลือก ---
+function renderStep1(container) {
+  let html = `
+    <div style="margin-bottom: 20px;">
+      <button onclick="addManualItem()" class="big-btn" style="background:white; color:var(--blue); border:2px dashed var(--blue); padding:12px;">
+        ➕ พิมพ์รายการสั่งเอง (นอกเหนือจากสต็อก)
+      </button>
+    </div>
+    <div style="font-size:13px; font-weight:600; color:var(--text-secondary); margin-bottom:12px; padding-left:4px;">รายการที่มีในสต็อก</div>
   `;
 
-  list.innerHTML = html;
+  if (systemItems.length === 0) {
+    html += '<div class="purchase-empty">ยังไม่มีข้อมูลสต็อกของวันนี้</div>';
+  } else {
+    html += systemItems.map((item, idx) => `
+      <div style="display:flex; justify-content:space-between; align-items:center; background:white; padding:16px; border-radius:12px; margin-bottom:8px; border:1px solid var(--border);">
+        <div style="flex:1;">
+          <div style="font-weight:600; font-size:15px;">${item.name}</div>
+          <div style="font-size:12px; color:var(--orange);">เหลือ: ${item.remaining} ${item.unit}</div>
+        </div>
+        <button onclick="selectItem(${idx})" style="padding:8px 14px; border-radius:20px; border:none; background:var(--blue); color:white; font-size:13px; font-weight:500; cursor:pointer;">
+          สั่งเพิ่ม
+        </button>
+      </div>
+    `).join('');
+  }
+
+  // ปุ่มไป Step 2 จะเด้งขึ้นมาเมื่อมีการเลือกอย่างน้อย 1 อย่าง
+  if (selectedOrderItems.length > 0) {
+    html += `
+      <div style="margin-top:24px; padding-bottom:30px;">
+        <button onclick="goToStep2()" class="big-btn primary" style="background:var(--green-dark); box-shadow:0 4px 12px rgba(22,163,74,0.3);">
+          เลือกจุดรับของ (${selectedOrderItems.length} รายการ) →
+        </button>
+      </div>
+    `;
+  }
+  container.innerHTML = html;
 }
 
-// --- ฟังก์ชันช่วยเหลือการกดปุ่มต่างๆ ---
-function addGroup() {
-  orderGroups.push({ locType: '', locCustom: '', items: [{ name: '', qty: '', unit: '' }] });
-  renderPurchaseSheet();
+// --- Step 2: สรุปรายการที่เลือก ใส่จำนวนและสถานที่ ---
+function renderStep2(container) {
+  let html = `
+    <button onclick="purchaseStep = 1; renderPurchaseSheet();" style="background:none; border:none; color:var(--blue); font-size:14px; margin-bottom:15px; cursor:pointer; font-family:'Prompt';">← ย้อนกลับไปเลือกของเพิ่ม</button>
+  `;
+
+  html += selectedOrderItems.map((item, idx) => `
+    <div class="order-item-card">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+        <strong style="font-size:16px;">${item.name || 'พิมพ์ชื่อรายการ...'}</strong>
+        <button onclick="removeSelectedItem(${idx})" style="color:var(--danger); border:none; background:none; font-size:20px; cursor:pointer;">✕</button>
+      </div>
+      
+      ${!item.name ? `<input type="text" placeholder="ชื่อของที่ต้องการสั่ง" oninput="updateSelectedField(${idx}, 'name', this.value)" style="width:100%; padding:10px; border:1px solid var(--border); border-radius:8px; margin-bottom:10px; font-family:'Prompt';">` : ''}
+
+      <div class="input-group">
+        <input type="number" step="0.5" placeholder="จำนวน" value="${item.qty}" oninput="updateSelectedField(${idx}, 'qty', this.value)">
+        <input type="text" placeholder="หน่วย" value="${item.unit}" oninput="updateSelectedField(${idx}, 'unit', this.value)">
+      </div>
+
+      <div style="margin-top:12px;">
+        <select onchange="updateSelectedField(${idx}, 'location', this.value)" 
+                style="width:100%; padding:12px; border:1.5px solid var(--blue); border-radius:8px; font-family:'Prompt'; background:var(--blue-bg); color:var(--blue); font-weight:600; outline:none;">
+          <option value="">-- เลือกสถานที่รับของ --</option>
+          ${PICKUP_LOCATIONS.map(l => `<option value="${l}" ${item.location === l ? 'selected' : ''}>${l}</option>`).join('')}
+        </select>
+        ${item.location === 'อื่นๆ' ? `
+          <input type="text" placeholder="ระบุชื่อสถานที่..." value="${item.locCustom || ''}" oninput="updateSelectedField(${idx}, 'locCustom', this.value)"
+                 style="width:100%; margin-top:8px; padding:10px; border:1px solid var(--blue); border-radius:8px; font-family:'Prompt';">
+        ` : ''}
+      </div>
+    </div>
+  `).join('');
+
+  html += `
+    <div style="padding-top:10px; padding-bottom:40px;">
+      <button class="approve-btn" style="width:100%; padding:18px; font-size:16px; background:var(--blue); border-radius:12px;" onclick="sendToDriver()">
+        🚀 ยืนยันส่งงานให้คนขับ
+      </button>
+    </div>
+  `;
+  container.innerHTML = html;
 }
-function removeGroup(gIdx) {
-  if(confirm('ต้องการลบจุดรับของนี้ รวมถึงรายการของทั้งหมดข้างในใช่หรือไม่?')) {
-    orderGroups.splice(gIdx, 1);
+
+// --- Logic การจัดการข้อมูล ---
+function selectItem(idx) {
+  const item = systemItems[idx];
+  if (!selectedOrderItems.some(i => i.name === item.name)) {
+    selectedOrderItems.push({ name: item.name, qty: '', unit: item.unit, location: '' });
+    showToast(`เลือก ${item.name} แล้ว`);
     renderPurchaseSheet();
+  } else {
+    showToast('รายการนี้เลือกไปแล้วครับ');
   }
 }
-function updateGroupLoc(gIdx, val) {
-  orderGroups[gIdx].locType = val;
-  if(val !== 'อื่นๆ') orderGroups[gIdx].locCustom = '';
-  renderPurchaseSheet();
-}
-function updateGroupCustom(gIdx, val) { orderGroups[gIdx].locCustom = val; }
 
-function addItem(gIdx) {
-  orderGroups[gIdx].items.push({ name: '', qty: '', unit: '' });
+function addManualItem() {
+  selectedOrderItems.unshift({ name: '', qty: '', unit: '', location: '' });
+  purchaseStep = 2; // พาไปหน้ากรอกข้อมูลทันที
   renderPurchaseSheet();
 }
-function removeItem(gIdx, iIdx) {
-  orderGroups[gIdx].items.splice(iIdx, 1);
-  if(orderGroups[gIdx].items.length === 0) {
-    orderGroups[gIdx].items.push({ name: '', qty: '', unit: '' }); // กันเหนียว ไม่ให้โล่ง
-  }
+
+function updateSelectedField(idx, field, val) {
+  selectedOrderItems[idx][field] = val;
+  if (field === 'location') renderPurchaseSheet(); // รีเฟรชเพื่อโชว์ช่อง "อื่นๆ"
+}
+
+function removeSelectedItem(idx) {
+  selectedOrderItems.splice(idx, 1);
+  if (selectedOrderItems.length === 0) purchaseStep = 1;
   renderPurchaseSheet();
 }
-function updateItem(gIdx, iIdx, field, val) {
-  orderGroups[gIdx].items[iIdx][field] = val;
+
+function goToStep2() {
+  purchaseStep = 2;
+  renderPurchaseSheet();
 }
 
 async function sendToDriver() {
-  const finalItems = [];
-  let hasError = false;
-
-  orderGroups.forEach(group => {
-    const loc = group.locType === 'อื่นๆ' ? group.locCustom.trim() : group.locType;
-    
-    group.items.forEach(item => {
-      const n = item.name.trim();
-      const q = item.qty;
-      
-      // ถ้ามีการพิมพ์ชื่อของ หรือตัวเลข อย่างใดอย่างหนึ่ง
-      if (n || q) { 
-        if (!loc) { showToast('กรุณาเลือกหรือพิมพ์สถานที่รับของให้ครบถ้วน', 'error'); hasError = true; return; }
-        if (!n || !q) { showToast(`กรุณากรอกชื่อของและจำนวนให้ครบในจุดรับ: ${loc}`, 'error'); hasError = true; return; }
-        finalItems.push({ name: n, qty: q, unit: item.unit.trim(), location: loc });
-      }
-    });
-  });
-
-  if (hasError) return;
+  const finalItems = selectedOrderItems.map(item => ({
+    name: item.name,
+    qty: item.qty,
+    unit: item.unit,
+    location: item.location === 'อื่นๆ' ? (item.locCustom || 'อื่นๆ') : item.location
+  })).filter(i => i.name && i.qty && i.location);
 
   if (finalItems.length === 0) {
-    if(!confirm('คุณยังไม่ได้ระบุรายการสั่งของเลย ยืนยันที่จะปิดจ๊อบนี้ใช่หรือไม่?')) return;
-  } else {
-    if(!confirm(`ยืนยันสั่งของทั้งหมด ${finalItems.length} รายการ ให้คนขับไปรับตามจุดต่างๆ ใช่หรือไม่?`)) return;
+    alert("กรุณากรอกข้อมูลให้ครบถ้วน (ชื่อของ จำนวน และสถานที่)");
+    return;
   }
 
-  const btn = document.getElementById('btn-submit-order');
-  btn.disabled = true;
-  btn.textContent = '⏳ กำลังส่งงาน...';
+  if (!confirm(`ส่งใบสั่งงาน ${finalItems.length} รายการ ให้คนขับใช่หรือไม่?`)) return;
+
+  const btn = document.querySelector('.approve-btn');
+  btn.disabled = true; btn.textContent = '⏳ กำลังส่งงาน...';
 
   try {
     const res = await apiPost({ action: 'approvePurchase', items: finalItems });
     if (res.success) {
-      showToast('✅ ส่งงานให้คนขับเรียบร้อย!', 'success');
-      document.getElementById('purchase-overlay').classList.remove('visible');
-      document.getElementById('driver-badge').textContent = 'ใบสั่งซื้อ';
-      orderGroups = []; // เคลียร์ฟอร์ม
+      showToast('✅ ส่งงานเรียบร้อย!', 'success');
+      closePurchaseSheet('force');
+      selectedOrderItems = [];
     } else {
-      btn.disabled = false; btn.textContent = '🚀 ส่งใบสั่งงานให้คนขับทั้งหมด';
-      showToast(res.message || 'เกิดข้อผิดพลาด', 'error');
+      throw new Error(res.message);
     }
   } catch (e) {
-    btn.disabled = false; btn.textContent = '🚀 ส่งใบสั่งงานให้คนขับทั้งหมด';
-    showToast('เชื่อมต่อไม่ได้', 'error');
+    btn.disabled = false; btn.textContent = '🚀 ยืนยันส่งงานให้คนขับ';
+    showToast('เกิดข้อผิดพลาด: ' + e.toString(), 'error');
   }
 }
 
