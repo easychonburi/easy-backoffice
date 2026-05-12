@@ -487,14 +487,8 @@
 
   <!-- PURCHASE SHEET -->
 <div class="purchase-overlay" id="purchase-overlay" onclick="closePurchaseSheet(event)">
-  <div class="purchase-sheet">
-    <div class="purchase-sheet-handle"></div>
-    <div class="purchase-sheet-header">
-      <div class="purchase-sheet-title">🚚 ใบสั่งซื้อรออนุมัติ</div>
-      <div class="purchase-sheet-sub" id="purchase-sheet-sub">กำลังโหลด...</div>
+  <div class="purchase-sheet" id="purchase-list" onclick="event.stopPropagation()">
     </div>
-    <div class="purchase-list" id="purchase-list"></div>
-  </div>
 </div>
 
 <div class="toast" id="toast"></div>
@@ -912,11 +906,19 @@ async function openPurchaseSheet() {
 }
 
 function closePurchaseSheet(e) {
-  if (e === 'force' || confirm('ข้อมูลที่เลือกไว้จะหายไป ต้องการปิดหน้าต่างนี้ใช่หรือไม่?')) {
+  // ปิดทันทีโดยไม่ถาม (เวลาส่งงานเสร็จ)
+  if (e === 'force') {
     document.getElementById('purchase-overlay').classList.remove('visible');
+    return;
+  }
+  // ถามก่อนปิด (เวลากดปุ่ม ✕ หรือจิ้มโดนพื้นหลังสีดำ)
+  if (e === 'prompt' || (e && e.target && e.target.id === 'purchase-overlay')) {
+    if (confirm('ข้อมูลที่เลือกไว้จะหายไป ต้องการปิดหน้าต่างนี้ใช่หรือไม่?')) {
+      document.getElementById('purchase-overlay').classList.remove('visible');
+    }
   }
 }
-
+  
 async function fetchPendingPurchases() {
   try {
     const res = await apiGet('action=getPendingPurchases');
@@ -930,14 +932,18 @@ async function fetchPendingPurchases() {
 function renderPurchaseSheet() {
   const container = document.getElementById('purchase-list');
   
-  // Header แถบบนสุด
+  // Header แถบบนสุด (เพิ่มปุ่ม ← ที่มุมซ้าย)
   let html = `
     <div class="sheet-header">
-      <div>
-        <div style="font-size:18px; font-weight:600;">${step === 1 ? '🛒 1. เลือกของที่ต้องสั่งเพิ่ม' : '📦 2. ระบุจุดรับและจำนวน'}</div>
-        <div style="font-size:12px; color:var(--text-secondary);">${step === 1 ? 'กดที่รายการให้กลายเป็นสีเขียว' : 'ติ๊กเลือกของ แล้วโยนลงจุดรับ'}</div>
+      <div style="display:flex; align-items:center; gap:12px;">
+        <button onclick="${step === 1 ? "closePurchaseSheet('prompt')" : "step=1; renderPurchaseSheet()"}" 
+                style="background:none; border:none; font-size:22px; cursor:pointer; color:var(--text-secondary); padding:4px;">←</button>
+        <div>
+          <div style="font-size:18px; font-weight:600;">${step === 1 ? '🛒 1. เลือกของที่ต้องสั่งเพิ่ม' : '📦 2. ระบุจุดรับและจำนวน'}</div>
+          <div style="font-size:12px; color:var(--text-secondary);">${step === 1 ? 'กดที่รายการให้กลายเป็นสีเขียว' : 'ติ๊กเลือกของ แล้วโยนลงจุดรับ'}</div>
+        </div>
       </div>
-      <button onclick="closePurchaseSheet('force')" style="background:none; border:none; font-size:24px; color:var(--text-secondary); cursor:pointer;">✕</button>
+      <button onclick="closePurchaseSheet('prompt')" style="background:none; border:none; font-size:24px; color:var(--text-secondary); cursor:pointer;">✕</button>
     </div>
     <div style="padding: 16px; padding-bottom: 100px;">
   `;
@@ -948,7 +954,7 @@ function renderPurchaseSheet() {
     html += renderStep2();
   }
 
-  html += `</div>`; // ปิด padding
+  html += `</div>`;
   container.innerHTML = html;
 }
 
@@ -993,9 +999,7 @@ function renderStep1() {
 
 // ─── Step 2: หน้าจัดลงสถานที่ ───
 function renderStep2() {
-  let html = `
-    <button onclick="step=1; renderPurchaseSheet();" style="border:none; background:none; color:var(--blue); margin-bottom:16px; font-family:'Prompt'; font-size:14px; cursor:pointer;">← กลับไปเลือกของเพิ่ม</button>
-  `;
+  let html = ``;
 
   const unassigned = cartItems.filter(c => !c.assigned);
   
