@@ -1099,6 +1099,19 @@ function renderLocationBox(group, gIdx) {
 }
 
 // ─── ฟังก์ชันเสริมสำหรับการจัดการข้อมูล ───
+
+// ฟังก์ชันสำหรับกดปุ่ม สั่งเพิ่ม/สั่งแล้ว
+function toggleCart(idx) {
+  const item = stockPool[idx];
+  const foundIdx = cartItems.findIndex(c => c.name === item.name);
+  if (foundIdx > -1) {
+    cartItems.splice(foundIdx, 1);
+  } else {
+    cartItems.push({ id: 'SYS_'+idx, name: item.name, unit: item.unit, assigned: false });
+  }
+  renderPurchaseSheet();
+}
+
 function addQuickManualItem() {
   const input = document.getElementById('quick_manual_input');
   const val = input ? input.value.trim() : "";
@@ -1114,6 +1127,56 @@ function removeManualFromCart(id) {
   if (idx > -1) { cartItems.splice(idx, 1); renderPurchaseSheet(); }
 }
 
+// ฟังก์ชันสำหรับกวาดของลงกล่องสถานที่
+function assignSelectedItems() {
+  const locSelect = document.getElementById('bulk_loc').value;
+  if (!locSelect) return showToast('กรุณาเลือกจุดรับของก่อนครับ', 'error');
+
+  const unassigned = cartItems.filter(c => !c.assigned);
+  let checkedCount = 0;
+
+  // หาหรือสร้างกล่องสถานที่
+  let group = locGroups.find(g => g.location === locSelect);
+  if (!group) {
+    group = { location: locSelect, customLoc: '', items: [] };
+    locGroups.unshift(group);
+  }
+
+  unassigned.forEach((c, i) => {
+    const chk = document.getElementById('chk_u_' + i);
+    if (chk && chk.checked) {
+      c.assigned = true;
+      group.items.push({ cartId: c.id, name: c.name, qty: '', unit: c.unit });
+      checkedCount++;
+    }
+  });
+
+  if (checkedCount === 0) return showToast('กรุณาติ๊กเลือกของอย่างน้อย 1 อย่างครับ', 'error');
+  renderPurchaseSheet();
+}
+
+// ฟังก์ชันสำหรับกดกากบาทลบของออกจากกล่อง
+function unassignItem(gIdx, iIdx) {
+  const item = locGroups[gIdx].items[iIdx];
+  const cartItem = cartItems.find(c => c.id === item.cartId);
+  if (cartItem) cartItem.assigned = false;
+  locGroups[gIdx].items.splice(iIdx, 1);
+  if (locGroups[gIdx].items.length === 0) locGroups.splice(gIdx, 1);
+  renderPurchaseSheet();
+}
+
+// ฟังก์ชันสำหรับลบกล่องสถานที่ทิ้งทั้งกล่อง
+function removeLocGroup(gIdx) {
+  if (confirm('ลบจุดนี้แล้วของจะเด้งกลับไปอยู่ในตะกร้ารอจัดนะครับ?')) {
+    locGroups[gIdx].items.forEach(item => {
+      const cartItem = cartItems.find(c => c.id === item.cartId);
+      if (cartItem) cartItem.assigned = false;
+    });
+    locGroups.splice(gIdx, 1);
+    renderPurchaseSheet();
+  }
+}
+
 async function sendToDriver() {
   const finalItems = [];
   locGroups.forEach(g => {
@@ -1124,8 +1187,22 @@ async function sendToDriver() {
   });
   if (finalItems.length === 0) return alert("ยังไม่ได้กรอกรายการสั่งของเลยครับ");
   if (!confirm(`ยืนยันส่งงาน ${finalItems.length} รายการให้คนขับ?`)) return;
-  const res = await apiPost({ action: 'approvePurchase', items: finalItems });
-  if (res.success) { showToast('🚀 ส่งงานสำเร็จ!'); document.getElementById('purchase-overlay').classList.remove('visible'); }
+  
+  const btn = document.querySelector('.sticky-footer button');
+  btn.disabled = true; btn.textContent = '⏳ กำลังส่งงาน...';
+  
+  try {
+    const res = await apiPost({ action: 'approvePurchase', items: finalItems });
+    if (res.success) { 
+      showToast('🚀 ส่งงานสำเร็จ!'); 
+      document.getElementById('purchase-overlay').classList.remove('visible'); 
+    } else {
+      throw new Error(res.message);
+    }
+  } catch (e) {
+    btn.disabled = false; btn.textContent = '🚀 ยืนยันส่งงานทั้งหมด';
+    showToast('เกิดข้อผิดพลาดในการส่งข้อมูล', 'error');
+  }
 }
 
 window.addEventListener('load', async () => {
