@@ -4,6 +4,11 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <title>EASY Driver System</title>
+  
+  <link rel="manifest" href="/manifest.json">
+  <meta name="theme-color" content="#ED1C24">
+  <link rel="apple-touch-icon" href="/icon-192.png">
+  
   <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Prompt', sans-serif; -webkit-tap-highlight-color: transparent; }
@@ -43,6 +48,7 @@
     
     .item-row { border: 1px solid #E5E7EB; border-radius: 12px; padding: 14px; margin-bottom: 10px; background: white; transition: 0.2s; }
     .item-row.done { opacity: 0.6; background: #F9FAFB; border: 1px dashed #D1D5DB; }
+    
     /* --- Fraction Buttons --- */
     .frac-btns { display: flex; gap: 4px; }
     .frac-btn { padding: 6px 10px; font-family: 'Prompt', sans-serif; font-size: 0.8rem; font-weight: 500; border: 1px solid #D1D5DB; border-radius: 6px; background: #fff; color: #333; cursor: pointer; white-space: nowrap; transition: 0.2s; }
@@ -78,7 +84,7 @@
     .loading-overlay.show { opacity: 1; pointer-events: all; }
     .spinner { width: 40px; height: 40px; border: 4px solid #E5E7EB; border-top-color: #ED1C24; border-radius: 50%; animation: spin 0.8s linear infinite; }
     @keyframes spin { to { transform: rotate(360deg); } }
-  #menuOverlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 9999; display: flex; justify-content: flex-end; padding: 70px 16px; opacity: 0; pointer-events: none; transition: opacity 0.2s; }
+    #menuOverlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 9999; display: flex; justify-content: flex-end; padding: 70px 16px; opacity: 0; pointer-events: none; transition: opacity 0.2s; }
     #menuOverlay.show { opacity: 1; pointer-events: all; }
     .menu-box { background: #fff; border-radius: 16px; padding: 16px; width: 250px; box-shadow: 0 8px 24px rgba(0,0,0,0.2); transform: translateY(-20px); transition: transform 0.2s; }
     #menuOverlay.show .menu-box { transform: translateY(0); }
@@ -263,10 +269,11 @@
   <div id="toast"></div>
 
   <script>
-    // ⚠️ ต้องเปลี่ยน URL นีัเป็นของโปรเจกต์วิวนะครับ (เจมมี่คงอันเดิมไว้ให้แล้ว)
+    // ⚠️ อย่าลืมเปลี่ยน URL เป็นของระบบวิวด้วยนะครับ!
     const API_URL = 'https://script.google.com/macros/s/AKfycbxxTjC7xOGHlgyStVBf6SimoU5RA7xX3VPwxIUtfGlpMNO89OQPDaRewKDDEmWGK4kk/exec';
     const SESSION_KEY = 'easy_session';
     const DRIVER_STATE_KEY = 'easyDriverState_v3';
+    const STATE_KEY = 'driver_work_state';
 
     let currentStaff = null;
     let BRANCHES = [];
@@ -283,36 +290,39 @@
       pickupData: {},
       stockChecked: false, // ด่าน 4
       returnStatus: 'locked', // ด่าน 5
-      lastDate: ""
+      lastDate: "",
+      driverReturnValues: {} // 🌟 ตัวแปรเก็บค่าค้างหน้าเช็คสต็อก
     };
 
     let currentPhotoBase64 = "";
 
-    let driverReturnValues = {}; // 🛠️ ตัวแปรสำหรับเก็บค่าสต็อกที่คนขับกรอก
-
+    // 🌟 รายการอัปเดตใหม่ 20 รายการครบถ้วน ตรงเป๊ะทุกตัวอักษร!
     const RETURN_ITEMS_SCHEMA = [
       { name: 'เส้นหมี่', unit: 'ห่อ', type: 'number' },
+      { name: 'อกไก่ดิบ', unit: 'ถุง', type: 'number' },
       { name: 'ผักกาดหอม', unit: 'ถุง', type: 'number' },
-      { name: 'ใบพาสเล่ย์', unit: 'ห่อ', type: 'number' },
-      { name: 'กระดาษใบเสร็จ (เล็ก)', unit: 'แถว', type: 'number' },
-      { name: 'กระดาษใบเสร็จ (ใหญ่)', unit: 'แถว', type: 'number' },
+      { name: 'ใบพาสเล่ย์', unit: 'ถุง', type: 'number' },
       { name: 'โค้ก', unit: 'แพ็ค', type: 'number' },
       { name: 'สไปร์ท', unit: 'แพ็ค', type: 'number' },
       { name: 'น้ำแดง', unit: 'แพ็ค', type: 'number' },
       { name: 'น้ำส้ม', unit: 'แพ็ค', type: 'number' },
+      { name: 'กระดาษใบเสร็จเล็ก', unit: 'ม้วน', type: 'number' },
+      { name: 'กระดาษใบเสร็จใหญ่', unit: 'ม้วน', type: 'number' },
       { name: 'กล่อง 26 oz', unit: 'ลัง', type: 'fraction' },
       { name: 'กล่อง 32 oz', unit: 'ลัง', type: 'fraction' },
+      { name: 'ถุงหิ้วพลาสติก 6x14', unit: 'ห่อ', type: 'number' },
+      { name: 'ถุงหิ้วพลาสติก 8x16', unit: 'ห่อ', type: 'number' },
       { name: 'ถุงซีล 7x10', unit: 'ห่อ', type: 'estimate' },
       { name: 'ถุงซีล 9x11.5', unit: 'ห่อ', type: 'estimate' },
       { name: 'สติ๊กเกอร์ แซ่บ', unit: 'แผ่น', type: 'estimate' },
-      { name: 'สติ๊กเกอร์ ดั้งเดิม', unit: 'แผ่น', type: 'estimate' }
+      { name: 'สติ๊กเกอร์ ดั้งเดิม', unit: 'แผ่น', type: 'estimate' },
+      { name: 'ทิชชู่แห้ง', unit: 'ห่อ', type: 'estimate' },
+      { name: 'ทิชชู่เปียก', unit: 'ห่อ', type: 'estimate' }
     ];
-    // โหลดครั้งแรก ดึงข้อมูลเลย
-  window.onload = async () => {
+
+    window.onload = async () => {
       const session = loadSession();
       if (!session) { window.location.href = '/index.html'; return; }
-      
-      // ป้องกันการเด้งไปหน้าอื่นผิดพลาด
       if (session.staff.role !== 'driver') { window.location.href = '/index.html'; return; }
       
       currentStaff = session.staff;
@@ -324,7 +334,7 @@
       if (state.checkedIn) { showSection('tasks-section'); } else { showSection('dashboard-section'); }
 
       restoreUIFromState();
-      fetchHistory(); // ดึงประวัติมาโชว์
+      fetchHistory();
 
       if(!state.stockChecked) {
          showLoading(true);
@@ -332,20 +342,52 @@
          await fetchPickupData();
          showLoading(false);
       }
+
+      // 👻 สั่งเช็คสถานะเข้างานทันทีหลังโหลด ป้องกันผีหลอก
+      setTimeout(syncDriverClockIn, 800);
     };
 
     function loadSession() {
       try { const r = localStorage.getItem(SESSION_KEY); if(!r) return null; const d = JSON.parse(r); if(Date.now() > d.expires) return null; return d; } catch { return null; }
     }
-    function saveState() { localStorage.setItem(DRIVER_STATE_KEY, JSON.stringify(state)); }
+    
+    function saveState() { 
+      localStorage.setItem(DRIVER_STATE_KEY, JSON.stringify(state)); 
+    }
+    
     function loadState() {
       const saved = localStorage.getItem(DRIVER_STATE_KEY);
       if (saved) { try { state = JSON.parse(saved); } catch(e) { state = {}; } }
       const today = new Date().toLocaleDateString('th-TH');
       if (state.lastDate !== today) {
-        state.packingData = {}; state.deliveryData = {}; state.pickupData = {}; state.stockChecked = false; state.returnStatus = 'locked'; state.checkedIn = false; state.lastDate = today; saveState();
+        state.packingData = {}; state.deliveryData = {}; state.pickupData = {}; 
+        state.stockChecked = false; state.returnStatus = 'locked'; state.checkedIn = false; 
+        state.driverReturnValues = {}; // 🌟 ล้างค่าเช็คสต็อกเฉพาะตอนขึ้นวันใหม่
+        state.lastDate = today; saveState();
       }
       BRANCHES = Object.keys(state.packingData || {});
+      // ให้ชัวร์ว่าตัวแปรไม่พัง
+      if (!state.driverReturnValues) state.driverReturnValues = {};
+    }
+
+    // 👻 ฟังก์ชันแก้หลอน: เช็คเวลาเข้างานจากเซิร์ฟเวอร์
+    async function syncDriverClockIn() {
+      if (!currentStaff) return;
+      const d = new Date();
+      const today = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+      try {
+        const res = await fetch(`${API_URL}?action=getTimesheets&staff_id=${currentStaff.staff_id}&date_from=${today}&date_to=${today}`);
+        const data = await res.json();
+        
+        // ถ้ามีประวัติเข้างานแล้วของวันนี้
+        if (data.success && data.data.length > 0 && data.data[0].clock_in) {
+          if (!state.checkedIn) {
+            state.checkedIn = true; 
+            saveState(); 
+            restoreUIFromState();
+          }
+        }
+      } catch(e) { console.log('Sync error:', e); }
     }
 
     function showSection(id) { document.querySelectorAll('section').forEach(s => s.classList.add('hidden')); document.getElementById(id).classList.remove('hidden'); window.scrollTo(0,0); }
@@ -353,7 +395,7 @@
     function showToast(m) { const t = document.getElementById('toast'); t.innerText = m; t.style.display = 'block'; setTimeout(() => t.style.display = 'none', 3000); }
     function goHome() { window.location.href = '/driver.html'; }
 
-    // --- ควบคุม UI (อัปเกรดล็อกปุ่ม) ---
+    // --- ควบคุม UI ---
     function restoreUIFromState() {
       const warningEl = document.getElementById('not-checked-in-warning');
 
@@ -376,16 +418,15 @@
       if (pickupDone && deliverDone && BRANCHES.length > 0) { setDone('badge-pickup', 'btn-start-pickup'); unlockCard('task-stock-card', 'badge-stock', 'btn-start-stock'); }
       if (state.stockChecked) { setDone('badge-stock', 'btn-start-stock'); unlockCard('task-return-card', 'badge-return', 'btn-start-return'); }
       
-     if (state.returnStatus === 'done') {
+      if (state.returnStatus === 'done') {
         setDone('badge-return', 'btn-start-return');
         document.getElementById('btn-checkout-main').classList.remove('btn-disabled');
-        showSection('dashboard-section'); // 🛠️ เพิ่มให้เด้งไปหน้ากดออกงาน
+        showSection('dashboard-section'); 
       }
 
       disableActionButtonsIfNotCheckedIn();
     }
 
-   // ปรับให้ล็อกเฉพาะปุ่ม "ส่งข้อมูล" หรือปุ่มที่ทำให้เกิดการเปลี่ยนแปลงข้อมูล
     function disableActionButtonsIfNotCheckedIn() {
       const actionBtns = ['btn-confirm-delivery', 'btn-submit-return', 'btn-start-return'];
       actionBtns.forEach(btnId => {
@@ -400,7 +441,6 @@
         }
       });
       
-      // ป้ายเตือนในหน้าสิ่งที่ต้องทำ
       const warningEl = document.getElementById('not-checked-in-warning');
       if(warningEl) {
         if(!state.checkedIn) {
@@ -412,14 +452,11 @@
       }
     }
 
-    // ฟังก์ชันดึงประวัติล่าสุด (เหมือนหน้า clock.html)
-   async function fetchHistory() {
+    async function fetchHistory() {
       try {
-        // ขอข้อมูลเข้างานจากระบบ Timesheets แทน
         const res = await fetch(`${API_URL}?action=getTimesheets&staff_id=${currentStaff.staff_id}`);
         const json = await res.json();
         if (json.success && json.data) { 
-           // จัดเรียงวันที่ใหม่สุดขึ้นก่อน และตัดมาแค่ 4 รายการ
            const sortedData = json.data.sort((a,b) => new Date(b.created_at || b.date) - new Date(a.created_at || a.date)).slice(0, 4);
            renderHistory(sortedData); 
         } else {
@@ -447,7 +484,7 @@
     function setDone(badgeId, btnId) { document.getElementById(badgeId).className = "badge done"; document.getElementById(badgeId).innerText = "เสร็จแล้ว ✅"; document.getElementById(btnId).classList.replace('primary', 'secondary'); document.getElementById(btnId).classList.replace('blue', 'secondary'); document.getElementById(btnId).classList.replace('orange', 'secondary'); document.getElementById(btnId).classList.replace('dark', 'secondary');}
     function unlockCard(cardId, badgeId, btnId) { document.getElementById(cardId).style.opacity = "1"; document.getElementById(badgeId).className = "badge todo"; document.getElementById(badgeId).innerText = "รอทำ"; document.getElementById(btnId).classList.remove('hidden'); }
 
-    // --- Clock In / Out (อัปเกรดแก้บัคกดซ้ำ) ---
+    // --- Clock In / Out ---
     async function clockAction(type) {
       showLoading(true);
       const payload = { action: type === 'in' ? 'clockIn' : 'clockOut', staff_id: currentStaff.staff_id, lat: "13.41045", lng: "101.055621", branch_id: "BR005", date: new Date().toLocaleDateString('en-CA') };
@@ -489,7 +526,6 @@
 
    async function fetchPickupData() {
       try {
-        // ดึงงานที่ "วิว" เป็นคนอนุมัติมาจากหลังบ้าน
         const res = await fetch(`${API_URL}?action=getPickups`); 
         const json = await res.json();
         if (json.success && json.data) {
@@ -542,7 +578,6 @@
           saveState(); 
           restoreUIFromState(); 
           
-          // เช็คว่าส่งครบทุกสาขาหรือยัง
           const allDone = BRANCHES.every(b => state.deliveryData[b] === 'done');
           if (allDone) {
             showSection('tasks-section');
@@ -560,42 +595,50 @@
     function openPickupAction(l) { state.currentPickupLoc = l; document.getElementById('pickup-title').innerText = l; const items = PICKUP_ITEMS_MAP[l] || []; document.getElementById('pickup-list-container').innerHTML = `<div class="card">${items.map(raw => { const m = raw.match(/^(.*?)\s+(\d+\s+.*)$/); return `<div style="display:flex; justify-content:space-between; padding:10px 0; border-bottom:1px solid #eee;"><strong>${m?m[1]:raw}</strong><strong style="color:#EF4444;">${m?m[2]:''}</strong></div>`; }).join('')}</div>`; showSection('pickup-section'); }
     function finishPickup() { state.pickupData[state.currentPickupLoc] = 'done'; saveState(); if (PICKUP_LOCS.every(loc => state.pickupData[loc] === 'done')) { restoreUIFromState(); showSection('tasks-section'); } else goPickupOverview(); }
 
-    // --- ด่าน 4: เช็คสต็อกคืน ---
+    // --- ด่าน 4: เช็คสต็อกคืน (อัปเกรดจำค่าที่กรอกค้างไว้) ---
     function goReturnStock() {
-      driverReturnValues = {}; // เคลียร์ค่าทุกครั้งที่เข้ามาหน้านี้
+      // 🌟 นำค่าจาก state กลับมาใส่ตัวแปร
+      const savedVals = state.driverReturnValues || {};
+      
       const html = RETURN_ITEMS_SCHEMA.map((item, idx) => {
+        const itemVal = savedVals[item.name] ? savedVals[item.name].qty : '';
         let inputArea = '';
 
         if (item.type === 'estimate') {
-          // 🛠️ ช้อยส์กะสายตา
           inputArea = `
             <select id="ret_qty_${idx}" onchange="updateDriverValue(${idx}, this.value)" style="width:130px; padding:8px; border:1.5px solid #D1D5DB; border-radius:8px; font-family:'Prompt'; outline:none; background:#F9FAFB;">
               <option value="">เลือกสถานะ...</option>
-              <option value="มากกว่า 10">มากกว่า 10</option>
-              <option value="น้อยกว่า 10">น้อยกว่า 10</option>
-              <option value="หมด">หมด</option>
+              <option value="มากกว่า 10" ${itemVal === 'มากกว่า 10' ? 'selected' : ''}>มากกว่า 10</option>
+              <option value="น้อยกว่า 10" ${itemVal === 'น้อยกว่า 10' ? 'selected' : ''}>น้อยกว่า 10</option>
+              <option value="หมด" ${itemVal === 'หมด' ? 'selected' : ''}>หมด</option>
             </select>
           `;
         } else if (item.type === 'fraction') {
-          // 🛠️ ปุ่มเศษส่วน
+          let numPart = ''; let fracPart = '';
+          if (itemVal) {
+             const parts = String(itemVal).split(' ');
+             if (parts.length === 2) { numPart = parts[0]; fracPart = parts[1]; }
+             else if (parts[0].includes('/')) { fracPart = parts[0]; }
+             else { numPart = parts[0]; }
+          }
+          
           inputArea = `
             <div style="display:flex; flex-direction:column; align-items:flex-end; gap:6px;">
               <div style="display:flex; align-items:center; gap:8px;">
-                <input type="number" id="inp_drv_${idx}" class="input-qty" style="width:60px; padding:8px; margin:0;" placeholder="0" oninput="handleInputDriver(${idx}, this.value)">
+                <input type="number" id="inp_drv_${idx}" class="input-qty" style="width:60px; padding:8px; margin:0;" placeholder="0" value="${numPart}" oninput="handleInputDriver(${idx}, this.value)">
                 <span style="font-size:0.8rem; color:#6B7280; width:30px;">${item.unit}</span>
               </div>
               <div class="frac-btns">
-                <button class="frac-btn" id="frac_drv_${idx}_14" onclick="setFracDriver(${idx}, '1/4')">¼</button>
-                <button class="frac-btn" id="frac_drv_${idx}_12" onclick="setFracDriver(${idx}, '1/2')">½</button>
-                <button class="frac-btn" id="frac_drv_${idx}_34" onclick="setFracDriver(${idx}, '3/4')">¾</button>
+                <button class="frac-btn ${fracPart === '1/4' ? 'selected' : ''}" id="frac_drv_${idx}_14" onclick="setFracDriver(${idx}, '1/4')">¼</button>
+                <button class="frac-btn ${fracPart === '1/2' ? 'selected' : ''}" id="frac_drv_${idx}_12" onclick="setFracDriver(${idx}, '1/2')">½</button>
+                <button class="frac-btn ${fracPart === '3/4' ? 'selected' : ''}" id="frac_drv_${idx}_34" onclick="setFracDriver(${idx}, '3/4')">¾</button>
               </div>
             </div>
           `;
         } else {
-          // 🛠️ กรอกตัวเลขปกติ
           inputArea = `
             <div style="display:flex; align-items:center; gap:8px;">
-              <input type="number" id="ret_qty_${idx}" class="input-qty" style="width:70px; padding:8px; margin:0;" placeholder="0" oninput="updateDriverValue(${idx}, this.value)">
+              <input type="number" id="ret_qty_${idx}" class="input-qty" style="width:70px; padding:8px; margin:0;" placeholder="0" value="${itemVal}" oninput="updateDriverValue(${idx}, this.value)">
               <span style="font-size:0.8rem; color:#6B7280; width:30px;">${item.unit}</span>
             </div>
           `;
@@ -613,7 +656,6 @@
       showSection('return-stock-section');
     }
 
-    // --- Helper Functions สำหรับจัดการค่าในด่าน 4 ---
     function setFracDriver(idx, fracVal) {
       const btns = document.querySelectorAll(`[id^="frac_drv_${idx}_"]`);
       const btn = document.getElementById(`frac_drv_${idx}_${fracVal.replace('/','')}`);
@@ -643,21 +685,26 @@
       updateDriverValue(idx, finalStr);
     }
 
+    // 🌟 ทุกครั้งที่พิมพ์ตัวเลข จะถูกจับเซฟลง state อัตโนมัติ
     function updateDriverValue(idx, val) {
       const name = RETURN_ITEMS_SCHEMA[idx].name;
       const unit = RETURN_ITEMS_SCHEMA[idx].unit;
+      
+      if (!state.driverReturnValues) state.driverReturnValues = {};
+
       if (!val || val === "0" || val === "") {
-        delete driverReturnValues[name];
+        delete state.driverReturnValues[name];
       } else {
-        driverReturnValues[name] = { name, qty: val, unit };
+        state.driverReturnValues[name] = { name, qty: val, unit };
       }
+      saveState(); // บันทึกปุ๊บฝังลงเครื่องปั๊บ
     }
 
     async function submitReturnStock() {
       const btn = document.getElementById('btn-submit-return');
       btn.innerText = "⏳ กำลังบันทึกข้อมูล..."; btn.classList.add('btn-disabled');
 
-      const itemsToReturn = Object.values(driverReturnValues);
+      const itemsToReturn = Object.values(state.driverReturnValues || {});
 
       if (itemsToReturn.length === 0) {
         if(!confirm("คุณไม่ได้ระบุยอดสินค้าคืนเลย ยืนยันที่จะบันทึกใช่หรือไม่?")) {
@@ -692,8 +739,7 @@
       document.getElementById('menuOverlay').classList.toggle('show');
     }
 
-    // ฟังก์ชันออกจากระบบ (ใหม่)
-   function driverLogout() {
+    function driverLogout() {
       if(confirm("ต้องการออกจากระบบใช่หรือไม่?")) {
         localStorage.removeItem(SESSION_KEY);
         window.location.href = '/index.html';
