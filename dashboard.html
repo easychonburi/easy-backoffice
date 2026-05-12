@@ -387,6 +387,11 @@
     padding: 16px; border-top: 1px solid var(--border);
     display: flex; gap: 10px; box-shadow: 0 -4px 12px rgba(0,0,0,0.05);
   }
+  
+  /* บังคับช่องกรอกไม่ให้ดันทะลุจอ */
+  .purchase-sheet input {
+    min-width: 0 !important;
+  }
 </style>
 </head>
 <body>
@@ -893,6 +898,7 @@ document.addEventListener('DOMContentLoaded', () => {
 // ─── PURCHASE SHEET (Flow ใหม่: ติ๊กเลือก -> โยนลงกล่อง) ───
 let step = 1; 
 let stockPool = []; // รายการทั้งหมดจากระบบ
+let stockMetaInfo = []; // เก็บข้อมูลว่าใครเป็นคนเช็ค
 let cartItems = []; // ของที่กดสั่ง (อยู่ในตะกร้า)
 let locGroups = []; // ของที่ถูกจัดลงกล่องสถานที่แล้ว
 
@@ -922,7 +928,12 @@ function closePurchaseSheet(e) {
 async function fetchPendingPurchases() {
   try {
     const res = await apiGet('action=getPendingPurchases');
-    stockPool = (res.success && res.data.length > 0) ? JSON.parse(res.data[0].items_json || '[]') : [];
+    if (res.success && res.data.length > 0) {
+        stockPool = JSON.parse(res.data[0].items_json || '[]');
+        stockMetaInfo = JSON.parse(res.data[0].meta_info || '[]'); // 🟢 ดึงข้อมูลคนเช็คมาเก็บไว้
+    } else {
+        stockPool = []; stockMetaInfo = [];
+    }
     renderPurchaseSheet();
   } catch {
     document.getElementById('purchase-list').innerHTML = '<div class="purchase-empty">โหลดไม่สำเร็จ</div>';
@@ -985,6 +996,18 @@ function renderStep1() {
       `;
     });
     html += `</div></div>`;
+  }
+
+  // 🟢 โชว์ข้อมูลว่าใครเช็คสต็อกมาล่าสุด (กล่องสีส้ม)
+  if (typeof stockMetaInfo !== 'undefined' && stockMetaInfo.length > 0) {
+    html += `
+      <div style="background:var(--orange-bg); padding:10px 14px; border-radius:12px; margin-bottom:16px; border:1px dashed #fed7aa;">
+        <div style="font-size:12px; font-weight:600; color:var(--orange); margin-bottom:4px;">⏱️ อัปเดตสต็อกล่าสุดโดย:</div>
+        <div style="font-size:12px; color:var(--text-secondary); line-height:1.6;">
+          ${stockMetaInfo.join('<br>')}
+        </div>
+      </div>
+    `;
   }
 
   if (stockPool.length === 0) {
