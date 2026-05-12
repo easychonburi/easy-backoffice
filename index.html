@@ -246,7 +246,7 @@ function redirectByRole(role) {
 function saveSession(staff) {
   localStorage.setItem(SESSION_KEY, JSON.stringify({
     staff, role: staff.role || 'staff',
-    expires: Date.now() + SESSION_HOURS * 60 * 60 * 1000
+    expires: Date.now() + (staff.role === 'driver' ? 8 : SESSION_HOURS) * 60 * 60 * 1000
   }));
 }
 
