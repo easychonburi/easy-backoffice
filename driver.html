@@ -43,6 +43,10 @@
     
     .item-row { border: 1px solid #E5E7EB; border-radius: 12px; padding: 14px; margin-bottom: 10px; background: white; transition: 0.2s; }
     .item-row.done { opacity: 0.6; background: #F9FAFB; border: 1px dashed #D1D5DB; }
+    /* --- Fraction Buttons --- */
+    .frac-btns { display: flex; gap: 4px; }
+    .frac-btn { padding: 6px 10px; font-family: 'Prompt', sans-serif; font-size: 0.8rem; font-weight: 500; border: 1px solid #D1D5DB; border-radius: 6px; background: #fff; color: #333; cursor: pointer; white-space: nowrap; transition: 0.2s; }
+    .frac-btn.selected { background: #EFF6FF; color: #3B82F6; border-color: #3B82F6; }
     .input-qty { width: 100%; padding: 12px; border: 1.5px solid #D1D5DB; border-radius: 8px; font-size: 1.1rem; text-align: center; margin-top: 10px; outline: none; }
     .input-qty:focus { border-color: #3B82F6; }
 
@@ -284,12 +288,25 @@
 
     let currentPhotoBase64 = "";
 
-    const RETURN_ITEMS_SCHEMA = [
-      { name: 'เส้นหมี่', unit: 'ห่อ' }, { name: 'ผักกาดหอม', unit: 'ถุง' }, { name: 'ไก่สด', unit: 'ถุง' },
-      { name: 'ถุงหิ้วพลาสติก 8x16', unit: 'ห่อ' }, { name: 'ถุงหิ้วพลาสติก 6x14', unit: 'ห่อ' },
-      { name: 'ถุงซีล 7x10', unit: 'ห่อ' }, { name: 'ถุงซีล 9x11.5', unit: 'ห่อ' }
-    ];
+    let driverReturnValues = {}; // 🛠️ ตัวแปรสำหรับเก็บค่าสต็อกที่คนขับกรอก
 
+    const RETURN_ITEMS_SCHEMA = [
+      { name: 'เส้นหมี่', unit: 'ห่อ', type: 'number' },
+      { name: 'ผักกาดหอม', unit: 'ถุง', type: 'number' },
+      { name: 'ใบพาสเล่ย์', unit: 'ห่อ', type: 'number' },
+      { name: 'กระดาษใบเสร็จ (เล็ก)', unit: 'แถว', type: 'number' },
+      { name: 'กระดาษใบเสร็จ (ใหญ่)', unit: 'แถว', type: 'number' },
+      { name: 'โค้ก', unit: 'แพ็ค', type: 'number' },
+      { name: 'สไปร์ท', unit: 'แพ็ค', type: 'number' },
+      { name: 'น้ำแดง', unit: 'แพ็ค', type: 'number' },
+      { name: 'น้ำส้ม', unit: 'แพ็ค', type: 'number' },
+      { name: 'กล่อง 26 oz', unit: 'ลัง', type: 'fraction' },
+      { name: 'กล่อง 32 oz', unit: 'ลัง', type: 'fraction' },
+      { name: 'ถุงซีล 7x10', unit: 'ห่อ', type: 'estimate' },
+      { name: 'ถุงซีล 9x11.5', unit: 'ห่อ', type: 'estimate' },
+      { name: 'สติ๊กเกอร์ แซ่บ', unit: 'แผ่น', type: 'estimate' },
+      { name: 'สติ๊กเกอร์ ดั้งเดิม', unit: 'แผ่น', type: 'estimate' }
+    ];
     // โหลดครั้งแรก ดึงข้อมูลเลย
   window.onload = async () => {
       const session = loadSession();
@@ -545,34 +562,123 @@
 
     // --- ด่าน 4: เช็คสต็อกคืน ---
     function goReturnStock() {
-      const html = RETURN_ITEMS_SCHEMA.map((item, idx) => `
-        <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #E5E7EB; padding:12px 0;">
-          <div style="font-weight:600; font-size:1.05rem;">${item.name}</div>
-          <div style="display:flex; align-items:center; gap:8px;">
-            <input type="number" id="ret_qty_${idx}" class="input-qty" style="width:70px; margin:0; padding:8px;" placeholder="0">
-            <span style="font-size:0.85rem; color:#6B7280; width: 25px;">${item.unit}</span>
+      driverReturnValues = {}; // เคลียร์ค่าทุกครั้งที่เข้ามาหน้านี้
+      const html = RETURN_ITEMS_SCHEMA.map((item, idx) => {
+        let inputArea = '';
+
+        if (item.type === 'estimate') {
+          // 🛠️ ช้อยส์กะสายตา
+          inputArea = `
+            <select id="ret_qty_${idx}" onchange="updateDriverValue(${idx}, this.value)" style="width:130px; padding:8px; border:1.5px solid #D1D5DB; border-radius:8px; font-family:'Prompt'; outline:none; background:#F9FAFB;">
+              <option value="">เลือกสถานะ...</option>
+              <option value="มากกว่า 10">มากกว่า 10</option>
+              <option value="น้อยกว่า 10">น้อยกว่า 10</option>
+              <option value="หมด">หมด</option>
+            </select>
+          `;
+        } else if (item.type === 'fraction') {
+          // 🛠️ ปุ่มเศษส่วน
+          inputArea = `
+            <div style="display:flex; flex-direction:column; align-items:flex-end; gap:6px;">
+              <div style="display:flex; align-items:center; gap:8px;">
+                <input type="number" id="inp_drv_${idx}" class="input-qty" style="width:60px; padding:8px; margin:0;" placeholder="0" oninput="handleInputDriver(${idx}, this.value)">
+                <span style="font-size:0.8rem; color:#6B7280; width:30px;">${item.unit}</span>
+              </div>
+              <div class="frac-btns">
+                <button class="frac-btn" id="frac_drv_${idx}_14" onclick="setFracDriver(${idx}, '1/4')">¼</button>
+                <button class="frac-btn" id="frac_drv_${idx}_12" onclick="setFracDriver(${idx}, '1/2')">½</button>
+                <button class="frac-btn" id="frac_drv_${idx}_34" onclick="setFracDriver(${idx}, '3/4')">¾</button>
+              </div>
+            </div>
+          `;
+        } else {
+          // 🛠️ กรอกตัวเลขปกติ
+          inputArea = `
+            <div style="display:flex; align-items:center; gap:8px;">
+              <input type="number" id="ret_qty_${idx}" class="input-qty" style="width:70px; padding:8px; margin:0;" placeholder="0" oninput="updateDriverValue(${idx}, this.value)">
+              <span style="font-size:0.8rem; color:#6B7280; width:30px;">${item.unit}</span>
+            </div>
+          `;
+        }
+
+        return `
+          <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #E5E7EB; padding:12px 0;">
+            <div style="font-weight:600; font-size:1.05rem;">${item.name}</div>
+            ${inputArea}
           </div>
-        </div>
-      `).join('');
+        `;
+      }).join('');
+      
       document.getElementById('return-items-list').innerHTML = html;
       showSection('return-stock-section');
     }
 
-   async function submitReturnStock() {
+    // --- Helper Functions สำหรับจัดการค่าในด่าน 4 ---
+    function setFracDriver(idx, fracVal) {
+      const btns = document.querySelectorAll(`[id^="frac_drv_${idx}_"]`);
+      const btn = document.getElementById(`frac_drv_${idx}_${fracVal.replace('/','')}`);
+      const isSelected = btn.classList.contains('selected');
+      
+      btns.forEach(b => b.classList.remove('selected'));
+      
+      const numInput = document.getElementById(`inp_drv_${idx}`);
+      const numVal = numInput.value;
+      
+      if (isSelected) {
+        updateDriverValue(idx, numVal || "");
+      } else {
+        btn.classList.add('selected');
+        let finalStr = (numVal && numVal !== "0") ? `${numVal} ${fracVal}` : fracVal;
+        updateDriverValue(idx, finalStr);
+      }
+    }
+
+    function handleInputDriver(idx, val) {
+      const fracBtn = document.querySelector(`[id^="frac_drv_${idx}_"].selected`);
+      let finalStr = val;
+      if (fracBtn) {
+        const fracStr = fracBtn.textContent === '¼' ? '1/4' : fracBtn.textContent === '½' ? '1/2' : '3/4';
+        finalStr = (val && val !== "0") ? `${val} ${fracStr}` : fracStr;
+      }
+      updateDriverValue(idx, finalStr);
+    }
+
+    function updateDriverValue(idx, val) {
+      const name = RETURN_ITEMS_SCHEMA[idx].name;
+      const unit = RETURN_ITEMS_SCHEMA[idx].unit;
+      if (!val || val === "0" || val === "") {
+        delete driverReturnValues[name];
+      } else {
+        driverReturnValues[name] = { name, qty: val, unit };
+      }
+    }
+
+    async function submitReturnStock() {
       const btn = document.getElementById('btn-submit-return');
       btn.innerText = "⏳ กำลังบันทึกข้อมูล..."; btn.classList.add('btn-disabled');
 
-      const itemsToReturn = RETURN_ITEMS_SCHEMA.map((item, idx) => ({ name: item.name, unit: item.unit, qty: document.getElementById(`ret_qty_${idx}`).value || 0 }));
+      const itemsToReturn = Object.values(driverReturnValues);
+
+      if (itemsToReturn.length === 0) {
+        if(!confirm("คุณไม่ได้ระบุยอดสินค้าคืนเลย ยืนยันที่จะบันทึกใช่หรือไม่?")) {
+          btn.innerText = "บันทึกข้อมูลสต็อก 💾"; btn.classList.remove('btn-disabled');
+          return;
+        }
+      }
+
       try {
         const res = await fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: "submitDriverReturn", date: new Date().toLocaleDateString('en-CA'), items: itemsToReturn }) });
         const json = await res.json();
         if(json.success) {
           state.stockChecked = true; saveState(); restoreUIFromState(); 
-          btn.innerText = "บันทึกข้อมูลสต็อก 💾"; btn.classList.remove('btn-disabled'); // คืนค่าปุ่ม
-          showSection('tasks-section'); // เด้งไปหน้าหลักเพื่อกดจบงาน
+          btn.innerText = "บันทึกข้อมูลสต็อก 💾"; btn.classList.remove('btn-disabled');
+          showSection('tasks-section');
           showToast("บันทึกสต็อกสำเร็จ!");
         } else throw new Error(json.message);
-      } catch(e) { alert("บันทึกไม่สำเร็จ: " + e.message); btn.innerText = "บันทึกข้อมูลสต็อก 💾"; btn.classList.remove('btn-disabled'); }
+      } catch(e) { 
+        alert("บันทึกไม่สำเร็จ: " + e.message); 
+        btn.innerText = "บันทึกข้อมูลสต็อก 💾"; btn.classList.remove('btn-disabled'); 
+      }
     }
 
     // --- ด่าน 5: จบงาน ---
