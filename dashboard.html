@@ -957,6 +957,11 @@ function renderPurchaseSheet() {
       <button onclick="closePurchaseSheet('prompt')" style="background:none; border:none; font-size:24px; color:var(--text-secondary); cursor:pointer;">✕</button>
     </div>
     <div style="padding: 16px; padding-bottom: 100px;">
+    <div style="margin-bottom:16px;">
+  <button onclick="showDriverView()" style="width:100%; padding:12px; background:#EFF6FF; border:1.5px solid #BFDBFE; border-radius:12px; font-family:'Prompt',sans-serif; font-size:14px; color:#1D4ED8; cursor:pointer;">
+    👀 ดูว่าตอนนี้คนขับเห็นอะไร
+  </button>
+</div>
   `;
 
   if (step === 1) {
@@ -1300,6 +1305,29 @@ window.addEventListener('load', async () => {
   } catch(e) { showToast('โหลดข้อมูลไม่สำเร็จ', 'error'); }
   showLoading(false);
 });
+
+  async function showDriverView() {
+  try {
+    const res = await apiGet('action=getPickups');
+    if (!res.success) { showToast('โหลดไม่สำเร็จ', 'error'); return; }
+    const data = res.data;
+    const locs = Object.keys(data);
+    if (locs.length === 0) {
+      alert('ตอนนี้คนขับยังไม่มีจุดรับของ');
+      return;
+    }
+    let msg = '📋 จุดรับของที่คนขับเห็นตอนนี้\n\n';
+    locs.forEach(loc => {
+      msg += `📍 ${loc}\n`;
+      data[loc].forEach(item => { msg += `   • ${item}\n`; });
+      msg += '\n';
+    });
+    alert(msg);
+  } catch {
+    showToast('เชื่อมต่อไม่ได้', 'error');
+  }
+}
+  
 </script>
 </body>
 </html>
