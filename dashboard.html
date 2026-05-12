@@ -344,62 +344,49 @@
   }
   @keyframes spin { to { transform: rotate(360deg); } }
   
-/* ─── PURCHASE SHEET (ปรับปรุงใหม่: เต็มจอ & Responsive) ─── */
+/* ─── PURCHASE SHEET (Full Screen & Visual Flow) ─── */
   .purchase-overlay {
-    position: fixed; inset: 0;
-    background: rgba(0,0,0,0.5);
-    z-index: 100; opacity: 0; pointer-events: none; transition: opacity 0.25s;
-    display: flex; align-items: flex-end;
+    position: fixed; inset: 0; background: rgba(0,0,0,0.5);
+    z-index: 1000; opacity: 0; pointer-events: none; transition: opacity 0.25s;
   }
   .purchase-overlay.visible { opacity: 1; pointer-events: all; }
 
   .purchase-sheet {
-    background: var(--bg); /* ใช้สีพื้นหลังเดียวกับแอป */
-    width: 100%;
-    height: 100%; /* ปรับให้สูงเต็มจอ */
-    max-height: 100vh;
-    overflow-y: auto;
-    transform: translateY(100%);
+    background: var(--bg);
+    width: 100%; height: 100%; position: fixed; bottom: 0; left: 0;
+    overflow-y: auto; transform: translateY(100%);
     transition: transform 0.3s cubic-bezier(0.32, 0.72, 0, 1);
-    display: flex;
-    flex-direction: column;
+    display: flex; flex-direction: column;
   }
   .purchase-overlay.visible .purchase-sheet { transform: translateY(0); }
 
-  .purchase-sheet-header { 
-    padding: 20px; 
-    background: white; 
-    border-bottom: 1px solid var(--border);
+  .sheet-header {
+    padding: 20px; background: white; border-bottom: 2px solid var(--border);
     position: sticky; top: 0; z-index: 10;
-    display: flex; justify-content: space-between; align-items: center;
+    display: flex; align-items: center; justify-content: space-between;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.05);
   }
-  .purchase-list { padding: 16px; flex: 1; }
 
-  /* การ์ดรายการใน Step 2 */
-  .order-item-card {
-    background: white;
-    border-radius: 12px;
-    padding: 16px;
-    margin-bottom: 12px;
-    border: 1px solid var(--border);
-    box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+  /* ปุ่มกดสั่งแล้ว (สีเขียว) */
+  .btn-select {
+    padding: 10px 16px; border-radius: 20px; border: none;
+    background: var(--blue); color: white; font-weight: 500; cursor: pointer; transition: 0.2s;
   }
-  .input-group {
-    display: flex;
-    gap: 8px;
-    margin-top: 10px;
-  }
-  .input-group input {
-    flex: 1;
-    min-width: 0; /* ป้องกัน Input ดันจนล้นจอ */
-    padding: 10px;
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    font-family: 'Prompt';
-    font-size: 14px;
+  .btn-select.selected { background: var(--green-dark); box-shadow: 0 2px 8px rgba(22,163,74,0.3); }
+
+  /* กล่องสถานที่ */
+  .loc-box {
+    background: white; border-radius: 16px; padding: 16px;
+    margin-bottom: 16px; border: 2px solid var(--border); box-shadow: var(--shadow);
   }
   .purchase-empty { text-align: center; padding: 40px 20px; color: var(--text-secondary); font-weight: 300; }
-  .close-sheet-btn { background: none; border: none; font-size: 20px; color: var(--text); cursor: pointer; padding: 5px; }
+  
+  /* แถบด้านล่าง */
+  .sticky-footer {
+    position: sticky; bottom: 0; background: white;
+    padding: 16px; border-top: 1px solid var(--border);
+    display: flex; gap: 10px; box-shadow: 0 -4px 12px rgba(0,0,0,0.05);
+  }
 </style>
 </head>
 <body>
@@ -909,22 +896,23 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 });
 
-// ─── PURCHASE SHEET (ระบบใหม่: 2 ขั้นตอน เลือกของก่อน -> ระบุจุดรับ) ───
-let purchaseStep = 1; // 1: หน้าเลือกของ, 2: หน้าสรุปและเลือกสถานที่
-let systemItems = []; // รายการที่ระบบคำนวณมาให้
-let selectedOrderItems = []; // รายการที่วิวกด "สั่งเพิ่ม"
-const PICKUP_LOCATIONS = ['Makro', 'Go Wholesale', 'ตลาด', 'เมืองชลเบเกอรี่', 'CMS', 'อื่นๆ'];
+// ─── PURCHASE SHEET (Flow ใหม่: ติ๊กเลือก -> โยนลงกล่อง) ───
+let step = 1; 
+let stockPool = []; // รายการทั้งหมดจากระบบ
+let cartItems = []; // ของที่กดสั่ง (อยู่ในตะกร้า)
+let locGroups = []; // ของที่ถูกจัดลงกล่องสถานที่แล้ว
+
+const LOC_LIST = ['Makro', 'Go Wholesale', 'ตลาด', 'เมืองชลเบเกอรี่', 'CMS', 'อื่นๆ'];
 
 async function openPurchaseSheet() {
   document.getElementById('purchase-overlay').classList.add('visible');
-  purchaseStep = 1;
-  selectedOrderItems = []; // เริ่มใหม่ทุกครั้งที่เปิด
+  step = 1; cartItems = []; locGroups = [];
+  document.getElementById('purchase-list').innerHTML = '<div class="purchase-empty">กำลังโหลดข้อมูล...</div>';
   await fetchPendingPurchases();
 }
 
 function closePurchaseSheet(e) {
-  // ปิดเมื่อกดย้อนกลับ หรือคลิกพื้นหลัง
-  if (e.target === document.getElementById('purchase-overlay') || e === 'force') {
+  if (e === 'force' || confirm('ข้อมูลที่เลือกไว้จะหายไป ต้องการปิดหน้าต่างนี้ใช่หรือไม่?')) {
     document.getElementById('purchase-overlay').classList.remove('visible');
   }
 }
@@ -932,178 +920,264 @@ function closePurchaseSheet(e) {
 async function fetchPendingPurchases() {
   try {
     const res = await apiGet('action=getPendingPurchases');
-    // ดึงข้อมูลสต็อกล่าสุดมาเก็บไว้
-    systemItems = (res.success && res.data.length > 0) ? JSON.parse(res.data[0].items_json || '[]') : [];
+    stockPool = (res.success && res.data.length > 0) ? JSON.parse(res.data[0].items_json || '[]') : [];
     renderPurchaseSheet();
   } catch {
-    document.getElementById('purchase-list').innerHTML = '<div class="purchase-empty">โหลดข้อมูลไม่สำเร็จ</div>';
+    document.getElementById('purchase-list').innerHTML = '<div class="purchase-empty">โหลดไม่สำเร็จ</div>';
   }
 }
 
 function renderPurchaseSheet() {
-  const list = document.getElementById('purchase-list');
-  const headerTitle = document.querySelector('.purchase-sheet-title');
-  const sub = document.getElementById('purchase-sheet-sub');
+  const container = document.getElementById('purchase-list');
   
-  if (purchaseStep === 1) {
-    headerTitle.textContent = "สั่งของเข้าครัวกลาง";
-    sub.textContent = "ขั้นตอนที่ 1: เลือกรายการจากสต็อก";
-    renderStep1(list);
-  } else {
-    headerTitle.textContent = "ระบุรายละเอียด";
-    sub.textContent = "ขั้นตอนที่ 2: ใส่จำนวนและจุดรับ";
-    renderStep2(list);
-  }
-}
-
-// --- Step 1: แสดงรายการสต็อกปัจจุบันให้กดเลือก ---
-function renderStep1(container) {
+  // Header แถบบนสุด
   let html = `
-    <div style="margin-bottom: 20px;">
-      <button onclick="addManualItem()" class="big-btn" style="background:white; color:var(--blue); border:2px dashed var(--blue); padding:12px;">
-        ➕ พิมพ์รายการสั่งเอง (นอกเหนือจากสต็อก)
-      </button>
+    <div class="sheet-header">
+      <div>
+        <div style="font-size:18px; font-weight:600;">${step === 1 ? '🛒 1. เลือกของที่ต้องสั่งเพิ่ม' : '📦 2. ระบุจุดรับและจำนวน'}</div>
+        <div style="font-size:12px; color:var(--text-secondary);">${step === 1 ? 'กดที่รายการให้กลายเป็นสีเขียว' : 'ติ๊กเลือกของ แล้วโยนลงจุดรับ'}</div>
+      </div>
+      <button onclick="closePurchaseSheet('force')" style="background:none; border:none; font-size:24px; color:var(--text-secondary); cursor:pointer;">✕</button>
     </div>
-    <div style="font-size:13px; font-weight:600; color:var(--text-secondary); margin-bottom:12px; padding-left:4px;">รายการที่มีในสต็อก</div>
+    <div style="padding: 16px; padding-bottom: 100px;">
   `;
 
-  if (systemItems.length === 0) {
-    html += '<div class="purchase-empty">ยังไม่มีข้อมูลสต็อกของวันนี้</div>';
+  if (step === 1) {
+    html += renderStep1();
   } else {
-    html += systemItems.map((item, idx) => `
-      <div style="display:flex; justify-content:space-between; align-items:center; background:white; padding:16px; border-radius:12px; margin-bottom:8px; border:1px solid var(--border);">
-        <div style="flex:1;">
-          <div style="font-weight:600; font-size:15px;">${item.name}</div>
-          <div style="font-size:12px; color:var(--orange);">เหลือ: ${item.remaining} ${item.unit}</div>
-        </div>
-        <button onclick="selectItem(${idx})" style="padding:8px 14px; border-radius:20px; border:none; background:var(--blue); color:white; font-size:13px; font-weight:500; cursor:pointer;">
-          สั่งเพิ่ม
-        </button>
-      </div>
-    `).join('');
+    html += renderStep2();
   }
 
-  // ปุ่มไป Step 2 จะเด้งขึ้นมาเมื่อมีการเลือกอย่างน้อย 1 อย่าง
-  if (selectedOrderItems.length > 0) {
+  html += `</div>`; // ปิด padding
+  container.innerHTML = html;
+}
+
+// ─── Step 1: หน้าเลือกของ ───
+function renderStep1() {
+  let html = `
+    <button onclick="addManualToCart()" style="width:100%; padding:14px; border:2px dashed var(--blue); border-radius:12px; background:white; color:var(--blue); font-family:'Prompt'; font-weight:600; cursor:pointer; margin-bottom:16px;">
+      ➕ พิมพ์ของที่ไม่มีในสต็อกเอง
+    </button>
+  `;
+
+  if (stockPool.length === 0) {
+    html += '<div class="purchase-empty">ไม่มีข้อมูลสต็อกของวันนี้</div>';
+  } else {
+    stockPool.forEach((item, idx) => {
+      const isSelected = cartItems.some(c => c.name === item.name);
+      html += `
+        <div style="display:flex; justify-content:space-between; align-items:center; background:white; padding:16px; border-radius:12px; margin-bottom:10px; border:1px solid var(--border);">
+          <div>
+            <div style="font-weight:600; font-size:15px;">${item.name}</div>
+            <div style="font-size:12px; color:var(--orange);">เหลือ: ${item.remaining} ${item.unit}</div>
+          </div>
+          <button class="btn-select ${isSelected ? 'selected' : ''}" onclick="toggleCart(${idx})">
+            ${isSelected ? '✅ สั่งแล้ว' : '➕ สั่งเพิ่ม'}
+          </button>
+        </div>
+      `;
+    });
+  }
+
+  if (cartItems.length > 0) {
     html += `
-      <div style="margin-top:24px; padding-bottom:30px;">
-        <button onclick="goToStep2()" class="big-btn primary" style="background:var(--green-dark); box-shadow:0 4px 12px rgba(22,163,74,0.3);">
-          เลือกจุดรับของ (${selectedOrderItems.length} รายการ) →
+      <div class="sticky-footer">
+        <button style="width:100%; padding:16px; border-radius:12px; border:none; background:var(--green-dark); color:white; font-family:'Prompt'; font-size:16px; font-weight:600; cursor:pointer; box-shadow:0 4px 12px rgba(22,163,74,0.3);" onclick="step=2; renderPurchaseSheet();">
+          ถัดไป: จัดลงสถานที่ (${cartItems.length} รายการ) →
         </button>
       </div>
     `;
   }
-  container.innerHTML = html;
+  return html;
 }
 
-// --- Step 2: สรุปรายการที่เลือก ใส่จำนวนและสถานที่ ---
-function renderStep2(container) {
+// ─── Step 2: หน้าจัดลงสถานที่ ───
+function renderStep2() {
   let html = `
-    <button onclick="purchaseStep = 1; renderPurchaseSheet();" style="background:none; border:none; color:var(--blue); font-size:14px; margin-bottom:15px; cursor:pointer; font-family:'Prompt';">← ย้อนกลับไปเลือกของเพิ่ม</button>
+    <button onclick="step=1; renderPurchaseSheet();" style="border:none; background:none; color:var(--blue); margin-bottom:16px; font-family:'Prompt'; font-size:14px; cursor:pointer;">← กลับไปเลือกของเพิ่ม</button>
   `;
 
-  html += selectedOrderItems.map((item, idx) => `
-    <div class="order-item-card">
-      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
-        <strong style="font-size:16px;">${item.name || 'พิมพ์ชื่อรายการ...'}</strong>
-        <button onclick="removeSelectedItem(${idx})" style="color:var(--danger); border:none; background:none; font-size:20px; cursor:pointer;">✕</button>
+  const unassigned = cartItems.filter(c => !c.assigned);
+  
+  // กล่องโยนของ (Bulk Assign)
+  if (unassigned.length > 0) {
+    html += `
+      <div style="background:var(--blue-bg); padding:16px; border-radius:16px; border:1.5px dashed var(--blue); margin-bottom:24px;">
+        <div style="font-weight:600; color:var(--blue); margin-bottom:12px;">📥 ของที่ยังไม่มีที่รับ (ติ๊กเลือกเลย)</div>
+        <div style="display:flex; flex-direction:column; gap:8px; margin-bottom:16px;">
+          ${unassigned.map((c, i) => `
+            <label style="display:flex; align-items:center; gap:10px; background:white; padding:10px 12px; border-radius:8px; border:1px solid #BFDBFE; cursor:pointer;">
+              <input type="checkbox" id="chk_u_${i}" value="${c.name}" style="width:18px; height:18px; accent-color:var(--blue);">
+              <span style="font-size:14px; flex:1;">${c.name || 'พิมพ์ชื่อของ...'}</span>
+              ${!c.name ? `<input type="text" placeholder="พิมพ์ชื่อของ..." oninput="updateCartName('${c.id}', this.value)" style="border:1px solid #ccc; padding:4px; border-radius:4px; font-family:'Prompt';">` : ''}
+            </label>
+          `).join('')}
+        </div>
+        
+        <div style="display:flex; gap:8px;">
+          <select id="bulk_loc" style="flex:2; padding:10px; border-radius:8px; border:1px solid var(--blue); font-family:'Prompt'; font-weight:600; outline:none;">
+            <option value="">-- เลือกจุดรับ --</option>
+            ${LOC_LIST.map(l => `<option value="${l}">${l}</option>`).join('')}
+          </select>
+          <button onclick="assignSelectedItems()" style="flex:1; background:var(--blue); color:white; border:none; border-radius:8px; font-family:'Prompt'; font-weight:600; cursor:pointer;">
+            ย้ายไป ↴
+          </button>
+        </div>
       </div>
-      
-      ${!item.name ? `<input type="text" placeholder="ชื่อของที่ต้องการสั่ง" oninput="updateSelectedField(${idx}, 'name', this.value)" style="width:100%; padding:10px; border:1px solid var(--border); border-radius:8px; margin-bottom:10px; font-family:'Prompt';">` : ''}
+    `;
+  } else {
+    html += `<div style="text-align:center; padding:10px; color:var(--green-dark); font-weight:600; background:var(--green-bg); border-radius:12px; margin-bottom:24px;">✅ จัดของลงกล่องครบหมดแล้ว!</div>`;
+  }
 
-      <div class="input-group">
-        <input type="number" step="0.5" placeholder="จำนวน" value="${item.qty}" oninput="updateSelectedField(${idx}, 'qty', this.value)">
-        <input type="text" placeholder="หน่วย" value="${item.unit}" oninput="updateSelectedField(${idx}, 'unit', this.value)">
-      </div>
+  // โชว์กล่องสถานที่
+  html += `<div style="font-weight:600; margin-bottom:12px; color:var(--text-secondary);">📍 จุดรับของที่จัดไว้แล้ว</div>`;
+  if (locGroups.length === 0) {
+    html += `<div class="purchase-empty" style="padding:20px;">ยังไม่มีจุดรับของ</div>`;
+  }
 
-      <div style="margin-top:12px;">
-        <select onchange="updateSelectedField(${idx}, 'location', this.value)" 
-                style="width:100%; padding:12px; border:1.5px solid var(--blue); border-radius:8px; font-family:'Prompt'; background:var(--blue-bg); color:var(--blue); font-weight:600; outline:none;">
-          <option value="">-- เลือกสถานที่รับของ --</option>
-          ${PICKUP_LOCATIONS.map(l => `<option value="${l}" ${item.location === l ? 'selected' : ''}>${l}</option>`).join('')}
-        </select>
-        ${item.location === 'อื่นๆ' ? `
-          <input type="text" placeholder="ระบุชื่อสถานที่..." value="${item.locCustom || ''}" oninput="updateSelectedField(${idx}, 'locCustom', this.value)"
-                 style="width:100%; margin-top:8px; padding:10px; border:1px solid var(--blue); border-radius:8px; font-family:'Prompt';">
+  locGroups.forEach((group, gIdx) => {
+    html += `
+      <div class="loc-box">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; border-bottom:1px solid var(--border); padding-bottom:12px;">
+          <div style="font-weight:600; font-size:16px; color:var(--red);">📌 ${group.location}</div>
+          <button onclick="removeLocGroup(${gIdx})" style="background:none; border:none; color:var(--danger); font-size:13px; text-decoration:underline; cursor:pointer;">ลบจุดนี้</button>
+        </div>
+        
+        ${group.location === 'อื่นๆ' ? `
+          <input type="text" placeholder="ระบุชื่อสถานที่..." value="${group.customLoc || ''}" oninput="locGroups[${gIdx}].customLoc=this.value" style="width:100%; padding:10px; border-radius:8px; border:1px solid var(--border); margin-bottom:12px; font-family:'Prompt';">
         ` : ''}
+
+        ${group.items.map((item, iIdx) => `
+          <div style="display:flex; gap:6px; align-items:center; margin-bottom:8px;">
+            <div style="flex:2; font-size:14px; font-weight:500; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${item.name}</div>
+            <input type="number" step="0.5" placeholder="จำนวน" value="${item.qty}" oninput="locGroups[${gIdx}].items[${iIdx}].qty=this.value" style="flex:1; width:60px; padding:8px; border:1px solid var(--border); border-radius:6px; text-align:center; font-family:'Prompt';">
+            <input type="text" placeholder="หน่วย" value="${item.unit}" oninput="locGroups[${gIdx}].items[${iIdx}].unit=this.value" style="flex:1; width:60px; padding:8px; border:1px solid var(--border); border-radius:6px; text-align:center; font-family:'Prompt';">
+            <button onclick="unassignItem(${gIdx}, ${iIdx})" style="background:none; border:none; color:var(--text-secondary); font-size:18px; padding:0 4px;">✕</button>
+          </div>
+        `).join('')}
       </div>
-    </div>
-  `).join('');
+    `;
+  });
 
   html += `
-    <div style="padding-top:10px; padding-bottom:40px;">
-      <button class="approve-btn" style="width:100%; padding:18px; font-size:16px; background:var(--blue); border-radius:12px;" onclick="sendToDriver()">
-        🚀 ยืนยันส่งงานให้คนขับ
+    <div class="sticky-footer">
+      <button style="width:100%; padding:16px; border-radius:12px; border:none; background:var(--green-dark); color:white; font-family:'Prompt'; font-size:16px; font-weight:600; cursor:pointer; box-shadow:0 4px 12px rgba(22,163,74,0.3);" onclick="sendToDriver()">
+        🚀 ยืนยันส่งงานทั้งหมด
       </button>
     </div>
   `;
-  container.innerHTML = html;
+  return html;
 }
 
-// --- Logic การจัดการข้อมูล ---
-function selectItem(idx) {
-  const item = systemItems[idx];
-  if (!selectedOrderItems.some(i => i.name === item.name)) {
-    selectedOrderItems.push({ name: item.name, qty: '', unit: item.unit, location: '' });
-    showToast(`เลือก ${item.name} แล้ว`);
-    renderPurchaseSheet();
+// ─── ฟังก์ชันสนับสนุนการทำงาน ───
+function toggleCart(idx) {
+  const item = stockPool[idx];
+  const foundIdx = cartItems.findIndex(c => c.name === item.name);
+  if (foundIdx > -1) {
+    cartItems.splice(foundIdx, 1);
   } else {
-    showToast('รายการนี้เลือกไปแล้วครับ');
+    cartItems.push({ id: 'SYS_'+idx, name: item.name, unit: item.unit, assigned: false });
   }
-}
-
-function addManualItem() {
-  selectedOrderItems.unshift({ name: '', qty: '', unit: '', location: '' });
-  purchaseStep = 2; // พาไปหน้ากรอกข้อมูลทันที
   renderPurchaseSheet();
 }
 
-function updateSelectedField(idx, field, val) {
-  selectedOrderItems[idx][field] = val;
-  if (field === 'location') renderPurchaseSheet(); // รีเฟรชเพื่อโชว์ช่อง "อื่นๆ"
-}
-
-function removeSelectedItem(idx) {
-  selectedOrderItems.splice(idx, 1);
-  if (selectedOrderItems.length === 0) purchaseStep = 1;
+function addManualToCart() {
+  const id = 'MAN_' + Date.now();
+  cartItems.unshift({ id: id, name: '', unit: '', assigned: false });
+  step = 2; // พาไปหน้าจัดกล่อง เพื่อให้พิมพ์ชื่อได้เลย
   renderPurchaseSheet();
 }
 
-function goToStep2() {
-  purchaseStep = 2;
+function updateCartName(id, val) {
+  const item = cartItems.find(c => c.id === id);
+  if (item) item.name = val;
+}
+
+function assignSelectedItems() {
+  const locSelect = document.getElementById('bulk_loc').value;
+  if (!locSelect) return showToast('กรุณาเลือกจุดรับของก่อนครับ', 'error');
+
+  const unassigned = cartItems.filter(c => !c.assigned);
+  let checkedCount = 0;
+
+  // หาหรือสร้างกล่องสถานที่
+  let group = locGroups.find(g => g.location === locSelect);
+  if (!group) {
+    group = { location: locSelect, customLoc: '', items: [] };
+    locGroups.unshift(group);
+  }
+
+  unassigned.forEach((c, i) => {
+    const chk = document.getElementById('chk_u_' + i);
+    if (chk && chk.checked) {
+      if (!c.name) return; // ถ้าเป็น manual แล้วยังไม่พิมพ์ชื่อ ให้ข้าม
+      c.assigned = true;
+      group.items.push({ cartId: c.id, name: c.name, qty: '', unit: c.unit });
+      checkedCount++;
+    }
+  });
+
+  if (checkedCount === 0) return showToast('กรุณาติ๊กเลือกของอย่างน้อย 1 อย่างครับ', 'error');
   renderPurchaseSheet();
+}
+
+function unassignItem(gIdx, iIdx) {
+  const item = locGroups[gIdx].items[iIdx];
+  const cartItem = cartItems.find(c => c.id === item.cartId);
+  if (cartItem) cartItem.assigned = false;
+  locGroups[gIdx].items.splice(iIdx, 1);
+  if (locGroups[gIdx].items.length === 0) locGroups.splice(gIdx, 1);
+  renderPurchaseSheet();
+}
+
+function removeLocGroup(gIdx) {
+  if (confirm('ลบจุดนี้แล้วของจะเด้งกลับไปอยู่ในตะกร้ารอจัดนะครับ?')) {
+    locGroups[gIdx].items.forEach(item => {
+      const cartItem = cartItems.find(c => c.id === item.cartId);
+      if (cartItem) cartItem.assigned = false;
+    });
+    locGroups.splice(gIdx, 1);
+    renderPurchaseSheet();
+  }
 }
 
 async function sendToDriver() {
-  const finalItems = selectedOrderItems.map(item => ({
-    name: item.name,
-    qty: item.qty,
-    unit: item.unit,
-    location: item.location === 'อื่นๆ' ? (item.locCustom || 'อื่นๆ') : item.location
-  })).filter(i => i.name && i.qty && i.location);
-
-  if (finalItems.length === 0) {
-    alert("กรุณากรอกข้อมูลให้ครบถ้วน (ชื่อของ จำนวน และสถานที่)");
-    return;
+  if (cartItems.filter(c => !c.assigned).length > 0) {
+    if (!confirm('ยังมีของที่ไม่ได้ระบุจุดรับ (มันจะไม่ถูกส่งไป) ยืนยันที่จะส่งงานเลยไหมครับ?')) return;
   }
 
-  if (!confirm(`ส่งใบสั่งงาน ${finalItems.length} รายการ ให้คนขับใช่หรือไม่?`)) return;
+  const finalItems = [];
+  let hasError = false;
 
-  const btn = document.querySelector('.approve-btn');
+  locGroups.forEach(g => {
+    const loc = g.location === 'อื่นๆ' ? g.customLoc.trim() : g.location;
+    if (!loc) hasError = true;
+    g.items.forEach(i => {
+      if (!i.qty) hasError = true;
+      if (i.name && i.qty && loc) {
+        finalItems.push({ name: i.name, qty: i.qty, unit: i.unit, location: loc });
+      }
+    });
+  });
+
+  if (hasError) return alert("กรุณาระบุจำนวนของให้ครบทุกช่อง หรือพิมพ์ชื่อสถานที่ให้ครบครับ");
+  if (finalItems.length === 0) return alert("ยังไม่ได้จัดของลงกล่องเลยครับ");
+  if (!confirm(`ยืนยันส่งงาน ${finalItems.length} รายการ ให้คนขับใช่หรือไม่?`)) return;
+
+  const btn = document.querySelector('.sticky-footer button');
   btn.disabled = true; btn.textContent = '⏳ กำลังส่งงาน...';
 
   try {
     const res = await apiPost({ action: 'approvePurchase', items: finalItems });
     if (res.success) {
-      showToast('✅ ส่งงานเรียบร้อย!', 'success');
+      showToast('✅ ส่งงานให้คนขับเรียบร้อย!', 'success');
       closePurchaseSheet('force');
-      selectedOrderItems = [];
     } else {
       throw new Error(res.message);
     }
   } catch (e) {
-    btn.disabled = false; btn.textContent = '🚀 ยืนยันส่งงานให้คนขับ';
-    showToast('เกิดข้อผิดพลาด: ' + e.toString(), 'error');
+    btn.disabled = false; btn.textContent = '🚀 ยืนยันส่งงานทั้งหมด';
+    showToast('เกิดข้อผิดพลาดในการส่งข้อมูล', 'error');
   }
 }
 
