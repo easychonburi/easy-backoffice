@@ -961,9 +961,12 @@ function renderPurchaseSheet() {
 // ─── Step 1: หน้าเลือกของ ───
 function renderStep1() {
   let html = `
-    <button onclick="addManualToCart()" style="width:100%; padding:14px; border:2px dashed var(--blue); border-radius:12px; background:white; color:var(--blue); font-family:'Prompt'; font-weight:600; cursor:pointer; margin-bottom:16px;">
-      ➕ พิมพ์ของที่ไม่มีในสต็อกเอง
-    </button>
+    <div style="display:flex; gap:8px; margin-bottom:16px;">
+      <input type="text" id="quick_manual_input" placeholder="พิมพ์ของนอกสต็อก (เช่น ฟองน้ำ 2 แพ็ค)" style="flex:1; padding:12px; border:2px solid var(--blue); border-radius:12px; font-family:'Prompt'; font-size:14px; outline:none;">
+      <button onclick="addQuickManualItem()" style="background:var(--blue); color:white; border:none; padding:0 20px; border-radius:12px; font-family:'Prompt'; font-weight:600; cursor:pointer; box-shadow:0 4px 12px rgba(59,130,246,0.3);">
+        ➕ เพิ่ม
+      </button>
+    </div>
   `;
 
   if (stockPool.length === 0) {
@@ -1012,8 +1015,7 @@ function renderStep2() {
           ${unassigned.map((c, i) => `
             <label style="display:flex; align-items:center; gap:10px; background:white; padding:10px 12px; border-radius:8px; border:1px solid #BFDBFE; cursor:pointer;">
               <input type="checkbox" id="chk_u_${i}" value="${c.name}" style="width:18px; height:18px; accent-color:var(--blue);">
-              <span style="font-size:14px; flex:1;">${c.name || 'พิมพ์ชื่อของ...'}</span>
-              ${!c.name ? `<input type="text" placeholder="พิมพ์ชื่อของ..." oninput="updateCartName('${c.id}', this.value)" style="border:1px solid #ccc; padding:4px; border-radius:4px; font-family:'Prompt';">` : ''}
+              <span style="font-size:14px; flex:1; font-weight:500;">${c.name}</span>
             </label>
           `).join('')}
         </div>
@@ -1085,16 +1087,23 @@ function toggleCart(idx) {
   renderPurchaseSheet();
 }
 
-function addManualToCart() {
+function addQuickManualItem() {
+  const input = document.getElementById('quick_manual_input');
+  if (!input) return;
+  const val = input.value.trim();
+  
+  if (!val) {
+    showToast('กรุณาพิมพ์ชื่อรายการก่อนกดเพิ่มครับ', 'error');
+    return;
+  }
+  
   const id = 'MAN_' + Date.now();
-  cartItems.unshift({ id: id, name: '', unit: '', assigned: false });
-  step = 2; // พาไปหน้าจัดกล่อง เพื่อให้พิมพ์ชื่อได้เลย
+  // 1. ดันของลงตะกร้า
+  cartItems.unshift({ id: id, name: val, unit: '', assigned: false });
+  
+  // 2. รีเฟรชหน้าเดิมโดยไม่เปลี่ยนไปหน้าจัดกล่อง
   renderPurchaseSheet();
-}
-
-function updateCartName(id, val) {
-  const item = cartItems.find(c => c.id === id);
-  if (item) item.name = val;
+  showToast('เพิ่มลงตะกร้าแล้ว!', 'success');
 }
 
 function assignSelectedItems() {
@@ -1114,7 +1123,6 @@ function assignSelectedItems() {
   unassigned.forEach((c, i) => {
     const chk = document.getElementById('chk_u_' + i);
     if (chk && chk.checked) {
-      if (!c.name) return; // ถ้าเป็น manual แล้วยังไม่พิมพ์ชื่อ ให้ข้าม
       c.assigned = true;
       group.items.push({ cartId: c.id, name: c.name, qty: '', unit: c.unit });
       checkedCount++;
