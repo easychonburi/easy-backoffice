@@ -969,11 +969,31 @@ function renderStep1() {
     </div>
   `;
 
+  // 🌟 ส่วนที่เพิ่มใหม่: ดึงรายการที่พิมพ์เองมาโชว์ให้เห็นในหน้า 1 เลย
+  const manualItems = cartItems.filter(c => c.id.startsWith('MAN_'));
+  if (manualItems.length > 0) {
+    html += `
+      <div style="margin-bottom:20px; background:white; padding:12px; border-radius:12px; border:1.5px dashed var(--blue);">
+        <div style="font-size:12px; font-weight:600; color:var(--blue); margin-bottom:8px;">📝 ของนอกสต็อกที่พิมพ์ไว้:</div>
+        <div style="display:flex; flex-direction:column; gap:6px;">
+    `;
+    manualItems.forEach(m => {
+      html += `
+          <div style="display:flex; justify-content:space-between; align-items:center; background:var(--blue-bg); padding:10px 14px; border-radius:8px;">
+            <span style="font-size:14px; font-weight:500; color:var(--text);">${m.name}</span>
+            <button onclick="removeManualFromCart('${m.id}')" style="background:none; border:none; color:var(--danger); font-size:16px; font-weight:bold; cursor:pointer; padding:0 8px;">✕</button>
+          </div>
+      `;
+    });
+    html += `</div></div>`;
+  }
+
+  // ส่วนโชว์สต็อกตามปกติ
   if (stockPool.length === 0) {
     html += '<div class="purchase-empty">ไม่มีข้อมูลสต็อกของวันนี้</div>';
   } else {
     stockPool.forEach((item, idx) => {
-      const isSelected = cartItems.some(c => c.name === item.name);
+      const isSelected = cartItems.some(c => c.name === item.name && !c.id.startsWith('MAN_'));
       html += `
         <div style="display:flex; justify-content:space-between; align-items:center; background:white; padding:16px; border-radius:12px; margin-bottom:10px; border:1px solid var(--border);">
           <div>
@@ -1104,6 +1124,14 @@ function addQuickManualItem() {
   // 2. รีเฟรชหน้าเดิมโดยไม่เปลี่ยนไปหน้าจัดกล่อง
   renderPurchaseSheet();
   showToast('เพิ่มลงตะกร้าแล้ว!', 'success');
+}
+
+  function removeManualFromCart(id) {
+  const idx = cartItems.findIndex(c => c.id === id);
+  if (idx > -1) {
+    cartItems.splice(idx, 1);
+    renderPurchaseSheet();
+  }
 }
 
 function assignSelectedItems() {
