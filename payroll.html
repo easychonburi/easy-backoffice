@@ -489,6 +489,7 @@ let currentGroup = null;
 let currentStaffData = null;
 let manualAdjust = 0;
 let paidStaffIds = new Set();
+let viewingPrevious = false;
 
 // ─── HELPERS ───
 function toDateStr(d) {
@@ -575,6 +576,32 @@ function getCurrentPeriods() {
     ftIsPayDay: toDateStr(now) === ftPayDate || toDateStr(now) === addDays(ftPayDate, 1),
     ptStart: toDateStr(ptMon), ptEnd: toDateStr(ptSun), ptPayDate: toDateStr(ptPay),
     ptIsPayDay: dow === 1
+  };
+}
+
+function getPreviousPeriods() {
+  const cur = getCurrentPeriods();
+  const ftS = new Date(cur.ftStart);
+  let prevFtStart, prevFtEnd, prevFtPayDate;
+  if (ftS.getDate() === 1) {
+    let lastM = ftS.getMonth() - 1, lastY = ftS.getFullYear();
+    if (lastM < 0) { lastM = 11; lastY--; }
+    const lastDay = new Date(lastY, lastM + 1, 0).getDate();
+    prevFtStart = toDateStr(new Date(lastY, lastM, 16));
+    prevFtEnd = toDateStr(new Date(lastY, lastM, lastDay));
+    prevFtPayDate = cur.ftStart;
+  } else {
+    prevFtStart = toDateStr(new Date(ftS.getFullYear(), ftS.getMonth(), 1));
+    prevFtEnd = toDateStr(new Date(ftS.getFullYear(), ftS.getMonth(), 15));
+    prevFtPayDate = toDateStr(new Date(ftS.getFullYear(), ftS.getMonth(), 16));
+  }
+  const ptS = new Date(cur.ptStart);
+  const prevPtMon = new Date(ptS); prevPtMon.setDate(ptS.getDate() - 7);
+  const prevPtSun = new Date(prevPtMon); prevPtSun.setDate(prevPtMon.getDate() + 6);
+  const prevPtPay = new Date(prevPtMon); prevPtPay.setDate(prevPtMon.getDate() + 7);
+  return {
+    ftStart: prevFtStart, ftEnd: prevFtEnd, ftPayDate: prevFtPayDate, ftIsPayDay: false,
+    ptStart: toDateStr(prevPtMon), ptEnd: toDateStr(prevPtSun), ptPayDate: toDateStr(prevPtPay), ptIsPayDay: false
   };
 }
 
@@ -772,9 +799,14 @@ function renderMainPage() {
           <div class="group-amount">${formatMoney(ftTotal)}</div>
           <div class="group-count">${ftStaff.length} คน</div>
         </div>
-        <button class="group-btn ${periods.ftIsPayDay ? 'payday' : 'normal'}" onclick="openGroup('fulltime')">
-          ${periods.ftIsPayDay ? '💰 จ่ายเงิน' : '📋 ดูรายละเอียด'}
-        </button>
+       <div style="display:flex; flex-direction:column; gap:8px; align-items:flex-end;">
+          <button class="group-btn ${periods.ftIsPayDay ? 'payday' : 'normal'}" onclick="viewingPrevious=false; openGroup('fulltime')">
+            ${periods.ftIsPayDay ? '💰 จ่ายเงิน' : '📋 ดูรายละเอียด'}
+          </button>
+          <button onclick="viewingPrevious=true; openGroup('fulltime')" style="background:none; border:none; font-size:12px; color:var(--text-secondary); cursor:pointer; font-family:'Prompt',sans-serif;">
+            ◀ รอบที่แล้ว
+          </button>
+        </div>
       </div>
     </div>
     <div class="card">
@@ -794,9 +826,14 @@ function renderMainPage() {
           <div class="group-amount">${formatMoney(ptTotal)}</div>
           <div class="group-count">${ptStaff.length} คน</div>
         </div>
-        <button class="group-btn ${periods.ptIsPayDay ? 'payday' : 'normal'}" onclick="openGroup('parttime')">
-          ${periods.ptIsPayDay ? '💰 จ่ายเงิน' : '📋 ดูรายละเอียด'}
-        </button>
+       <div style="display:flex; flex-direction:column; gap:8px; align-items:flex-end;">
+          <button class="group-btn ${periods.ptIsPayDay ? 'payday' : 'normal'}" onclick="viewingPrevious=false; openGroup('parttime')">
+            ${periods.ptIsPayDay ? '💰 จ่ายเงิน' : '📋 ดูรายละเอียด'}
+          </button>
+          <button onclick="viewingPrevious=true; openGroup('parttime')" style="background:none; border:none; font-size:12px; color:var(--text-secondary); cursor:pointer; font-family:'Prompt',sans-serif;">
+            ◀ รอบที่แล้ว
+          </button>
+        </div>
       </div>
     </div>`;
 
@@ -809,7 +846,7 @@ async function openGroup(type) {
   paidStaffIds = new Set();
   showLoading(true);
 
-  const periods = getCurrentPeriods();
+  const periods = viewingPrevious ? getPreviousPeriods() : getCurrentPeriods();
   const isFulltime = type === 'fulltime';
   const staff = allStaff.filter(s => s.role !== 'admin' && (isFulltime ? s.pay_type === 'daily' : s.pay_type === 'hourly'));
   const start = isFulltime ? periods.ftStart : periods.ptStart;
@@ -837,8 +874,7 @@ async function openGroup(type) {
   const payrolls = staff.map(s => calcPayroll(s, allTimesheets, start, end));
 
   document.getElementById('list-title').textContent = isFulltime ? '💼 พนักงานประจำ' : '👤 Part-time';
-  document.getElementById('list-sub').textContent = `${periodLabel(start, end)} · จ่าย ${thaiDate(payDate)}`;
-
+document.getElementById('list-sub').textContent = `${viewingPrevious ? '📌 รอบที่แล้ว · ' : ''}${periodLabel(start, end)} · จ่าย ${thaiDate(payDate)}`;
   let html = '';
   if (!payrolls.length) {
     html = '<div class="empty-state"><div class="empty-icon">👥</div><div class="empty-text">ไม่พบพนักงาน</div></div>';
