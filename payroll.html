@@ -419,6 +419,139 @@
     animation: spin 0.7s linear infinite;
   }
   @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* ═══ CALENDAR ═══ */
+  .cal-overlay {
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,0.5);
+    z-index: 200; opacity: 0; pointer-events: none; transition: opacity 0.25s;
+  }
+  .cal-overlay.visible { opacity: 1; pointer-events: all; }
+  .cal-sheet {
+    position: absolute; bottom: 0; left: 0; right: 0;
+    background: var(--white); border-radius: 24px 24px 0 0;
+    max-height: 92vh; overflow-y: auto;
+    transform: translateY(100%);
+    transition: transform 0.3s cubic-bezier(0.32, 0.72, 0, 1);
+    padding-bottom: 32px;
+  }
+  .cal-overlay.visible .cal-sheet { transform: translateY(0); }
+  .cal-handle { width: 36px; height: 4px; background: var(--border); border-radius: 2px; margin: 16px auto 0; }
+  .cal-header {
+    padding: 14px 20px; display: flex; align-items: center;
+    justify-content: space-between; border-bottom: 1px solid var(--border);
+  }
+  .cal-title { font-size: 16px; font-weight: 600; color: var(--text); }
+  .cal-subtitle { font-size: 12px; color: var(--text-secondary); font-weight: 300; margin-top: 1px; }
+  .cal-close-btn {
+    background: var(--soft); border: 1px solid var(--border);
+    border-radius: 20px; padding: 6px 14px;
+    font-family: 'Prompt', sans-serif; font-size: 12px; cursor: pointer; color: var(--text-secondary);
+  }
+  .cal-legend {
+    display: flex; gap: 10px; padding: 10px 16px 4px; flex-wrap: wrap;
+  }
+  .cal-legend-item { display: flex; align-items: center; gap: 5px; font-size: 11px; color: var(--text-secondary); font-weight: 300; }
+  .cal-legend-dot { width: 10px; height: 10px; border-radius: 3px; flex-shrink: 0; }
+  .cal-nav {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 10px 16px 6px;
+  }
+  .cal-nav-btn {
+    background: var(--soft); border: 1px solid var(--border);
+    border-radius: 10px; width: 36px; height: 36px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px; cursor: pointer; color: var(--text);
+  }
+  .cal-nav-btn:active { background: var(--border); }
+  .cal-month-label { font-size: 17px; font-weight: 600; color: var(--text); }
+  .cal-weekdays {
+    display: grid; grid-template-columns: repeat(7, 1fr);
+    padding: 0 10px; gap: 3px; margin-bottom: 3px;
+  }
+  .cal-weekday-label {
+    text-align: center; font-size: 11px; font-weight: 500;
+    color: var(--text-secondary); padding: 4px 0;
+  }
+  .cal-weekday-label.sun { color: var(--danger); }
+  .cal-weekday-label.sat { color: var(--blue); }
+  .cal-grid {
+    display: grid; grid-template-columns: repeat(7, 1fr);
+    padding: 0 10px; gap: 3px;
+  }
+  .cal-cell {
+    border-radius: 8px; min-height: 66px; padding: 5px 4px;
+    display: flex; flex-direction: column; align-items: center;
+  }
+  .cal-cell-num { font-size: 12px; font-weight: 500; align-self: flex-start; padding-left: 2px; margin-bottom: 2px; }
+  .cal-cell-label { font-size: 9.5px; font-weight: 600; text-align: center; line-height: 1.3; }
+  .cal-cell-time { font-size: 8px; font-weight: 300; text-align: center; line-height: 1.5; margin-top: 1px; }
+  .cal-cell.empty { background: transparent; min-height: 66px; }
+  .cal-cell.future { background: var(--soft); border: 1px solid var(--border); }
+  .cal-cell.future .cal-cell-num { color: #D1D5DB; }
+  .cal-cell.weekend { background: #F3F4F6; border: 1px solid #E5E7EB; }
+  .cal-cell.weekend .cal-cell-num { color: var(--text-secondary); }
+  .cal-cell.weekend .cal-cell-label { color: #9CA3AF; }
+  .cal-cell.norecord { background: var(--soft); border: 1px dashed var(--border); }
+  .cal-cell.norecord .cal-cell-num { color: #9CA3AF; }
+  .cal-cell.work { background: #DCFCE7; border: 1px solid #86EFAC; }
+  .cal-cell.work .cal-cell-num { color: var(--green-dark); }
+  .cal-cell.work .cal-cell-label { color: var(--green-dark); }
+  .cal-cell.work .cal-cell-time { color: #166534; }
+  .cal-cell.leave { background: var(--danger-bg); border: 1px solid #FCA5A5; }
+  .cal-cell.leave .cal-cell-num { color: var(--danger); }
+  .cal-cell.leave .cal-cell-label { color: var(--danger); }
+  .cal-cell.absent { background: #FFF7ED; border: 1px solid #FED7AA; }
+  .cal-cell.absent .cal-cell-num { color: var(--orange); }
+  .cal-cell.absent .cal-cell-label { color: var(--orange); font-weight: 600; }
+  .cal-cell.today-ring { outline: 2px solid var(--red); outline-offset: -2px; }
+  .cal-open-btn {
+    width: 100%; background: var(--blue-bg); border: 1px solid #BFDBFE;
+    border-radius: var(--radius-sm); padding: 11px;
+    font-family: 'Prompt', sans-serif; font-size: 13px; font-weight: 500;
+    color: var(--blue); cursor: pointer; margin-bottom: 14px; transition: all 0.2s;
+  }
+  .cal-open-btn:active { background: #DBEAFE; }
+
+  /* LEAVE ACTION SHEET */
+  .leave-action-overlay {
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,0.45);
+    z-index: 300; opacity: 0; pointer-events: none; transition: opacity 0.2s;
+    display: flex; align-items: flex-end;
+  }
+  .leave-action-overlay.visible { opacity: 1; pointer-events: all; }
+  .leave-action-sheet {
+    width: 100%; background: var(--white); border-radius: 20px 20px 0 0;
+    padding: 20px 20px 36px; transform: translateY(100%);
+    transition: transform 0.25s cubic-bezier(0.32, 0.72, 0, 1);
+  }
+  .leave-action-overlay.visible .leave-action-sheet { transform: translateY(0); }
+  .leave-action-title { font-size: 15px; font-weight: 600; color: var(--text); margin-bottom: 4px; }
+  .leave-action-sub { font-size: 12px; color: var(--text-secondary); font-weight: 300; margin-bottom: 16px; }
+  .leave-type-row { display: flex; gap: 8px; margin-bottom: 14px; flex-wrap: wrap; }
+  .leave-type-btn {
+    flex: 1; min-width: 0; border: 1.5px solid var(--border);
+    background: var(--soft); border-radius: var(--radius-sm); padding: 10px 8px;
+    font-family: 'Prompt', sans-serif; font-size: 13px; font-weight: 400;
+    color: var(--text-secondary); cursor: pointer; text-align: center; transition: all 0.15s;
+  }
+  .leave-type-btn.selected { border-color: var(--danger); background: var(--danger-bg); color: var(--danger); font-weight: 500; }
+  .leave-note-input {
+    width: 100%; border: 1.5px solid var(--border); border-radius: var(--radius-sm);
+    padding: 10px 12px; font-family: 'Prompt', sans-serif; font-size: 13px; font-weight: 300;
+    color: var(--text); background: var(--soft); outline: none; margin-bottom: 14px;
+  }
+  .leave-note-input:focus { border-color: var(--danger); }
+  .leave-action-btns { display: flex; gap: 10px; }
+  .leave-action-btn {
+    flex: 1; border: none; border-radius: var(--radius-sm); padding: 13px;
+    font-family: 'Prompt', sans-serif; font-size: 14px; font-weight: 500; cursor: pointer; transition: all 0.2s;
+  }
+  .leave-action-btn:active { transform: scale(0.97); }
+  .leave-action-btn.cancel { background: var(--soft); color: var(--text-secondary); border: 1.5px solid var(--border); }
+  .leave-action-btn.confirm-add { background: var(--danger); color: white; }
+  .leave-action-btn.confirm-del { background: var(--soft); color: var(--danger); border: 1.5px solid #FCA5A5; }
 </style>
 <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
 </head>
@@ -469,6 +602,74 @@
     </div>
   
     <div class="sheet-body" id="detail-body"></div>
+  </div>
+</div>
+
+<div class="leave-action-overlay" id="leave-action-overlay" onclick="closeLeaveActionOutside(event)">
+  <div class="leave-action-sheet">
+    <div class="leave-action-title" id="la-title">บันทึกวันลา</div>
+    <div class="leave-action-sub" id="la-sub">—</div>
+    <div id="la-add-section">
+      <div class="leave-type-row">
+        <button class="leave-type-btn selected" onclick="selectLeaveType(this,'ลากิจ')">ลากิจ</button>
+        <button class="leave-type-btn" onclick="selectLeaveType(this,'ลาป่วย')">ลาป่วย</button>
+        <button class="leave-type-btn" onclick="selectLeaveType(this,'ลาพักร้อน')">ลาพักร้อน</button>
+      </div>
+      <input class="leave-note-input" id="la-note" type="text" placeholder="หมายเหตุ (ถ้ามี)">
+      <div class="leave-action-btns">
+        <button class="leave-action-btn cancel" onclick="closeLeaveAction()">ยกเลิก</button>
+        <button class="leave-action-btn confirm-add" onclick="confirmSaveLeave()">✓ บันทึก</button>
+      </div>
+    </div>
+    <div id="la-del-section" style="display:none">
+      <div class="leave-action-btns">
+        <button class="leave-action-btn cancel" onclick="closeLeaveAction()">ปิด</button>
+        <button class="leave-action-btn confirm-del" onclick="confirmDeleteLeave()">✕ ลบวันลา</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="cal-overlay" id="cal-overlay" onclick="closeCalOutside(event)">
+  <div class="cal-sheet" id="cal-sheet">
+    <div class="cal-handle"></div>
+    <div class="cal-header">
+      <div>
+        <div class="cal-title" id="cal-staff-name">—</div>
+        <div class="cal-subtitle">📅 ปฎิทินการทำงาน</div>
+      </div>
+      <button class="cal-close-btn" onclick="closeCalendar()">ปิด</button>
+    </div>
+    <div class="cal-legend">
+      <div class="cal-legend-item">
+        <div class="cal-legend-dot" style="background:#DCFCE7;border:1px solid #86EFAC"></div>ทำงาน
+      </div>
+      <div class="cal-legend-item">
+        <div class="cal-legend-dot" style="background:#FEE2E2;border:1px solid #FCA5A5"></div>ขาด
+      </div>
+      <div class="cal-legend-item">
+        <div class="cal-legend-dot" style="background:#FFF7ED;border:1px solid #FED7AA"></div>ลา
+      </div>
+      <div class="cal-legend-item">
+        <div class="cal-legend-dot" style="background:#F3F4F6;border:1px solid #E5E7EB"></div>วันหยุด
+      </div>
+    </div>
+    <div class="cal-nav">
+      <button class="cal-nav-btn" onclick="changeCalMonth(-1)">‹</button>
+      <div class="cal-month-label" id="cal-month-label">—</div>
+      <button class="cal-nav-btn" onclick="changeCalMonth(1)">›</button>
+    </div>
+    <div class="cal-weekdays">
+      <div class="cal-weekday-label sun">อา</div>
+      <div class="cal-weekday-label">จ</div>
+      <div class="cal-weekday-label">อ</div>
+      <div class="cal-weekday-label">พ</div>
+      <div class="cal-weekday-label">พฤ</div>
+      <div class="cal-weekday-label">ศ</div>
+      <div class="cal-weekday-label sat">ส</div>
+    </div>
+    <div class="cal-grid" id="cal-grid"></div>
+    <div id="cal-stats" style="text-align:center;padding:10px 16px 4px;font-size:13px;font-weight:300;color:var(--text-secondary)"></div>
   </div>
 </div>
 
@@ -956,6 +1157,8 @@ function renderDetailBody() {
 
   let html = '';
 
+  html += `<button class="cal-open-btn" onclick="openCalendar('${payroll.staff.staff_id}')">📅 ดูปฎิทินการทำงาน</button>`;
+
   if (isPaid) {
     html += `
       <div class="paid-box">
@@ -1297,6 +1500,215 @@ document.addEventListener('touchend', (e) => {
     activeSheet = null;
   }
 });
+
+// ─── CALENDAR ───
+const THAI_MONTHS_FULL = ['มกราคม','กุมภาพันธ์','มีนาคม','เมษายน','พฤษภาคม','มิถุนายน',
+  'กรกฎาคม','สิงหาคม','กันยายน','ตุลาคม','พฤศจิกายน','ธันวาคม'];
+
+let calStaffId = null, calYear = null, calMonth = null;
+let calTimesheets = [], calLeaves = [];
+let calDayOffSet = new Set([0]); // default: หยุดอาทิตย์
+
+async function openCalendar(staffId) {
+  calStaffId = staffId;
+  const now = new Date();
+  calYear = now.getFullYear();
+  calMonth = now.getMonth();
+  const staff = allStaff.find(s => s.staff_id === staffId);
+  document.getElementById('cal-staff-name').textContent = staff ? (staff.name || staff.nickname || staffId) : staffId;
+
+  // parse day_off จาก staff (เช่น "0" หรือ "0,6")
+  calDayOffSet = new Set();
+  const dayOffRaw = String(staff?.day_off ?? '0');
+  dayOffRaw.split(',').forEach(d => {
+    const n = parseInt(d.trim());
+    if (!isNaN(n)) calDayOffSet.add(n);
+  });
+
+  await loadCalData();
+  document.getElementById('cal-overlay').classList.add('visible');
+}
+
+async function loadCalData() {
+  const y = calYear, m = String(calMonth + 1).padStart(2, '0');
+  const firstDay = `${y}-${m}-01`;
+  const lastDay = toDateStr(new Date(y, calMonth + 1, 0));
+  showLoading(true);
+  try {
+    const [tsRes, leaveRes] = await Promise.all([
+      apiGet(`action=getTimesheets&date_from=${firstDay}&date_to=${lastDay}`),
+      apiGet(`action=getLeaves&date_from=${firstDay}&date_to=${lastDay}`).catch(() => ({ success: false }))
+    ]);
+    calTimesheets = (tsRes.success ? tsRes.data : []).filter(t => String(t.staff_id) === String(calStaffId));
+    calLeaves = leaveRes.success ? (leaveRes.data || []).filter(l => String(l.staff_id) === String(calStaffId)) : [];
+  } catch {
+    calTimesheets = []; calLeaves = [];
+  }
+  showLoading(false);
+  renderCalendar();
+}
+
+function renderCalendar() {
+  document.getElementById('cal-month-label').textContent = `${THAI_MONTHS_FULL[calMonth]} ${calYear + 543}`;
+  const today = toDateStr(new Date());
+  const daysInMonth = new Date(calYear, calMonth + 1, 0).getDate();
+  const firstWeekday = new Date(calYear, calMonth, 1).getDay();
+
+  // map timesheet by date
+  const tsMap = {};
+  calTimesheets.forEach(t => {
+    const d = typeof t.date === 'string' ? t.date.substring(0, 10) : toDateStr(new Date(t.date));
+    tsMap[d] = t;
+  });
+
+  // map manual leave by date (override)
+  const leaveMap = {};
+  calLeaves.forEach(l => {
+    const d = typeof l.date === 'string' ? l.date.substring(0, 10) : toDateStr(new Date(l.date));
+    leaveMap[d] = l;
+  });
+
+  let cells = '';
+  let absentCount = 0, workCount = 0;
+
+  for (let i = 0; i < firstWeekday; i++) {
+    cells += `<div class="cal-cell empty"></div>`;
+  }
+
+  for (let day = 1; day <= daysInMonth; day++) {
+    const mm = String(calMonth + 1).padStart(2, '0');
+    const dd = String(day).padStart(2, '0');
+    const dateStr = `${calYear}-${mm}-${dd}`;
+    const dow = new Date(dateStr + 'T00:00:00').getDay();
+    const isToday = dateStr === today;
+    const isFuture = dateStr > today;
+    const isDayOff = calDayOffSet.has(dow);
+    const ts = tsMap[dateStr];
+    const leaveObj = leaveMap[dateStr];
+
+    let cellClass = '', labelHtml = '', onclickAttr = '';
+
+    if (isFuture) {
+      // อนาคต: แสดงแค่เทา ไม่ต้องทำอะไร
+      cellClass = isDayOff ? 'weekend' : 'future';
+    } else if (leaveObj) {
+      // มี leave record บันทึกไว้ manual = "ลา" (สีแดง, override)
+      cellClass = 'leave';
+      const leaveTypeLabel = leaveObj.leave_type || 'ลา';
+      labelHtml = `<div class="cal-cell-label">${leaveTypeLabel}</div>`;
+      onclickAttr = `onclick="openLeaveDelete('${leaveObj.leave_id}','${dateStr}')"`;
+    } else if (ts && ts.clock_in) {
+      // มีการเข้างาน = ทำงาน (สีเขียว)
+      cellClass = 'work';
+      const inT = ts.clock_in || '—';
+      const outT = ts.clock_out || '—';
+      labelHtml = `<div class="cal-cell-label">ทำงาน</div><div class="cal-cell-time">${inT}<br>${outT}</div>`;
+      workCount++;
+    } else if (isDayOff) {
+      // วันหยุดตามตาราง (day_off) = เทา
+      cellClass = 'weekend';
+      labelHtml = `<div class="cal-cell-label">หยุด</div>`;
+    } else {
+      // ——— AUTO-DETECT: ผ่านมาแล้ว + ไม่ใช่วันหยุด + ไม่มี timesheet = ขาด ———
+      cellClass = 'absent';
+      labelHtml = `<div class="cal-cell-label">ขาด</div>`;
+      onclickAttr = `onclick="openLeaveAdd('${dateStr}')"`;
+      absentCount++;
+    }
+
+    if (isToday) cellClass += ' today-ring';
+    const numStyle = isDayOff ? 'color:#9CA3AF' : '';
+    cells += `<div class="cal-cell ${cellClass}" ${onclickAttr} style="${onclickAttr ? 'cursor:pointer' : ''}">
+      <div class="cal-cell-num" style="${numStyle}">${day}</div>${labelHtml}
+    </div>`;
+  }
+
+  document.getElementById('cal-grid').innerHTML = cells;
+
+  // แสดง summary stat ใต้ปฎิทิน
+  const statsEl = document.getElementById('cal-stats');
+  if (statsEl) {
+    statsEl.innerHTML = absentCount > 0
+      ? `<span style="color:var(--orange);font-weight:500">ขาด ${absentCount} วัน</span>&ensp;·&ensp;<span style="color:var(--green-dark)">ทำงาน ${workCount} วัน</span>`
+      : `<span style="color:var(--green-dark)">ทำงาน ${workCount} วัน ✓</span>`;
+  }
+}
+
+async function changeCalMonth(delta) {
+  calMonth += delta;
+  if (calMonth > 11) { calMonth = 0; calYear++; }
+  if (calMonth < 0) { calMonth = 11; calYear--; }
+  await loadCalData();
+}
+
+function closeCalendar() { document.getElementById('cal-overlay').classList.remove('visible'); }
+function closeCalOutside(e) { if (e.target === document.getElementById('cal-overlay')) closeCalendar(); }
+
+// ─── LEAVE MANAGEMENT ───
+let currentLeaveDate = null, currentLeaveId = null, currentLeaveType = 'ลากิจ';
+
+function openLeaveAdd(dateStr) {
+  currentLeaveDate = dateStr; currentLeaveId = null; currentLeaveType = 'ลากิจ';
+  const d = new Date(dateStr + 'T00:00:00');
+  const DAYS = ['อาทิตย์','จันทร์','อังคาร','พุธ','พฤหัสบดี','ศุกร์','เสาร์'];
+  document.getElementById('la-title').textContent = '📋 บันทึกเป็นวันลา';
+  document.getElementById('la-sub').textContent = `วัน${DAYS[d.getDay()]}ที่ ${d.getDate()} ${THAI_MONTHS_FULL[d.getMonth()]} ${d.getFullYear()+543} — ระบบตรวจพบว่าขาดงาน`;
+  document.getElementById('la-add-section').style.display = '';
+  document.getElementById('la-del-section').style.display = 'none';
+  document.getElementById('la-note').value = '';
+  document.querySelectorAll('.leave-type-btn').forEach(b => b.classList.toggle('selected', b.textContent === 'ลากิจ'));
+  document.getElementById('leave-action-overlay').classList.add('visible');
+}
+
+function openLeaveDelete(leaveId, dateStr) {
+  currentLeaveId = leaveId; currentLeaveDate = dateStr;
+  const d = new Date(dateStr + 'T00:00:00');
+  const DAYS = ['อาทิตย์','จันทร์','อังคาร','พุธ','พฤหัสบดี','ศุกร์','เสาร์'];
+  document.getElementById('la-title').textContent = 'ลบวันลา';
+  document.getElementById('la-sub').textContent = `วัน${DAYS[d.getDay()]}ที่ ${d.getDate()} ${THAI_MONTHS_FULL[d.getMonth()]} ${d.getFullYear()+543}`;
+  document.getElementById('la-add-section').style.display = 'none';
+  document.getElementById('la-del-section').style.display = '';
+  document.getElementById('leave-action-overlay').classList.add('visible');
+}
+
+function selectLeaveType(btn, type) {
+  currentLeaveType = type;
+  document.querySelectorAll('.leave-type-btn').forEach(b => b.classList.remove('selected'));
+  btn.classList.add('selected');
+}
+
+function closeLeaveAction() { document.getElementById('leave-action-overlay').classList.remove('visible'); }
+function closeLeaveActionOutside(e) { if (e.target === document.getElementById('leave-action-overlay')) closeLeaveAction(); }
+
+async function confirmSaveLeave() {
+  if (!currentLeaveDate || !calStaffId) return;
+  const note = document.getElementById('la-note').value.trim();
+  showLoading(true); closeLeaveAction();
+  try {
+    const res = await apiPost({
+      action: 'saveLeave', staff_id: calStaffId,
+      date: currentLeaveDate, leave_type: currentLeaveType, note
+    });
+    if (res.success) {
+      showToast(`✅ บันทึกวันลาแล้ว`, 'success');
+      await loadCalData();
+    } else { showToast('บันทึกไม่สำเร็จ: ' + (res.message||''), 'error'); }
+  } catch { showToast('เกิดข้อผิดพลาด', 'error'); }
+  showLoading(false);
+}
+
+async function confirmDeleteLeave() {
+  if (!currentLeaveId) return;
+  showLoading(true); closeLeaveAction();
+  try {
+    const res = await apiPost({ action: 'deleteLeave', leave_id: currentLeaveId });
+    if (res.success) {
+      showToast('🗑 ลบวันลาแล้ว', '');
+      await loadCalData();
+    } else { showToast('ลบไม่สำเร็จ', 'error'); }
+  } catch { showToast('เกิดข้อผิดพลาด', 'error'); }
+  showLoading(false);
+}
 
 async function exportToImage(event) {
   const overlay = document.getElementById('detail-overlay');
