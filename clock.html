@@ -318,8 +318,11 @@
 <div class="toast" id="toast"></div>
 <div class="loading-overlay" id="loading"><div class="spinner"></div></div>
 
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
+<script src="/firebase-config.js"></script><script src="/firebase-api.js"></script>
 <script>
-const API_URL = 'https://script.google.com/macros/s/AKfycbxxTjC7xOGHlgyStVBf6SimoU5RA7xX3VPwxIUtfGlpMNO89OQPDaRewKDDEmWGK4kk/exec';
 const SESSION_KEY = 'easy_session';
 
 const THAI_DAYS = ['อาทิตย์','จันทร์','อังคาร','พุธ','พฤหัสบดี','ศุกร์','เสาร์'];
@@ -578,8 +581,8 @@ function calcOTMin(s, now) { const [eh,em]=s.split(':').map(Number); let n=now.g
 function haversine(a,b,c,d){const R=6371000,dL=(c-a)*Math.PI/180,dN=(d-b)*Math.PI/180,x=Math.sin(dL/2)**2+Math.cos(a*Math.PI/180)*Math.cos(c*Math.PI/180)*Math.sin(dN/2)**2;return R*2*Math.atan2(Math.sqrt(x),Math.sqrt(1-x));}
 function getTimeStr(d=new Date()){return`${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;}
 function getDateStr(d=new Date()){return`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;}
-async function apiGet(p){const r=await fetch(`${API_URL}?${p}`);return r.json();}
-async function apiPost(b){const r=await fetch(API_URL,{method:'POST',body:JSON.stringify(b)});return r.json();}
+async function apiGet(p){const q=Object.fromEntries(new URLSearchParams(p));return easyApi.request(q.action,q);}
+async function apiPost(b){return easyApi.request(b.action,b);}
 function showModal(id){document.getElementById(id).classList.add('visible');}
 function hideModal(id){document.getElementById(id).classList.remove('visible');}
 function showLoading(s){document.getElementById('loading').classList.toggle('show',s);}

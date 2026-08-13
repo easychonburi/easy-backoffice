@@ -133,6 +133,7 @@
 
 <div class="pin-body">
   <div class="pin-label">กรอก PIN เพื่อเข้าสู่ระบบ</div>
+  <input id="staff-id" inputmode="text" autocomplete="username" placeholder="รหัสพนักงาน เช่น PC001" style="width:100%;max-width:300px;margin:-4px 0 16px;padding:13px 16px;border:1.5px solid var(--border);border-radius:12px;font:400 14px 'Prompt',sans-serif;text-transform:uppercase;text-align:center;">
   <div class="pin-dots" id="pin-dots">
     <div class="pin-dot"></div>
     <div class="pin-dot"></div>
@@ -169,8 +170,12 @@
   <div class="welcome-role" id="welcome-role">—</div>
 </div>
 
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
+<script src="/firebase-config.js"></script>
+<script src="/firebase-api.js"></script>
 <script>
-const API_URL = 'https://script.google.com/macros/s/AKfycbxxTjC7xOGHlgyStVBf6SimoU5RA7xX3VPwxIUtfGlpMNO89OQPDaRewKDDEmWGK4kk/exec';
 const SESSION_KEY = 'easy_session';
 const SESSION_HOURS = 3;
 
@@ -205,8 +210,10 @@ function updateDots() {
 async function verifyPin() {
   showLoading(true);
   try {
-    const res = await fetch(`${API_URL}?action=getStaffByPin&pin=${pinBuffer}`);
-    const data = await res.json();
+    const staffId = document.getElementById('staff-id').value.trim().toUpperCase();
+    if (!staffId) throw new Error('กรอกรหัสพนักงาน');
+    await easyApi.auth.signInWithEmailAndPassword(`${staffId.toLowerCase()}@easy-backoffice.local`, `EASY-${pinBuffer}`);
+    const data = await easyApi.request('getMyStaff');
     if (data.success) {
       saveSession(data.data);
       showWelcome(data.data);
@@ -216,9 +223,9 @@ async function verifyPin() {
       document.getElementById('pin-error').textContent = 'PIN ไม่ถูกต้อง กรุณาลองใหม่';
       setTimeout(updateDots, 700);
     }
-  } catch {
+  } catch (err) {
     pinBuffer = '';
-    document.getElementById('pin-error').textContent = 'เชื่อมต่อไม่ได้ กรุณาลองใหม่';
+    document.getElementById('pin-error').textContent = err.message === 'กรอกรหัสพนักงาน' ? 'กรอกรหัสพนักงานก่อนค่ะ' : 'รหัสพนักงานหรือ PIN ไม่ถูกต้อง';
     updateDots();
   }
   showLoading(false);

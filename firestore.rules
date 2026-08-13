@@ -1,0 +1,39 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn() { return request.auth != null; }
+    function admin() {
+      return signedIn() && request.auth.token.email == 'pc001@easy-backoffice.local';
+    }
+    function isOwnStaff(staffId) {
+      return signedIn() && request.auth.token.email == staffId.lower() + '@easy-backoffice.local';
+    }
+
+    // This collection deliberately contains no PIN, pay rate, bank, or ID-card data.
+    match /staff/{staffId} {
+      allow read: if signedIn();
+      allow write: if admin();
+    }
+    // Restricted fields used only by the admin payroll page.
+    match /staff_private/{staffId} { allow read, write: if admin(); }
+    match /branches/{id} { allow read: if signedIn(); allow write: if admin(); }
+    match /settings/{id} { allow read: if signedIn(); allow write: if admin(); }
+    match /central_targets/{id} { allow read: if signedIn(); allow write: if admin(); }
+    match /timesheets/{id} {
+      allow read: if admin() || isOwnStaff(resource.data.staff_id);
+      allow create: if admin() || isOwnStaff(request.resource.data.staff_id);
+      allow update: if admin() || isOwnStaff(resource.data.staff_id);
+      allow delete: if admin();
+    }
+    match /stock_logs/{id} {
+      allow read: if signedIn();
+      allow create: if admin() || isOwnStaff(request.resource.data.staff_id);
+      allow update, delete: if admin();
+    }
+    match /driver_jobs/{id} { allow read: if signedIn(); allow write: if admin(); }
+    match /payroll_runs/{id} { allow read, write: if admin(); }
+    match /advances/{id} { allow read, write: if admin(); }
+    match /leaves/{id} { allow read, write: if admin(); }
+    match /{document=**} { allow read, write: if false; }
+  }
+}

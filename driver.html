@@ -268,9 +268,11 @@
 
   <div id="toast"></div>
 
+  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
+  <script src="/firebase-config.js"></script><script src="/firebase-api.js"></script>
   <script>
-    // ⚠️ อย่าลืมเปลี่ยน URL เป็นของระบบวิวด้วยนะครับ!
-    const API_URL = 'https://script.google.com/macros/s/AKfycbxxTjC7xOGHlgyStVBf6SimoU5RA7xX3VPwxIUtfGlpMNO89OQPDaRewKDDEmWGK4kk/exec';
     const SESSION_KEY = 'easy_session';
     const DRIVER_STATE_KEY = 'easyDriverState_v3';
     const STATE_KEY = 'driver_work_state';
@@ -376,8 +378,7 @@
       const d = new Date();
       const today = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
       try {
-        const res = await fetch(`${API_URL}?action=getTimesheets&staff_id=${currentStaff.staff_id}&date_from=${today}&date_to=${today}`);
-        const data = await res.json();
+        const data = await easyApi.request('getTimesheets', { staff_id: currentStaff.staff_id, date_from: today, date_to: today });
         
         // ถ้ามีประวัติเข้างานแล้วของวันนี้
         if (data.success && data.data.length > 0 && data.data[0].clock_in) {
@@ -454,8 +455,7 @@
 
     async function fetchHistory() {
       try {
-        const res = await fetch(`${API_URL}?action=getTimesheets&staff_id=${currentStaff.staff_id}`);
-        const json = await res.json();
+        const json = await easyApi.request('getTimesheets', { staff_id: currentStaff.staff_id });
         if (json.success && json.data) { 
            const sortedData = json.data.sort((a,b) => new Date(b.created_at || b.date) - new Date(a.created_at || a.date)).slice(0, 4);
            renderHistory(sortedData); 
@@ -489,8 +489,7 @@
       showLoading(true);
       const payload = { action: type === 'in' ? 'clockIn' : 'clockOut', staff_id: currentStaff.staff_id, lat: "13.41045", lng: "101.055621", branch_id: "BR005", date: new Date().toLocaleDateString('en-CA') };
       try {
-        const res = await fetch(API_URL, { method: 'POST', body: JSON.stringify(payload) });
-        const json = await res.json();
+        const json = await easyApi.request(payload.action, payload);
         
         if(json.success) {
           if(type === 'in') { state.checkedIn = true; saveState(); restoreUIFromState(); showSection('tasks-section'); } 
@@ -513,7 +512,7 @@
     // --- ดึงข้อมูล API ---
     async function fetchDynamicOrders() {
       try {
-        const res = await fetch(`${API_URL}?action=getDriverOrders`); const json = await res.json();
+        const json = await easyApi.request('getDriverOrders');
         if(json.success && json.data) {
           for (let branch in json.data) {
             if (!state.packingData[branch]) { state.packingData[branch] = []; if (!BRANCHES.includes(branch)) BRANCHES.push(branch); }
@@ -526,8 +525,7 @@
 
    async function fetchPickupData() {
       try {
-        const res = await fetch(`${API_URL}?action=getPickups`); 
-        const json = await res.json();
+        const json = await easyApi.request('getPickups');
         if (json.success && json.data) {
           PICKUP_ITEMS_MAP = json.data; 
           PICKUP_LOCS = Object.keys(json.data);
@@ -571,8 +569,7 @@
       const btn = document.getElementById('btn-confirm-delivery'); if(btn.classList.contains('btn-disabled')) return;
       btn.innerText = "⏳ ส่งรูปเข้า Telegram..."; btn.classList.add('btn-disabled');
       try { 
-        const res = await fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: "uploadDriverPhoto", name: currentStaff.nickname, branch: state.currentDeliveryBranch, imageBase64: currentPhotoBase64 }) }); 
-        const json = await res.json(); 
+        const json = await easyApi.request('uploadDriverPhoto', { name: currentStaff.nickname, branch: state.currentDeliveryBranch, imageBase64: currentPhotoBase64 });
         if(json.success) { 
           state.deliveryData[state.currentDeliveryBranch] = 'done'; 
           saveState(); 
@@ -714,8 +711,7 @@
       }
 
       try {
-        const res = await fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: "submitDriverReturn", date: new Date().toLocaleDateString('en-CA'), items: itemsToReturn }) });
-        const json = await res.json();
+        const json = await easyApi.request('submitDriverReturn', { date: new Date().toLocaleDateString('en-CA'), items: itemsToReturn });
         if(json.success) {
           state.stockChecked = true; saveState(); restoreUIFromState(); 
           btn.innerText = "บันทึกข้อมูลสต็อก 💾"; btn.classList.remove('btn-disabled');
