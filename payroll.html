@@ -552,6 +552,36 @@
   .leave-action-btn.cancel { background: var(--soft); color: var(--text-secondary); border: 1.5px solid var(--border); }
   .leave-action-btn.confirm-add { background: var(--danger); color: white; }
   .leave-action-btn.confirm-del { background: var(--soft); color: var(--danger); border: 1.5px solid #FCA5A5; }
+
+  /* ADMIN TIMESHEET EDITOR */
+  .timesheet-editor-overlay {
+    position: fixed; inset: 0; background: rgba(0,0,0,0.45);
+    z-index: 350; opacity: 0; pointer-events: none; transition: opacity 0.2s;
+    display: flex; align-items: flex-end;
+  }
+  .timesheet-editor-overlay.visible { opacity: 1; pointer-events: all; }
+  .timesheet-editor-sheet {
+    width: 100%; background: var(--white); border-radius: 20px 20px 0 0;
+    padding: 20px 20px 36px; transform: translateY(100%);
+    transition: transform 0.25s cubic-bezier(0.32, 0.72, 0, 1);
+  }
+  .timesheet-editor-overlay.visible .timesheet-editor-sheet { transform: translateY(0); }
+  .timesheet-editor-title { font-size: 16px; font-weight: 600; color: var(--text); margin-bottom: 4px; }
+  .timesheet-editor-sub { font-size: 12px; color: var(--text-secondary); font-weight: 300; margin-bottom: 16px; }
+  .timesheet-time-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 12px; }
+  .timesheet-label { display:block; font-size: 12px; color: var(--text-secondary); margin-bottom: 5px; }
+  .timesheet-input {
+    width: 100%; border: 1.5px solid var(--border); border-radius: var(--radius-sm);
+    padding: 11px 12px; font-family: 'Prompt', sans-serif; font-size: 14px;
+    color: var(--text); background: var(--soft); outline: none;
+  }
+  .timesheet-input:focus { border-color: var(--blue); }
+  .timesheet-editor-note { resize: vertical; min-height: 72px; margin-bottom: 14px; }
+  .timesheet-editor-warning { font-size: 11px; color: #92400E; background: #FFFBEB; border: 1px solid #FDE68A; border-radius: 8px; padding: 8px 10px; margin-bottom: 14px; line-height: 1.5; }
+  .timesheet-editor-actions { display:flex; gap:10px; }
+  .timesheet-editor-btn { flex:1; border:none; border-radius:var(--radius-sm); padding:13px; font-family:'Prompt',sans-serif; font-size:14px; font-weight:500; cursor:pointer; }
+  .timesheet-editor-btn.cancel { background:var(--soft); color:var(--text-secondary); border:1.5px solid var(--border); }
+  .timesheet-editor-btn.save { background:var(--blue); color:white; }
 </style>
 <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
 </head>
@@ -630,13 +660,38 @@
   </div>
 </div>
 
+<div class="timesheet-editor-overlay" id="timesheet-editor-overlay" onclick="closeTimesheetEditorOutside(event)">
+  <div class="timesheet-editor-sheet">
+    <div class="timesheet-editor-title" id="te-title">แก้ไขเวลาทำงาน</div>
+    <div class="timesheet-editor-sub" id="te-sub">—</div>
+    <div class="timesheet-time-row">
+      <div>
+        <label class="timesheet-label" for="te-clock-in">เวลาเข้างาน</label>
+        <input class="timesheet-input" id="te-clock-in" type="time">
+      </div>
+      <div>
+        <label class="timesheet-label" for="te-clock-out">เวลาออกงาน</label>
+        <input class="timesheet-input" id="te-clock-out" type="time">
+      </div>
+    </div>
+    <label class="timesheet-label" for="te-note">หมายเหตุการแก้ไข <span style="color:var(--danger)">*</span></label>
+    <textarea class="timesheet-input timesheet-editor-note" id="te-note" placeholder="เช่น ลืมสแกนออก / ระบบขัดข้อง"></textarea>
+    <div class="timesheet-editor-warning">การบันทึกจะใช้คำนวณค่าแรงใหม่ทันที หากรอบนี้จ่ายเงินไปแล้ว ให้ตรวจสอบยอดก่อนแก้ไข</div>
+    <div class="timesheet-editor-actions">
+      <button class="timesheet-editor-btn cancel" onclick="closeTimesheetEditor()">ยกเลิก</button>
+      <button class="timesheet-editor-btn save" onclick="saveTimesheetEdit()">บันทึกเวลา</button>
+    </div>
+    <button id="te-leave-link" onclick="openLeaveFromTimesheetEditor()" style="display:none;width:100%;margin-top:12px;background:none;border:none;color:var(--text-secondary);font-family:'Prompt',sans-serif;font-size:12px;text-decoration:underline;cursor:pointer">บันทึกเป็นวันลาแทน</button>
+  </div>
+</div>
+
 <div class="cal-overlay" id="cal-overlay" onclick="closeCalOutside(event)">
   <div class="cal-sheet" id="cal-sheet">
     <div class="cal-handle"></div>
     <div class="cal-header">
       <div>
         <div class="cal-title" id="cal-staff-name">—</div>
-        <div class="cal-subtitle">📅 ปฎิทินการทำงาน</div>
+        <div class="cal-subtitle">📅 ปฎิทินการทำงาน · แตะวันเพื่อแก้ไขเวลา</div>
       </div>
       <button class="cal-close-btn" onclick="closeCalendar()">ปิด</button>
     </div>
@@ -1603,6 +1658,7 @@ function renderCalendar() {
       const inT = ts.clock_in || '—';
       const outT = ts.clock_out || '—';
       labelHtml = `<div class="cal-cell-label">ทำงาน</div><div class="cal-cell-time">${inT}<br>${outT}</div>`;
+      onclickAttr = `onclick="openTimesheetEditor('${dateStr}')"`;
       workCount++;
     } else if (isDayOff) {
       // วันหยุดตามตาราง (day_off) = เทา
@@ -1612,7 +1668,7 @@ function renderCalendar() {
       // ——— AUTO-DETECT: ผ่านมาแล้ว + ไม่ใช่วันหยุด + ไม่มี timesheet = ขาด ———
       cellClass = 'absent';
       labelHtml = `<div class="cal-cell-label">ขาด</div>`;
-      onclickAttr = `onclick="openLeaveAdd('${dateStr}')"`;
+      onclickAttr = `onclick="openTimesheetEditor('${dateStr}')"`;
       absentCount++;
     }
 
@@ -1643,6 +1699,85 @@ async function changeCalMonth(delta) {
 
 function closeCalendar() { document.getElementById('cal-overlay').classList.remove('visible'); }
 function closeCalOutside(e) { if (e.target === document.getElementById('cal-overlay')) closeCalendar(); }
+
+// ─── ADMIN TIMESHEET EDITOR ───
+let editingTimesheet = null;
+
+function toTimeInput(value) {
+  return value ? String(value).substring(0, 5) : '';
+}
+
+function openTimesheetEditor(dateStr) {
+  const record = calTimesheets.find(t => {
+    const date = typeof t.date === 'string' ? t.date.substring(0, 10) : toDateStr(new Date(t.date));
+    return date === dateStr;
+  }) || null;
+  const staff = allStaff.find(s => String(s.staff_id) === String(calStaffId));
+  const name = staff?.nickname || staff?.name || 'พนักงาน';
+
+  editingTimesheet = { date: dateStr, record };
+  document.getElementById('te-title').textContent = record ? '✏️ แก้ไขเวลาทำงาน' : '➕ เพิ่มเวลาทำงานย้อนหลัง';
+  document.getElementById('te-sub').textContent = `${name} · ${thaiDateFull(dateStr)}`;
+  document.getElementById('te-clock-in').value = toTimeInput(record?.clock_in);
+  document.getElementById('te-clock-out').value = toTimeInput(record?.clock_out);
+  document.getElementById('te-note').value = record?.admin_note || record?.edit_note || '';
+  document.getElementById('te-leave-link').style.display = record ? 'none' : '';
+  document.getElementById('timesheet-editor-overlay').classList.add('visible');
+}
+
+function closeTimesheetEditor() {
+  document.getElementById('timesheet-editor-overlay').classList.remove('visible');
+  editingTimesheet = null;
+}
+
+function closeTimesheetEditorOutside(e) {
+  if (e.target === document.getElementById('timesheet-editor-overlay')) closeTimesheetEditor();
+}
+
+function openLeaveFromTimesheetEditor() {
+  const date = editingTimesheet?.date;
+  closeTimesheetEditor();
+  if (date) openLeaveAdd(date);
+}
+
+async function saveTimesheetEdit() {
+  if (!editingTimesheet || !calStaffId) return;
+  const clockIn = document.getElementById('te-clock-in').value;
+  const clockOut = document.getElementById('te-clock-out').value;
+  const note = document.getElementById('te-note').value.trim();
+
+  if (!clockIn) return showToast('กรุณาระบุเวลาเข้างาน', 'error');
+  if (!clockOut) return showToast('กรุณาระบุเวลาออกงาน', 'error');
+  if (!note) return showToast('กรุณาระบุเหตุผลที่แก้ไข', 'error');
+  if (clockIn === clockOut) return showToast('เวลาเข้าและออกต้องไม่เท่ากัน', 'error');
+
+  showLoading(true);
+  try {
+    const res = await apiPost({
+      action: 'upsertTimesheet',
+      record_id: editingTimesheet.record?.record_id || '',
+      staff_id: calStaffId,
+      date: editingTimesheet.date,
+      clock_in: clockIn,
+      clock_out: clockOut,
+      admin_note: note,
+      is_manual: 'yes'
+    });
+    if (!res.success) throw new Error(res.message || 'บันทึกไม่สำเร็จ');
+    closeTimesheetEditor();
+    showToast('✅ บันทึกเวลาเรียบร้อย', 'success');
+    await loadCalData();
+    if (currentStaffData && String(currentStaffData.payroll.staff.staff_id) === String(calStaffId)) {
+      const tsRes = await apiGet(`action=getTimesheets&date_from=${currentStaffData.start}&date_to=${currentStaffData.end}`);
+      allTimesheets = tsRes.success ? tsRes.data : allTimesheets;
+      currentStaffData.payroll = calcPayroll(currentStaffData.payroll.staff, allTimesheets, currentStaffData.start, currentStaffData.end);
+      renderDetailBody();
+    }
+  } catch (err) {
+    showToast(err.message || 'บันทึกไม่สำเร็จ', 'error');
+  }
+  showLoading(false);
+}
 
 // ─── LEAVE MANAGEMENT ───
 let currentLeaveDate = null, currentLeaveId = null, currentLeaveType = 'ลากิจ';
