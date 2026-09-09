@@ -1,6 +1,8 @@
 <!DOCTYPE html>
 <html lang="th">
 <head>
+<script src="/firebase-config.js"></script>
+<script src="/firebase-client.js"></script>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <title>EASY Driver System</title>
@@ -270,9 +272,9 @@
 
   <script>
     // ⚠️ อย่าลืมเปลี่ยน URL เป็นของระบบวิวด้วยนะครับ!
-    const API_URL = 'https://script.google.com/macros/s/AKfycbxxTjC7xOGHlgyStVBf6SimoU5RA7xX3VPwxIUtfGlpMNO89OQPDaRewKDDEmWGK4kk/exec';
-    const SESSION_KEY = 'easy_session';
-    const DRIVER_STATE_KEY = 'easyDriverState_v3';
+    const API_URL = '/api';
+    const SESSION_KEY = 'easy_firebase_session';
+    const DRIVER_STATE_KEY = 'easyFirebaseDriverState_v1';
     const STATE_KEY = 'driver_work_state';
 
     let currentStaff = null;
@@ -487,7 +489,9 @@
     // --- Clock In / Out ---
     async function clockAction(type) {
       showLoading(true);
-      const payload = { action: type === 'in' ? 'clockIn' : 'clockOut', staff_id: currentStaff.staff_id, lat: "13.41045", lng: "101.055621", branch_id: "BR005", date: new Date().toLocaleDateString('en-CA') };
+      let position;
+      try { position = await window.easyPosition(); } catch { showLoading(false); alert("กรุณาเปิดตำแหน่งเพื่อบันทึกเวลา"); return; }
+      const payload = { action: type === 'in' ? 'clockIn' : 'clockOut', staff_id: currentStaff.staff_id, lat: position.lat, lng: position.lng, branch_id: "BR005", date: new Date().toLocaleDateString('en-CA') };
       try {
         const res = await fetch(API_URL, { method: 'POST', body: JSON.stringify(payload) });
         const json = await res.json();
@@ -741,7 +745,7 @@
 
     function driverLogout() {
       if(confirm("ต้องการออกจากระบบใช่หรือไม่?")) {
-        localStorage.removeItem(SESSION_KEY);
+        localStorage.removeItem(SESSION_KEY); if(window.easyLogout) window.easyLogout();
         window.location.href = '/index.html';
       }
     }

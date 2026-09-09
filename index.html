@@ -1,6 +1,8 @@
 <!DOCTYPE html>
 <html lang="th">
 <head>
+<script src="/firebase-config.js"></script>
+<script src="/firebase-client.js"></script>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>EASY หมี่ไก่ฉีก</title>
@@ -132,7 +134,8 @@
 </div>
 
 <div class="pin-body">
-  <div class="pin-label">กรอก PIN เพื่อเข้าสู่ระบบ</div>
+  <label for="staff-id">รหัสพนักงาน</label><input id="staff-id" autocomplete="username" placeholder="เช่น STF001" style="padding:12px;border:1px solid #ddd;border-radius:8px;margin:8px;width:230px;text-align:center">
+<div class="pin-label">กรอก PIN เพื่อเข้าสู่ระบบ</div>
   <div class="pin-dots" id="pin-dots">
     <div class="pin-dot"></div>
     <div class="pin-dot"></div>
@@ -170,8 +173,8 @@
 </div>
 
 <script>
-const API_URL = 'https://script.google.com/macros/s/AKfycbxxTjC7xOGHlgyStVBf6SimoU5RA7xX3VPwxIUtfGlpMNO89OQPDaRewKDDEmWGK4kk/exec';
-const SESSION_KEY = 'easy_session';
+const API_URL = '/api';
+const SESSION_KEY = 'easy_firebase_session';
 const SESSION_HOURS = 3;
 
 let pinBuffer = '';
@@ -205,7 +208,7 @@ function updateDots() {
 async function verifyPin() {
   showLoading(true);
   try {
-    const res = await fetch(`${API_URL}?action=getStaffByPin&pin=${pinBuffer}`);
+    const res = await fetch(API_URL, {method:'POST',body:JSON.stringify({action:'getStaffByPin',staff_id:document.getElementById('staff-id').value.trim(),pin:pinBuffer})});
     const data = await res.json();
     if (data.success) {
       saveSession(data.data);
@@ -213,7 +216,7 @@ async function verifyPin() {
     } else {
       pinBuffer = '';
       document.querySelectorAll('.pin-dot').forEach(d => d.classList.add('error'));
-      document.getElementById('pin-error').textContent = 'PIN ไม่ถูกต้อง กรุณาลองใหม่';
+      document.getElementById('pin-error').textContent = data.message || 'PIN ไม่ถูกต้อง กรุณาลองใหม่';
       setTimeout(updateDots, 700);
     }
   } catch {
@@ -255,7 +258,7 @@ function loadSession() {
     const raw = localStorage.getItem(SESSION_KEY);
     if (!raw) return null;
     const data = JSON.parse(raw);
-    if (Date.now() > data.expires) { localStorage.removeItem(SESSION_KEY); return null; }
+    if (Date.now() > data.expires) { localStorage.removeItem(SESSION_KEY); if(window.easyLogout) window.easyLogout(); return null; }
     return data;
   } catch { return null; }
 }
