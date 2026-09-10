@@ -32,3 +32,9 @@ Deploy only easy-backoffice-simple-staging, Cloud Run easy-simple-api in
 asia-southeast1 with the existing runtime/build identities and PIN_SECRET:1.
 Run node build.js to generate the Hosting allowlist in public/. Never deploy this
 branch with the original production workflow. Synthetic/test accounts only.
+
+Verification on staging: admin/staff/driver PIN, staff create/edit + branch/work
+settings, clock in/out, stock/driver orders and returns, leave/OT/advance/payroll
+writes and rereads passed with synthetic PORT accounts. Original pages and
+payroll detail/calendar were checked at 360px. Browser staff GPS was unavailable;
+clock writes were tested through the API with the synthetic branch coordinates.
