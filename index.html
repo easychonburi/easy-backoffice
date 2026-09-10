@@ -175,7 +175,7 @@ let pinBuffer = '';
 
 window.addEventListener('load', async () => {
   if (!sessionStorage.getItem('easy_firebase_token')) return;
-  try { await easyApi('me'); redirectByRole(); }
+  try { const staff = await easyApi('me'); redirectByRole(staff.role); }
   catch { sessionStorage.removeItem('easy_firebase_token'); }
 });
 
@@ -225,7 +225,7 @@ function showWelcome(staff) {
 }
 
 function redirectByRole(role) {
-  window.location.href = '/foundation.html';
+  window.location.href = role === 'admin' ? '/admin.html' : '/foundation.html';
 }
 
 function showLoading(s) { document.getElementById('loading').classList.toggle('show', s); }
