@@ -3,3 +3,4 @@ public/
 .firebase/
 .env*
 *-debug.log
+*.xlsx
