@@ -4,7 +4,7 @@
 <script src="/firebase-config.js"></script>
 <script src="/firebase-client.js"></script>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>EASY Driver System</title>
   
   <link rel="manifest" href="/manifest.json">
@@ -91,6 +91,7 @@
     .menu-box { background: #fff; border-radius: 16px; padding: 16px; width: 250px; box-shadow: 0 8px 24px rgba(0,0,0,0.2); transform: translateY(-20px); transition: transform 0.2s; }
     #menuOverlay.show .menu-box { transform: translateY(0); }
   </style>
+<link rel="stylesheet" href="/mobile.css">
 </head>
 
 <body>
@@ -103,7 +104,7 @@
         <h2 id="userNameDisplay">สวัสดี...</h2>
         <small style="color:#FFC928; font-weight: 500;">ตำแหน่ง: พนักงานจัดส่ง</small>
       </div>
-      <div style="cursor:pointer; font-size: 1.8rem; line-height: 1;" onclick="toggleMenu()">☰</div>
+      <button type="button" class="driver-menu-toggle" aria-label="เปิดเมนู" style="cursor:pointer; font-size:1.8rem; line-height:1; background:none; border:0; color:inherit" onclick="toggleMenu()">☰</button>
     </div>
 
     <div class="container">
