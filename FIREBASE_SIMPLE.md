@@ -23,10 +23,26 @@ advance_ids atomically with deduction. Paid-period time/leave edits are rejected
 The original clock uses global shifts; payroll supports individual shift times
 and its original Sunday rule. These existing differences are retained.
 
-Staging limitation: no Telegram/LINE production credentials or destinations are
-copied. Driver photo submission explicitly reports that a test Telegram room is
-not configured. Payroll saves without sending a notification. Leave CRUD follows
-the original payroll page fields (the supplied code.gs has no leave handlers).
+Shop settings and notifications:
+- Admin edits central_targets.target_qty. Original reporting/production units,
+  ratios and zero/diff rules are retained. setup-shop.js initializes missing rows
+  at target_qty=0 (no live quantities imported); owner sets targets through Admin.
+- settings/driver_order_quantities.items contains the old FIXED_ORDER_QTY defaults.
+  Stock resolves current quantities on each submission. Existing orders retain
+  their recorded amounts. There is no new driver conversion system.
+- settings/notifications stores the legacy Telegram/LINE keys server-side under
+  the existing server-only rules. Only token-present booleans return to Admin;
+  blank password inputs preserve values, explicit clear removes them.
+- Clock/late, stock, advance, payroll and driver notifications use the original
+  destinations. Central work orders go to LINE. Every staging message is marked
+  as test data. Failed notifications warn without retrying completed data writes.
+- Driver packing confirmation sends each destination separately, including
+  requested amounts, full/short status, actual and missing quantities. Delivery
+  photos go from request memory directly to Telegram, with no persistent storage.
+
+Run GOOGLE_CLOUD_PROJECT=easy-backoffice-simple-staging node functions/setup-shop.js
+once before deploying this slice. It preserves existing settings. Credentials
+are supplied separately through authenticated Admin settings, never in Git.
 
 Deploy only easy-backoffice-simple-staging, Cloud Run easy-simple-api in
 asia-southeast1 with the existing runtime/build identities and PIN_SECRET:1.
