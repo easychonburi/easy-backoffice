@@ -1,8 +1,10 @@
 <!DOCTYPE html>
 <html lang="th">
 <head>
+<script src="/firebase-config.js"></script>
+<script src="/firebase-client.js"></script>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>EASY — บันทึกเวลา</title>
 <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <style>
@@ -212,6 +214,7 @@
   }
   @keyframes spin { to { transform: rotate(360deg); } }
 </style>
+<link rel="stylesheet" href="/mobile.css">
 </head>
 <body>
 
@@ -319,8 +322,8 @@
 <div class="loading-overlay" id="loading"><div class="spinner"></div></div>
 
 <script>
-const API_URL = 'https://script.google.com/macros/s/AKfycbxxTjC7xOGHlgyStVBf6SimoU5RA7xX3VPwxIUtfGlpMNO89OQPDaRewKDDEmWGK4kk/exec';
-const SESSION_KEY = 'easy_session';
+const API_URL = '/api';
+const SESSION_KEY = 'easy_firebase_session';
 
 const THAI_DAYS = ['อาทิตย์','จันทร์','อังคาร','พุธ','พฤหัสบดี','ศุกร์','เสาร์'];
 const THAI_MONTHS = ['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
@@ -365,13 +368,13 @@ function loadSession() {
     const raw = localStorage.getItem(SESSION_KEY);
     if (!raw) return null;
     const data = JSON.parse(raw);
-    if (Date.now() > data.expires) { localStorage.removeItem(SESSION_KEY); return null; }
+    if (Date.now() > data.expires) { localStorage.removeItem(SESSION_KEY); if(window.easyLogout) window.easyLogout(); return null; }
     return data;
   } catch { return null; }
 }
 
 function logout() {
-  localStorage.removeItem(SESSION_KEY);
+  localStorage.removeItem(SESSION_KEY); if(window.easyLogout) window.easyLogout();
   window.location.href = '/index.html';
 }
 

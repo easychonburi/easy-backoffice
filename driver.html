@@ -1,8 +1,10 @@
 <!DOCTYPE html>
 <html lang="th">
 <head>
+<script src="/firebase-config.js"></script>
+<script src="/firebase-client.js"></script>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>EASY Driver System</title>
   
   <link rel="manifest" href="/manifest.json">
@@ -89,6 +91,7 @@
     .menu-box { background: #fff; border-radius: 16px; padding: 16px; width: 250px; box-shadow: 0 8px 24px rgba(0,0,0,0.2); transform: translateY(-20px); transition: transform 0.2s; }
     #menuOverlay.show .menu-box { transform: translateY(0); }
   </style>
+<link rel="stylesheet" href="/mobile.css">
 </head>
 
 <body>
@@ -101,7 +104,7 @@
         <h2 id="userNameDisplay">สวัสดี...</h2>
         <small style="color:#FFC928; font-weight: 500;">ตำแหน่ง: พนักงานจัดส่ง</small>
       </div>
-      <div style="cursor:pointer; font-size: 1.8rem; line-height: 1;" onclick="toggleMenu()">☰</div>
+      <button type="button" class="driver-menu-toggle" aria-label="เปิดเมนู" style="cursor:pointer; font-size:1.8rem; line-height:1; background:none; border:0; color:inherit" onclick="toggleMenu()">☰</button>
     </div>
 
     <div class="container">
@@ -270,9 +273,9 @@
 
   <script>
     // ⚠️ อย่าลืมเปลี่ยน URL เป็นของระบบวิวด้วยนะครับ!
-    const API_URL = 'https://script.google.com/macros/s/AKfycbxxTjC7xOGHlgyStVBf6SimoU5RA7xX3VPwxIUtfGlpMNO89OQPDaRewKDDEmWGK4kk/exec';
-    const SESSION_KEY = 'easy_session';
-    const DRIVER_STATE_KEY = 'easyDriverState_v3';
+    const API_URL = '/api';
+    const SESSION_KEY = 'easy_firebase_session';
+    const DRIVER_STATE_KEY = 'easyFirebaseDriverState_v1';
     const STATE_KEY = 'driver_work_state';
 
     let currentStaff = null;
@@ -487,7 +490,9 @@
     // --- Clock In / Out ---
     async function clockAction(type) {
       showLoading(true);
-      const payload = { action: type === 'in' ? 'clockIn' : 'clockOut', staff_id: currentStaff.staff_id, lat: "13.41045", lng: "101.055621", branch_id: "BR005", date: new Date().toLocaleDateString('en-CA') };
+      let position;
+      try { position = await window.easyPosition(); } catch { showLoading(false); alert("กรุณาเปิดตำแหน่งเพื่อบันทึกเวลา"); return; }
+      const payload = { action: type === 'in' ? 'clockIn' : 'clockOut', staff_id: currentStaff.staff_id, lat: position.lat, lng: position.lng, branch_id: "BR005", date: new Date().toLocaleDateString('en-CA') };
       try {
         const res = await fetch(API_URL, { method: 'POST', body: JSON.stringify(payload) });
         const json = await res.json();
@@ -741,7 +746,7 @@
 
     function driverLogout() {
       if(confirm("ต้องการออกจากระบบใช่หรือไม่?")) {
-        localStorage.removeItem(SESSION_KEY);
+        localStorage.removeItem(SESSION_KEY); if(window.easyLogout) window.easyLogout();
         window.location.href = '/index.html';
       }
     }
