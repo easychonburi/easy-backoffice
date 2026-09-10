@@ -346,7 +346,7 @@
 @media(max-width:430px){.form-row{flex-direction:column;gap:0}.attendance-item{gap:8px}.add-advance-btn{flex-shrink:0}.modal-sheet{padding:20px 16px 28px}}
 </style></head><body>
 <div class="app-header">
-  <div class="header-top"><div class="header-logo">EASY</div><button class="logout-btn" id="logout">ออกจากระบบ</button></div>
+  <div class="header-top"><div class="header-logo">EASY</div><button class="logout-btn" onclick="location.href='/dashboard.html'">← Dashboard</button><button class="logout-btn" id="logout">ออกจากระบบ</button></div>
   <div class="header-greeting" id="greeting">สวัสดี 👋</div><div class="header-date" id="header-date">—</div>
 </div>
 <div class="app-body" id="admin-body" hidden>
@@ -374,6 +374,9 @@
 <label class="form-label" for="staff-shift">กะ</label><select class="form-select" id="staff-shift" name="shift"><option value="morning">กะเช้า</option><option value="night">กะดึก</option></select>
 <div class="form-row"><div><label class="form-label" for="custom-start">เวลาเริ่มเฉพาะคน (ถ้ามี)</label><input class="form-input" id="custom-start" type="time" name="custom_shift_start"></div><div><label class="form-label" for="custom-end">เวลาเลิกเฉพาะคน (ถ้ามี)</label><input class="form-input" id="custom-end" type="time" name="custom_shift_end"></div></div>
 <p class="note">ประจำ: เว้นว่างใช้เวลากะกลาง · Part-time: เว้นว่างเป็นเวลายืดหยุ่น ตาม EASY เดิม วันอาทิตย์ใช้ 10:30–20:00</p>
+<label class="form-label" for="bank-name">ธนาคาร</label><input class="form-input" id="bank-name" name="bank_name" maxlength="80">
+<label class="form-label" for="bank-account">เลขบัญชี</label><input class="form-input" id="bank-account" name="bank_account" maxlength="40" inputmode="numeric">
+<label class="form-label" for="day-off">วันหยุดประจำ</label><input class="form-input" id="day-off" name="day_off" pattern="[0-6](,[0-6])*|" placeholder="เช่น 0 หรือ 0,6"><p class="note">0 = อาทิตย์, 1 = จันทร์ … 6 = เสาร์ เว้นว่างหากไม่มีวันหยุดประจำ</p>
 <p class="note" id="staff-error" role="alert"></p><div class="modal-btn-row"><button type="button" class="modal-btn secondary" data-close="staff-modal">ยกเลิก</button><button class="modal-btn primary" type="submit">บันทึก</button></div></form></div></div>
 <div class="modal-overlay" id="branch-modal" hidden><div class="modal-sheet" role="dialog" aria-modal="true" aria-labelledby="branch-title"><div class="modal-handle"></div><div class="modal-title" id="branch-title">📍 เพิ่มสาขา</div>
 <form id="branch-form"><input type="hidden" name="branch_id"><label class="form-label" for="branch-name">ชื่อสาขา</label><input class="form-input" id="branch-name" name="name" maxlength="80" required><label class="form-label" for="branch-status">สถานะ</label><select class="form-select" id="branch-status" name="status"><option value="active">ใช้งาน</option><option value="inactive">ปิดใช้งาน</option></select>
@@ -386,6 +389,7 @@
 <p class="note">เวลาเลิกก่อนเวลาเริ่มหมายถึงข้ามเที่ยงคืน วันอาทิตย์ใช้ 10:30–20:00 ตาม EASY เดิม</p>
 <label class="form-label" for="work-ot">อัตรา OT กลาง (บาท/ชั่วโมง)</label><input class="form-input" id="work-ot" name="ot_rate_per_hour" type="number" min="0.01" max="100000" step="0.01" required>
 <label class="form-label" for="late-grace">ผ่อนผันสาย (นาที)</label><input class="form-input" id="late-grace" name="late_grace_min" type="number" min="0" max="120" step="1" required>
+<label class="form-label" for="ot-grace">เกินเวลาเลิกงานก่อนนับ OT (นาที)</label><input class="form-input" id="ot-grace" name="ot_grace_min" type="number" min="0" max="120" step="1" required>
 <p class="note" id="work-error" role="alert"></p><div class="modal-btn-row"><button type="button" class="modal-btn secondary" data-close="work-modal">ยกเลิก</button><button class="modal-btn primary" type="submit">บันทึก</button></div></form></div></div>
 <div class="toast" id="toast" role="status"></div><div class="loading-overlay" id="loading"><div class="spinner"></div></div>
 <script src="/firebase-client.js"></script><script src="/admin.js"></script></body></html>

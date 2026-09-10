@@ -225,7 +225,7 @@ function showWelcome(staff) {
 }
 
 function redirectByRole(role) {
-  window.location.href = role === 'admin' ? '/admin.html' : '/foundation.html';
+  window.location.href = role === 'admin' ? '/dashboard.html' : role === 'driver' ? '/driver.html' : '/clock.html';
 }
 
 function showLoading(s) { document.getElementById('loading').classList.toggle('show', s); }

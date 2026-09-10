@@ -88,7 +88,11 @@
     #menuOverlay.show { opacity: 1; pointer-events: all; }
     .menu-box { background: #fff; border-radius: 16px; padding: 16px; width: 250px; box-shadow: 0 8px 24px rgba(0,0,0,0.2); transform: translateY(-20px); transition: transform 0.2s; }
     #menuOverlay.show .menu-box { transform: translateY(0); }
-  </style>
+  
+/* Only narrow overflow fixes; original EASY layout remains. */
+*{min-width:0}.toast{white-space:normal;overflow-wrap:anywhere}.att-info,.advance-info,.payroll-item-info{min-width:0}.att-name,.advance-name,.header-greeting{overflow-wrap:anywhere}
+@media(max-width:430px){.form-row{flex-wrap:wrap}.form-row>div{flex-basis:100%}.modal-sheet{max-height:90dvh;overflow-y:auto}.cal-grid{min-width:0}.cal-cell{min-width:0}.detail-sheet{max-width:100vw}.bank-account{overflow-wrap:anywhere}}
+</style>
 </head>
 
 <body>
@@ -268,11 +272,13 @@
 
   <div id="toast"></div>
 
-  <script>
-    // ⚠️ อย่าลืมเปลี่ยน URL เป็นของระบบวิวด้วยนะครับ!
-    const API_URL = 'https://script.google.com/macros/s/AKfycbxxTjC7xOGHlgyStVBf6SimoU5RA7xX3VPwxIUtfGlpMNO89OQPDaRewKDDEmWGK4kk/exec';
-    const SESSION_KEY = 'easy_session';
-    const DRIVER_STATE_KEY = 'easyDriverState_v3';
+  <script src="/firebase-client.js"></script>
+<script src="/easy-page.js"></script>
+<script>
+// ⚠️ อย่าลืมเปลี่ยน URL เป็นของระบบวิวด้วยนะครับ!
+    
+    const SESSION_KEY = 'easy_firebase_page';
+    let DRIVER_STATE_KEY = 'easyDriverState_firebase';
     const STATE_KEY = 'driver_work_state';
 
     let currentStaff = null;
@@ -321,11 +327,12 @@
     ];
 
     window.onload = async () => {
+  await easyPageReady;
       const session = loadSession();
       if (!session) { window.location.href = '/index.html'; return; }
       if (session.staff.role !== 'driver') { window.location.href = '/index.html'; return; }
       
-      currentStaff = session.staff;
+      currentStaff = session.staff; DRIVER_STATE_KEY += '_' + currentStaff.staff_id;
       document.getElementById('userNameDisplay').innerText = `สวัสดี ${currentStaff.nickname || currentStaff.name}`;
       
       loadState();
@@ -347,9 +354,7 @@
       setTimeout(syncDriverClockIn, 800);
     };
 
-    function loadSession() {
-      try { const r = localStorage.getItem(SESSION_KEY); if(!r) return null; const d = JSON.parse(r); if(Date.now() > d.expires) return null; return d; } catch { return null; }
-    }
+    function loadSession() { return window.easyCurrentSession; }
     
     function saveState() { 
       localStorage.setItem(DRIVER_STATE_KEY, JSON.stringify(state)); 
@@ -376,7 +381,7 @@
       const d = new Date();
       const today = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
       try {
-        const res = await fetch(`${API_URL}?action=getTimesheets&staff_id=${currentStaff.staff_id}&date_from=${today}&date_to=${today}`);
+        const res = await easyLegacyFetch(`action=getTimesheets&staff_id=${currentStaff.staff_id}&date_from=${today}&date_to=${today}`);
         const data = await res.json();
         
         // ถ้ามีประวัติเข้างานแล้วของวันนี้
@@ -454,7 +459,7 @@
 
     async function fetchHistory() {
       try {
-        const res = await fetch(`${API_URL}?action=getTimesheets&staff_id=${currentStaff.staff_id}`);
+        const res = await easyLegacyFetch(`action=getTimesheets&staff_id=${currentStaff.staff_id}`);
         const json = await res.json();
         if (json.success && json.data) { 
            const sortedData = json.data.sort((a,b) => new Date(b.created_at || b.date) - new Date(a.created_at || a.date)).slice(0, 4);
@@ -487,9 +492,11 @@
     // --- Clock In / Out ---
     async function clockAction(type) {
       showLoading(true);
-      const payload = { action: type === 'in' ? 'clockIn' : 'clockOut', staff_id: currentStaff.staff_id, lat: "13.41045", lng: "101.055621", branch_id: "BR005", date: new Date().toLocaleDateString('en-CA') };
+      const driverBranch = (window.easyBranches || []).find(b => b.branch_id === currentStaff.branch_id);
+      if (!driverBranch || driverBranch.lat == null || driverBranch.lng == null) { showToast('กรุณาให้ผู้ดูแลกำหนดสาขาและพิกัดก่อน'); showLoading(false); return; }
+      const payload = { action: type === 'in' ? 'clockIn' : 'clockOut', staff_id: currentStaff.staff_id, lat: driverBranch.lat, lng: driverBranch.lng, branch_id: driverBranch.branch_id, date: new Date().toLocaleDateString('en-CA') };
       try {
-        const res = await fetch(API_URL, { method: 'POST', body: JSON.stringify(payload) });
+        const res = await easyLegacyFetch('', { method: 'POST', body: JSON.stringify(payload) });
         const json = await res.json();
         
         if(json.success) {
@@ -513,7 +520,7 @@
     // --- ดึงข้อมูล API ---
     async function fetchDynamicOrders() {
       try {
-        const res = await fetch(`${API_URL}?action=getDriverOrders`); const json = await res.json();
+        const res = await easyLegacyFetch(`action=getDriverOrders`); const json = await res.json();
         if(json.success && json.data) {
           for (let branch in json.data) {
             if (!state.packingData[branch]) { state.packingData[branch] = []; if (!BRANCHES.includes(branch)) BRANCHES.push(branch); }
@@ -526,7 +533,7 @@
 
    async function fetchPickupData() {
       try {
-        const res = await fetch(`${API_URL}?action=getPickups`); 
+        const res = await easyLegacyFetch(`action=getPickups`); 
         const json = await res.json();
         if (json.success && json.data) {
           PICKUP_ITEMS_MAP = json.data; 
@@ -571,7 +578,7 @@
       const btn = document.getElementById('btn-confirm-delivery'); if(btn.classList.contains('btn-disabled')) return;
       btn.innerText = "⏳ ส่งรูปเข้า Telegram..."; btn.classList.add('btn-disabled');
       try { 
-        const res = await fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: "uploadDriverPhoto", name: currentStaff.nickname, branch: state.currentDeliveryBranch, imageBase64: currentPhotoBase64 }) }); 
+        const res = await easyLegacyFetch('', { method: 'POST', body: JSON.stringify({ action: "uploadDriverPhoto", name: currentStaff.nickname, branch: state.currentDeliveryBranch, imageBase64: currentPhotoBase64 }) }); 
         const json = await res.json(); 
         if(json.success) { 
           state.deliveryData[state.currentDeliveryBranch] = 'done'; 
@@ -714,7 +721,7 @@
       }
 
       try {
-        const res = await fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: "submitDriverReturn", date: new Date().toLocaleDateString('en-CA'), items: itemsToReturn }) });
+        const res = await easyLegacyFetch('', { method: 'POST', body: JSON.stringify({ action: "submitDriverReturn", date: new Date().toLocaleDateString('en-CA'), items: itemsToReturn }) });
         const json = await res.json();
         if(json.success) {
           state.stockChecked = true; saveState(); restoreUIFromState(); 
@@ -739,12 +746,7 @@
       document.getElementById('menuOverlay').classList.toggle('show');
     }
 
-    function driverLogout() {
-      if(confirm("ต้องการออกจากระบบใช่หรือไม่?")) {
-        localStorage.removeItem(SESSION_KEY);
-        window.location.href = '/index.html';
-      }
-    }
+    function driverLogout() { if(confirm("ต้องการออกจากระบบใช่หรือไม่?")) return easyLogout(); }
 
     function clearDriverState() {
       if(confirm("แน่ใจหรือไม่ว่าจะล้างข้อมูลของวันนี้ทั้งหมด?")) {

@@ -1,91 +1,34 @@
-# EASY Firebase SIMPLE — employee master data
+# EASY Firebase SIMPLE — staging port
 
-Base: `easy-backoffice/main` at `d8e777bbb6536d4eaa4d3a410a6cec8d25f2b1c1`.
-Reference: `easychonburi/easybkk-backoffice`, branch `firebase-migration-v2`.
-No migration branch code or production data is included.
+Source UI/flow: easy-backoffice/main d8e777b. Technical reference only:
+easybkk-backoffice/firebase-migration-v2. Original backend logic supplied in
+code.gs; workbook used for column names only. No production data imported.
 
-## What works in this slice
+Published pages: index (PIN only; admin -> dashboard, staff -> clock, driver ->
+driver), dashboard, admin, clock, payroll, driver and stock (driver dependency).
+Original page layout, wording and payroll formulas are retained, with narrow
+mobile fixes. admin provides the missing staff/branch/work/pay configuration.
+foundation.html is a test artifact and is not published by build.js.
 
-The existing four-digit keypad posts JSON to `/api`. No Staff ID is entered.
-The backend validates PINs and issues random, server-checked sessions (3 hours;
-drivers 8 hours). Admins can list, create and edit test accounts, change PINs,
-roles and active status on `admin.html`. Changing PIN, role or status invalidates
-existing sessions; ordinary profile edits keep them. The signed-in admin can edit
-its own details/PIN but cannot disable itself or lower its own role.
-PINs must be unique, including inactive accounts. PIN lookup uses a secret HMAC;
-verification uses salted scrypt. PINs/hashes never appear in API responses.
-Login is limited to 10 attempts per minute for the entire test shop, including
-successful attempts. A busy shop or abusive caller can temporarily exhaust this
-shared allowance; there is no device/IP-specific limiter in this foundation.
+Backend: existing server-only Firestore, PIN_SECRET:1 and opaque sessions.
+operations.js handles the original API actions directly; legacy-rules.js retains
+the original time/GPS helpers and item catalogue. easy-page.js connects original
+page response shapes and session handling to the existing /api endpoint.
 
-Collections: `staff` (minimal profiles and private PIN verification fields),
-`pin_index` (HMAC to staff ID, transactionally unique), `sessions` (hashed token,
-staff ID, account version, expiry), `login_limits/shop` (single rolling counter).
-Firestore browser access is denied; the server checks current staff status and
-role on every authenticated action. Expired sessions are rejected; automated
-deletion is not configured in this foundation.
+Collections: staff, branches, settings/work, timesheets, leaves, advances,
+payroll_runs, stock_logs, driver_jobs, central_targets (original stock target
+read dependency), pin_index, sessions and login_limits. Staff adds bank_name,
+bank_account and day_off. settings/work adds ot_grace_min. Payments record exact
+advance_ids atomically with deduction. Paid-period time/leave edits are rejected.
+The original clock uses global shifts; payroll supports individual shift times
+and its original Sunday rule. These existing differences are retained.
 
-Borrowed from Bubble: same-origin `/api`, server-only Firestore, hashed PINs,
-opaque sessions, and website-based account management. UI is copied from EASY
-main's dashboard header, shortcuts, cards and bottom-sheet forms. Main has no
-staff/branch/settings CRUD page, so only the missing forms are added. The copied
-CSS has narrow mobile fixes for long text and stacked form fields.
+Staging limitation: no Telegram/LINE production credentials or destinations are
+copied. Driver photo submission explicitly reports that a test Telegram room is
+not configured. Payroll saves without sending a notification. Leave CRUD follows
+the original payroll page fields (the supplied code.gs has no leave handlers).
 
-Added data (field names follow EASY main, not Bubble):
-- `staff`: `branch_id`, `staff_type` (fulltime/parttime), `pay_type` (daily/hourly),
-  `rate`, nullable `ot_rate` (blank uses the global rate), `shift` (morning/night),
-  `custom_shift_start`, `custom_shift_end`. Editing without a PIN keeps the old PIN.
-- `branches`: `branch_id`, `name`, `status`, nullable `lat`/`lng`, `allowed_radius_m`.
-  Inactive branches cannot be newly assigned; existing assignments are preserved.
-- `settings/work`: `shift_morning_start`, `shift_morning_end`, `shift_night_start`,
-  `shift_night_end`, `ot_rate_per_hour`, `late_grace_min`. No generic settings CRUD.
-
-Main's payroll reads individual times before global shifts; part-time without
-individual times is flexible, and Sunday is fixed at 10:30–20:00. These fields and
-the Sunday rule are retained/displayed; no time recording or payroll is added.
-Main's clock currently reads global shifts directly. Resolving that existing
-difference belongs to the later clock migration, not this master-data slice.
-
-Admins land on `admin.html`; other roles retain the test foundation page. Legacy dashboard, clock, driver,
-payroll and stock files remain untouched and are excluded from Firebase Hosting.
-There is no fallback to the old backend. Do not publish this branch through the
-existing production hosting workflow. Firebase Hosting publishes ONLY `public/`
-generated by `node build.js`; no credentials or server source are in that folder.
-
-## Staging
-
-The authorized project is `easy-backoffice-simple-staging` only. The existing
-runtime is `easy-simple-api` in `asia-southeast1`; keep `PIN_SECRET:1` unchanged.
-The runtime identity is `easy-simple-runtime`, and build identity is
-`easy-simple-build`, both in that staging project. Synthetic data only.
-
-## Staging setup after the project is supplied
-
-An operator with access to that new project will need billing enabled for Cloud
-Run, Firestore Native mode, and Firebase Hosting. Use Node 22. Install the server
-dependencies with `npm ci` in `functions/` and run `node build.js` at the repo root.
-
-Create a random secret of at least 32 characters named `PIN_SECRET` in Secret
-Manager for this staging project. Keep it stable: changing it requires resetting
-all PINs. Grant only the staging runtime service account access to this secret
-and Firestore (Datastore User). Deploy `functions/` as a Node 22 HTTP function on
-Cloud Run, entry point `api`, service name `easy-simple-api`, region
-`asia-southeast1`, allowing unauthenticated HTTP invocation (the API itself checks
-sessions), with `PIN_SECRET` injected and `GOOGLE_CLOUD_PROJECT` set explicitly to
-the new staging project ID. The Hosting rewrite in `firebase.json` targets this
-service. Never reuse the production runtime identity.
-
-For the first account, use Application Default Credentials belonging to the
-staging project and set `GOOGLE_CLOUD_PROJECT`, `PIN_SECRET` and a chosen four-digit
-`ADMIN_PIN` in the operator's environment; run `node functions/bootstrap.js`.
-It refuses to seed a nonempty staff collection. Remove `ADMIN_PIN` from the
-environment afterwards. No production import or public bootstrap endpoint exists.
-
-Deploy Hosting and rules explicitly to that new project:
-`firebase deploy --project <NEW-STAGING-ID> --only hosting,firestore:rules`.
-Then verify correct/wrong PIN, admin account creation, staff access denial for
-admin actions, logout and disabled-account rejection using synthetic accounts.
-Actual Firestore/Cloud Run/IAM integration still needs this staging verification.
-
-API implementation follows the Firebase server/Hosting integration pattern:
-https://firebase.google.com/docs/hosting/functions
+Deploy only easy-backoffice-simple-staging, Cloud Run easy-simple-api in
+asia-southeast1 with the existing runtime/build identities and PIN_SECRET:1.
+Run node build.js to generate the Hosting allowlist in public/. Never deploy this
+branch with the original production workflow. Synthetic/test accounts only.

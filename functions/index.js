@@ -4,6 +4,7 @@ const {initializeApp} = require('firebase-admin/app');
 const {getFirestore} = require('firebase-admin/firestore');
 initializeApp();
 const db = getFirestore();
+const operations = require('./operations');
 const digest = value => crypto.createHash('sha256').update(value).digest('hex');
 function configuration() {
   const project = process.env.GOOGLE_CLOUD_PROJECT || process.env.GCLOUD_PROJECT || '';
@@ -12,10 +13,10 @@ function configuration() {
 }
 const lookup = pin => crypto.createHmac('sha256', process.env.PIN_SECRET).update(pin).digest('hex');
 const safe = row => ({staff_id: row.staff_id, name: row.name, nickname: row.nickname, role: row.role, status: row.status,
-  branch_id: row.branch_id || '', staff_type: row.staff_type || 'fulltime', pay_type: row.pay_type || 'daily', rate: row.rate ?? 0,
+  branch_id: row.branch_id || '', bank_name: row.bank_name || '', bank_account: row.bank_account || '', day_off: row.day_off ?? '0', staff_type: row.staff_type || 'fulltime', pay_type: row.pay_type || 'daily', rate: row.rate ?? 0,
   ot_rate: row.ot_rate ?? null, shift: row.shift || 'morning', custom_shift_start: row.custom_shift_start || '', custom_shift_end: row.custom_shift_end || ''});
 // EASY main uses two global shifts, optional individual times, and a global OT fallback.
-const workDefaults = {shift_morning_start: '09:00', shift_morning_end: '17:00', shift_night_start: '17:00', shift_night_end: '01:00', ot_rate_per_hour: 50, late_grace_min: 15};
+const workDefaults = {shift_morning_start: '09:00', shift_morning_end: '17:00', shift_night_start: '17:00', shift_night_end: '01:00', ot_rate_per_hour: 50, late_grace_min: 15, ot_grace_min: 15};
 function number(value, label, min = 0, max = 100000) {
   if (value === '' || value == null || !['string','number'].includes(typeof value) || !Number.isFinite(Number(value)) || Number(value) < min || Number(value) > max) fail(label + 'ไม่ถูกต้อง');
   return Number(value);
@@ -39,11 +40,14 @@ async function saveStaff(body, actor, first = false) {
   const staffType = body.staff_type || 'fulltime', payType = body.pay_type || 'daily', shift = body.shift || 'morning';
   if (!['fulltime','parttime'].includes(staffType) || !['daily','hourly'].includes(payType) || !['morning','night'].includes(shift)) fail('ประเภทพนักงาน ค่าแรง หรือกะไม่ถูกต้อง');
   const start = body.custom_shift_start || '', end = body.custom_shift_end || '';
+  if(body.bank_name!=null && (typeof body.bank_name!=='string'||body.bank_name.length>80)) fail('ชื่อธนาคารไม่ถูกต้อง');
+  if(body.bank_account!=null && (typeof body.bank_account!=='string'||body.bank_account.length>40)) fail('เลขบัญชีไม่ถูกต้อง');
+  if(body.day_off!=null && !/^(?:[0-6](?:,[0-6])*)?$/.test(body.day_off)) fail('วันหยุดใช้ 0–6 คั่นด้วยจุลภาค');
   if ((start && !time(start)) || (end && (!time(end) || !start)) || (start && start === end)) fail('เวลาเฉพาะรายคนไม่ถูกต้อง');
   const pinRef = body.pin ? db.collection('pin_index').doc(lookup(body.pin)) : null;
   const salt = crypto.randomBytes(16).toString('hex');
   let row = {staff_id: ref.id, name: body.name.trim(), nickname: body.nickname || '', role: body.role, status: body.status,
-    branch_id: branchId, staff_type: staffType, pay_type: payType, shift, custom_shift_start: start, custom_shift_end: end,
+    branch_id: branchId, ...(body.bank_name!=null?{bank_name:body.bank_name}:{}), ...(body.bank_account!=null?{bank_account:body.bank_account}:{}), ...(body.day_off!=null?{day_off:body.day_off}:{}), staff_type: staffType, pay_type: payType, shift, custom_shift_start: start, custom_shift_end: end,
     rate: number(body.rate ?? 0, 'ค่าแรง'), ot_rate: body.ot_rate == null || body.ot_rate === '' ? null : number(body.ot_rate, 'อัตรา OT', 0.01)};
   await db.runTransaction(async tx => {
     const [old, existing, initial, branch] = await Promise.all([tx.get(ref), pinRef ? tx.get(pinRef) : null, first ? tx.get(db.collection('staff').limit(1)) : null, branchId ? tx.get(db.collection('branches').doc(branchId)) : null]);
@@ -80,6 +84,7 @@ async function saveWorkSettings(body) {
   if (row.shift_morning_start === row.shift_morning_end || row.shift_night_start === row.shift_night_end) fail('เวลาเริ่มและเลิกงานต้องต่างกัน');
   row.ot_rate_per_hour = number(body.ot_rate_per_hour, 'อัตรา OT', 0.01);
   row.late_grace_min = number(body.late_grace_min, 'นาทีผ่อนผัน', 0, 120);
+  row.ot_grace_min = number(body.ot_grace_min ?? 15, 'นาทีผ่อนผัน OT', 0, 120);
   if (!Number.isInteger(row.late_grace_min)) fail('นาทีผ่อนผันต้องเป็นจำนวนเต็ม');
   await db.collection('settings').doc('work').set(row);
   return row;
@@ -110,6 +115,7 @@ async function dispatch(body, token) {
   if (!staff || staff.status !== 'active' || staff.version !== session.version) fail('กรุณาเข้าสู่ระบบใหม่', 401);
   if (body.action === 'logout') { await ref.delete(); return true; }
   if (body.action === 'me') return safe(staff);
+  if (operations.actions.has(body.action)) return operations.handle(body, staff, safe);
   if (staff.role !== 'admin') fail('เฉพาะผู้ดูแล', 403);
   if (body.action === 'listStaff') return (await db.collection('staff').get()).docs.map(doc => safe(doc.data()));
   if (body.action === 'saveStaff') return saveStaff(body, staff);
