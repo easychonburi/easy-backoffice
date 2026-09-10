@@ -56,15 +56,18 @@ async function upsert(body){
   await ref.set({record_id:ref.id,staff_id:person.staff_id,staff_name:person.nickname||person.name,branch_id:person.branch_id||'',branch_name:branch?.name||'',date:d,clock_in:start,clock_out:end,hours_worked:calcHoursWorked(start,end),late_min:late,late_reason:late?'แก้ไขโดยแอดมิน: '+note:'',ot_hours:ot>(Number(cfg.ot_grace_min)||15)?Number((ot/60).toFixed(2)):0,ot_requested:'no',ot_reason:'',ot_status:'no',note:'แก้ไขเวลาโดยแอดมิน: '+note,status:'complete',clock_in_lat:'',clock_in_lng:'',clock_out_lat:'',clock_out_lng:'',location_flagged:false},{merge:true});
   return {success:true,record_id:ref.id};
 }
-async function savePayroll(body){
-  await staff(body.staff_id);const start=date(body.period_start),end=date(body.period_end);if(end<start)fail('ช่วงวันที่ไม่ถูกต้อง');date(body.pay_date);
+async function savePayroll(body,safe){
+  const person=await staff(body.staff_id);const start=date(body.period_start),end=date(body.period_end);if(end<start)fail('ช่วงวันที่ไม่ถูกต้อง');date(body.pay_date);
   const ref=db().collection('payroll_runs').doc(body.staff_id+'_'+start+'_'+end),row={run_id:ref.id,staff_id:body.staff_id,period_start:start,period_end:end,pay_date:body.pay_date,status:'paid',paid_at:now(),adjust_note:txt(body.adjust_note)};
   for(const key of ['days_worked','hours_worked','base_pay','ot_pay','late_deduct','early_out_deduct','manual_adjust','total_pay'])row[key]=amount(body[key]??0,key==='manual_adjust'||key==='total_pay'?-100000000:0);
   // Same three-step page flow, but the payment and its exact advance IDs commit together.
   const advanceIds=body.advance_ids||[];if(!Array.isArray(advanceIds)||advanceIds.length>400)fail('รายการเงินเบิกไม่ถูกต้อง');
   await db().runTransaction(async tx=>{const old=await tx.get(ref);const refs=advanceIds.map(v=>db().collection('advances').doc(String(v)));const advances=await Promise.all(refs.map(r=>tx.get(r)));if(old.exists){if(JSON.stringify(old.data().advance_ids||[])!==JSON.stringify(advanceIds))fail('รอบนี้บันทึกจ่ายแล้ว');return;}
     for(const a of advances)if(!a.exists||a.data().staff_id!==body.staff_id||a.data().status!=='pending')fail('ข้อมูลเงินเบิกเปลี่ยน กรุณาโหลดใหม่');
-    tx.create(ref,{...row,advance_ids:advanceIds});for(const r of refs)tx.update(r,{status:'deducted',run_id:ref.id});});
+    const detailKeys=['date','clock_in','clock_out','late_min','late_deduct','ot_hours','ot_pay','ot_status','ot_reason','record_id','day_total','effective_clock_in','effective_clock_out'];
+    const details=Array.isArray(body.details)?body.details.slice(0,366).map(d=>Object.fromEntries(detailKeys.filter(k=>d[k]!=null&&['string','number','boolean'].includes(typeof d[k])).map(k=>[k,d[k]]))):[];
+    const savedAdvances=advances.map(a=>{const v=a.data();return {advance_id:v.advance_id,amount:v.amount,date:v.date,note:v.note||''};});
+    tx.create(ref,{...row,advance_ids:advanceIds,staff_snapshot:safe(person),details,advance_items:savedAdvances,advance_total:savedAdvances.reduce((n,a)=>n+Number(a.amount||0),0)});for(const r of refs)tx.update(r,{status:'deducted',run_id:ref.id});});
   return {success:true,run_id:ref.id};
 }
 const cutoffNoon=()=>{const noon=new Date(day()+'T12:00:00+07:00');return Date.now()<noon.getTime()?noon.getTime()-86400000:noon.getTime();};
@@ -110,7 +113,7 @@ exports.handle=async(body,user,safe)=>{
   if(action==='upsertTimesheet')return upsert(body);
   if(action==='updateTimesheetOT'){const row=await get('timesheets',body.record_id);if(!row||!['approved','rejected'].includes(body.ot_status))fail('รายการ OT ไม่ถูกต้อง');if(await paid(row.staff_id,row.date))fail('รอบนี้จ่ายเงินแล้ว');await db().collection('timesheets').doc(body.record_id).update({ot_status:body.ot_status});return {success:true};}
   if(action==='getPayrollRuns')return ok((await list('payroll_runs')).filter(r=>(!body.staff_id||r.staff_id===body.staff_id)&&(!body.status||r.status===body.status)));
-  if(action==='savePayrollRun')return savePayroll(body);
+  if(action==='savePayrollRun')return savePayroll(body,safe);
   if(action==='markAdvancesDeducted'){for(const advId of body.advance_ids||[]){const row=await get('advances',advId);if(!row||row.status!=='deducted'||!row.run_id)fail('ต้องบันทึกจ่ายเงินเดือนพร้อมเงินเบิกก่อน');}return {success:true};}
   if(action==='sendPayrollNotify')return {success:true,...await notify.after(()=>notify.telegram(`💰 จ่ายเงินเดือนแล้ว\n👤 ${txt(body.staff_name)}\n💵 ${Number(body.total_pay).toLocaleString('th-TH',{minimumFractionDigits:2})} บาท\n📅 รอบ: ${body.period_start} – ${body.period_end}`,'telegram_chat_payroll'))};
   if(action==='getAdvances')return ok((await list('advances')).filter(r=>(!body.staff_id||r.staff_id===body.staff_id)&&(!body.status||r.status===body.status)));

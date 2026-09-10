@@ -174,10 +174,10 @@
 
     <div class="card" style="padding: 16px;">
       <div style="font-size: 14px; font-weight: 600; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center;">
-        <span>📋 ประวัติสั่งเพิ่ม (วันนี้)</span>
+        <span>📋 ประวัติ Stock</span>
         <button onclick="loadAdminHistory()" style="border:none; background:var(--blue-bg); color:var(--blue); padding: 6px 12px; border-radius: 20px; font-family:'Prompt'; font-size: 12px; font-weight:500; cursor: pointer;">↻ รีเฟรช</button>
       </div>
-      <div id="admin-history-list" style="font-size: 13px; color: var(--text-secondary);">กำลังโหลด...</div>
+      <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px"><label for="stock-history-date">วันที่</label><input type="date" id="stock-history-date" onchange="loadAdminHistory()" style="font:inherit;min-width:0;max-width:100%"><button onclick="document.getElementById('stock-history-date').value=new Date().toLocaleDateString('en-CA',{timeZone:'Asia/Bangkok'});loadAdminHistory()" style="font:inherit">วันนี้</button></div><div id="admin-history-list" style="font-size: 13px; color: var(--text-secondary);">กำลังโหลด...</div>
     </div>
   </div>
 
@@ -335,20 +335,19 @@ function goToModeSelect() {
    document.getElementById('btn-back').style.display = 'block'; 
 }
 
-async function loadAdminHistory() {
-   const container = document.getElementById('admin-history-list');
-   container.innerHTML = 'กำลังโหลดข้อมูลล่าสุด...';
-   try {
-       const res = await apiGet('action=getTodayStockOrders');
-       if (res.success && res.data.length > 0) {
-           let html = '';
-           res.data.forEach(log => {
-               const bName = branchNames[log.branch_id] || log.branch_id;
-               html += `<div style="border-bottom: 1px solid var(--border); padding: 12px 0;"><div style="display:flex; justify-content:space-between; margin-bottom:6px;"><span style="font-weight:600; color:var(--text); font-size:14px;">${bName}</span><span style="font-size:12px; color:var(--blue); font-weight:500;">${log.time} น.</span></div><div style="padding-left:10px; border-left: 2px solid var(--red); margin-top:6px; color:var(--text);">${log.orders.map(o => `<div style="margin-bottom:2px;">- ${o}</div>`).join('')}</div></div>`;
-           });
-           container.innerHTML = html;
-       } else { container.innerHTML = '<div style="padding:10px 0;">ยังไม่มีสาขาไหนสั่งเพิ่มในวันนี้ครับ</div>'; }
-   } catch (e) { container.innerHTML = '<span style="color:var(--danger)">โหลดข้อมูลไม่สำเร็จ กรุณาลองใหม่</span>'; }
+let stockHistoryVersion=0;
+async function loadAdminHistory(){
+ const request=++stockHistoryVersion,container=document.getElementById('admin-history-list'),picker=document.getElementById('stock-history-date');
+ if(!picker.value)picker.value=new Date().toLocaleDateString('en-CA',{timeZone:'Asia/Bangkok'});
+ container.textContent='กำลังโหลด...';
+ try{const logs=await easyApi('getStockHistory',{date:picker.value});if(request!==stockHistoryVersion)return;container.replaceChildren();
+  if(!logs.length){container.textContent='ไม่มีข้อมูล Stock ในวันที่เลือก';return;}
+  for(const log of logs){const card=document.createElement('div');card.style.cssText='border-bottom:1px solid var(--border);padding:12px 0;overflow-wrap:anywhere';const title=document.createElement('strong');title.textContent=(log.branch_name||branchNames[log.branch_id]||'ไม่ระบุสาขา')+' · '+({open:'เปิดร้าน',close:'ปิดร้าน',return:'คืนของ'}[log.mode]||log.mode)+' · '+new Date(log.checked_at).toLocaleTimeString('th-TH',{timeZone:'Asia/Bangkok',hour:'2-digit',minute:'2-digit'});card.append(title);
+   const who=document.createElement('div');who.textContent=log.staff_name||'';card.append(who);
+   for(const item of JSON.parse(log.items_json||'[]')){const row=document.createElement('div');row.textContent=item.name+' '+(item.value??item.qty??'')+' '+(item.unit||'');card.append(row);}
+   const orders=JSON.parse(log.orders_json||'[]');if(orders.length){const label=document.createElement('strong');label.textContent='รายการสั่งเพิ่ม';card.append(label);for(const item of orders){const row=document.createElement('div');row.textContent='- '+item;card.append(row);}}container.append(card);
+  }
+ }catch(e){if(request===stockHistoryVersion)container.textContent=e.message||'โหลดข้อมูลไม่สำเร็จ';}
 }
 
 async function selectMode(mode) {

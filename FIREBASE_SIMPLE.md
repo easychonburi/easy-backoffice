@@ -54,3 +54,25 @@ settings, clock in/out, stock/driver orders and returns, leave/OT/advance/payrol
 writes and rereads passed with synthetic PORT accounts. Original pages and
 payroll detail/calendar were checked at 360px. Browser staff GPS was unavailable;
 clock writes were tested through the API with the synthetic branch coordinates.
+
+## Admin data/history slice
+
+Admin data.html exposes only timesheets, advances, leaves, stock_logs, driver_jobs
+and payroll_runs. It lists 50 records per page, filters dates/staff/branch/text,
+and requires an explicit permanent-delete confirmation. Server-side checks block
+paid runs, linked/deducted advances, paid-period attendance/leaves, stock orders,
+central-close/driver-return stock and populated driver jobs. Those need a defined
+joint reversal/work cancellation process; this slice does not guess one. Deleting
+an independent record does not retract Telegram/LINE messages already sent.
+
+Payroll supports arbitrary earlier/later standard periods and a calendar date
+within a period, preserving current-period payday behavior and existing formulas.
+Paid amounts come from payroll_runs, never recalculated from today's rates.
+New payments retain safe staff/details/advance snapshots. Older runs without
+snapshots show stored totals and disclose missing historical daily detail.
+Inventory history uses calendar days in Asia/Bangkok and includes open/close/return
+records. Staff stock submission and the operational noon cutoff are unchanged.
+
+Validation: syntax/build plus focused in-memory API checks for allowlist/roles,
+linked deletion, standalone deletion, exact period joins, frozen paid totals,
+period boundaries and Bangkok stock dates. No browser flow matrix.

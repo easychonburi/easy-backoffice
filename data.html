@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html lang="th"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>EASY — จัดการข้อมูล</title>
+<link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<!-- EASY main dashboard styles are copied below, not derived from foundation/Bubble. -->
+<style id="easy-main-styles">
+  :root {
+    --red: #E5232B;
+    --red-dark: #C81D24;
+    --yellow: #FFC928;
+    --bg: #F5F7FB;
+    --white: #FFFFFF;
+    --soft: #F9FAFB;
+    --border: #E5E7EB;
+    --text: #1F2937;
+    --text-secondary: #6B7280;
+    --green: #22C55E;
+    --green-dark: #16A34A;
+    --green-bg: #DCFCE7;
+    --danger: #FF5A4F;
+    --danger-bg: #FEE2E2;
+    --blue: #3B82F6;
+    --blue-bg: #EFF6FF;
+    --orange: #F97316;
+    --orange-bg: #FFF7ED;
+    --shadow: 0 2px 12px rgba(0,0,0,0.07);
+    --radius: 16px;
+    --radius-sm: 10px;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+  body {
+    font-family: 'Prompt', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    padding-bottom: 32px;
+  }
+
+  /* ─── HEADER ─── */
+  .app-header {
+    background: var(--red);
+    padding: 48px 20px 28px;
+    border-radius: 0 0 32px 32px;
+  }
+
+  .header-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 10px;
+  }
+
+  .header-logo { font-size: 22px; font-weight: 700; color: var(--yellow); }
+
+  .logout-btn {
+    background: rgba(255,255,255,0.2);
+    border: none; color: white;
+    font-family: 'Prompt', sans-serif;
+    font-size: 12px; padding: 6px 14px;
+    border-radius: 20px; cursor: pointer;
+  }
+  .logout-btn:active { background: rgba(255,255,255,0.35); }
+
+  .header-greeting { font-size: 22px; font-weight: 600; color: white; margin-bottom: 2px; }
+  .header-date { font-size: 13px; color: rgba(255,255,255,0.7); font-weight: 300; }
+
+  /* ─── BODY ─── */
+  .app-body { padding: 20px 16px; display: flex; flex-direction: column; gap: 14px; }
+
+  /* ─── SECTION TITLE ─── */
+  .section-title {
+    font-size: 12px; color: var(--text-secondary);
+    font-weight: 500; text-transform: uppercase;
+    letter-spacing: 0.5px; margin-bottom: 8px;
+    padding: 0 2px;
+  }
+
+  /* ─── CARD ─── */
+  .card {
+    background: var(--white);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    border: 1px solid var(--border);
+    overflow: hidden;
+  }
+
+  /* ─── ALERT BANNER ─── */
+  .alert-banner {
+    border-radius: var(--radius);
+    padding: 14px 16px;
+    display: flex; align-items: center; gap: 12px;
+    cursor: pointer; transition: all 0.2s;
+    box-shadow: var(--shadow);
+  }
+  .alert-banner:active { transform: scale(0.99); }
+  .alert-icon { font-size: 20px; flex-shrink: 0; }
+  .alert-text { flex: 1; }
+  .alert-title { font-size: 14px; font-weight: 500; }
+  .alert-sub { font-size: 12px; font-weight: 300; margin-top: 1px; }
+  .alert-arrow { font-size: 18px; flex-shrink: 0; opacity: 0.6; }
+
+  .alert-ot { background: var(--orange-bg); border: 1px solid #FED7AA; }
+  .alert-ot .alert-title { color: var(--orange); }
+  .alert-ot .alert-sub { color: var(--text-secondary); }
+
+  /* ─── ATTENDANCE ─── */
+  .attendance-header {
+    padding: 14px 16px 10px;
+    display: flex; justify-content: space-between; align-items: center;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .attendance-title { font-size: 14px; font-weight: 500; color: var(--text); }
+
+  .attendance-count {
+    display: flex; gap: 8px;
+  }
+
+  .count-pill {
+    font-size: 11px; font-weight: 500;
+    padding: 3px 10px; border-radius: 20px;
+  }
+  .count-in { background: var(--green-bg); color: var(--green-dark); }
+  .count-out { background: var(--danger-bg); color: var(--danger); }
+
+  .attendance-list { padding: 4px 0; }
+
+  .attendance-item {
+    display: flex; align-items: center; gap: 12px;
+    padding: 10px 16px;
+    border-bottom: 1px solid var(--border);
+  }
+  .attendance-item:last-child { border-bottom: none; }
+
+  .att-avatar {
+    width: 34px; height: 34px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 13px; font-weight: 600; flex-shrink: 0;
+  }
+  .att-avatar.present { background: var(--green-bg); color: var(--green-dark); }
+  .att-avatar.absent { background: var(--soft); color: var(--text-secondary); border: 1.5px dashed var(--border); }
+
+  .att-info { flex: 1; }
+  .att-name { font-size: 14px; font-weight: 400; color: var(--text); }
+  .att-branch { font-size: 11px; color: var(--text-secondary); font-weight: 300; }
+
+  .att-time {
+    font-size: 13px; font-weight: 500;
+    flex-shrink: 0;
+  }
+  .att-time.present { color: var(--green-dark); }
+  .att-time.absent { color: var(--text-secondary); font-weight: 300; font-size: 12px; }
+  .att-time.late { color: var(--danger); }
+  .att-time.out { color: var(--danger); } /* เพิ่มคลาสสีแดงตอนออกงาน */
+
+  /* ─── PAYROLL NEXT ─── */
+  .payroll-next { padding: 14px 16px; }
+  .payroll-next-title { font-size: 14px; font-weight: 500; color: var(--text); margin-bottom: 12px; }
+
+  .payroll-item {
+    display: flex; align-items: center; gap: 12px;
+    padding: 10px 12px;
+    background: var(--soft);
+    border-radius: var(--radius-sm);
+    margin-bottom: 8px;
+    border: 1px solid var(--border);
+  }
+  .payroll-item:last-child { margin-bottom: 0; }
+
+  .payroll-item-icon { font-size: 20px; flex-shrink: 0; }
+  .payroll-item-info { flex: 1; }
+  .payroll-item-name { font-size: 13px; font-weight: 500; color: var(--text); }
+  .payroll-item-date { font-size: 11px; color: var(--text-secondary); font-weight: 300; margin-top: 1px; }
+
+  .payroll-item-right { text-align: right; flex-shrink: 0; }
+  .payroll-item-amount { font-size: 16px; font-weight: 700; color: var(--text); }
+  .payroll-item-days {
+    font-size: 11px; font-weight: 500;
+    padding: 2px 8px; border-radius: 10px;
+    margin-top: 2px; display: inline-block;
+  }
+  .days-urgent { background: var(--danger-bg); color: var(--danger); }
+  .days-soon { background: var(--orange-bg); color: var(--orange); }
+  .days-normal { background: var(--soft); color: var(--text-secondary); border: 1px solid var(--border); }
+
+  /* ─── ADVANCES ─── */
+  .advances-header {
+    padding: 14px 16px 10px;
+    display: flex; justify-content: space-between; align-items: center;
+    border-bottom: 1px solid var(--border);
+  }
+  .advances-title { font-size: 14px; font-weight: 500; color: var(--text); }
+  .add-advance-btn {
+    border: none; background: var(--red); color: white;
+    font-family: 'Prompt', sans-serif;
+    font-size: 12px; font-weight: 500;
+    padding: 6px 14px; border-radius: 20px;
+    cursor: pointer; transition: all 0.2s;
+  }
+  .add-advance-btn:active { background: var(--red-dark); transform: scale(0.97); }
+
+  .advances-list { padding: 4px 0; }
+
+  .advance-item {
+    display: flex; align-items: center; gap: 12px;
+    padding: 10px 16px;
+    border-bottom: 1px solid var(--border);
+  }
+  .advance-item:last-child { border-bottom: none; }
+
+  .advance-avatar {
+    width: 34px; height: 34px; border-radius: 50%;
+    background: var(--orange-bg); color: var(--orange);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 13px; font-weight: 600; flex-shrink: 0;
+  }
+
+  .advance-info { flex: 1; }
+  .advance-name { font-size: 14px; font-weight: 400; color: var(--text); }
+  .advance-note { font-size: 11px; color: var(--text-secondary); font-weight: 300; }
+
+  .advance-right { text-align: right; flex-shrink: 0; }
+  .advance-amount { font-size: 15px; font-weight: 600; color: var(--orange); }
+  .advance-date { font-size: 11px; color: var(--text-secondary); font-weight: 300; }
+
+  .advances-empty {
+    text-align: center; padding: 20px;
+    font-size: 13px; color: var(--text-secondary); font-weight: 300;
+  }
+
+  /* ─── SHORTCUTS ─── */
+  .shortcut-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+
+  .shortcut-btn {
+    background: var(--white);
+    border: 1.5px solid var(--border);
+    border-radius: var(--radius);
+    padding: 16px 14px;
+    display: flex; flex-direction: column; align-items: center; gap: 8px;
+    cursor: pointer; transition: all 0.2s;
+    box-shadow: var(--shadow);
+    text-decoration: none;
+  }
+  .shortcut-btn:active { transform: scale(0.96); box-shadow: none; }
+
+  .shortcut-icon { font-size: 26px; }
+  .shortcut-label { font-size: 13px; font-weight: 500; color: var(--text); }
+  .shortcut-sub { font-size: 11px; color: var(--text-secondary); font-weight: 300; }
+
+  /* ─── MODAL ─── */
+  .modal-overlay {
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,0.5);
+    z-index: 100;
+    opacity: 0; pointer-events: none;
+    transition: opacity 0.25s;
+    display: flex; align-items: flex-end;
+  }
+  .modal-overlay.visible { opacity: 1; pointer-events: all; }
+
+  .modal-sheet {
+    background: var(--white);
+    border-radius: 24px 24px 0 0;
+    padding: 24px 20px 40px;
+    width: 100%;
+    transform: translateY(100%);
+    transition: transform 0.3s cubic-bezier(0.32, 0.72, 0, 1);
+  }
+  .modal-overlay.visible .modal-sheet { transform: translateY(0); }
+
+  .modal-handle {
+    width: 36px; height: 4px;
+    background: var(--border); border-radius: 2px;
+    margin: 0 auto 20px;
+  }
+
+  .modal-title { font-size: 18px; font-weight: 600; color: var(--text); margin-bottom: 16px; }
+
+  .form-label { font-size: 12px; color: var(--text-secondary); font-weight: 400; margin-bottom: 6px; }
+
+  .form-select, .form-input {
+    width: 100%; border: 1.5px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 11px 14px;
+    font-family: 'Prompt', sans-serif;
+    font-size: 14px; font-weight: 300;
+    color: var(--text); background: var(--soft);
+    outline: none; margin-bottom: 14px;
+    appearance: none;
+  }
+  .form-select:focus, .form-input:focus { border-color: var(--red); }
+
+  .form-row { display: flex; gap: 10px; }
+  .form-row > div { flex: 1; }
+
+  .modal-btn-row { display: flex; gap: 10px; margin-top: 4px; }
+  .modal-btn {
+    flex: 1; border: none;
+    border-radius: var(--radius-sm); padding: 14px;
+    font-family: 'Prompt', sans-serif;
+    font-size: 15px; font-weight: 500;
+    cursor: pointer; transition: all 0.2s;
+  }
+  .modal-btn:active { transform: scale(0.97); }
+  .modal-btn.primary { background: var(--red); color: white; }
+  .modal-btn.secondary { background: var(--soft); color: var(--text-secondary); border: 1.5px solid var(--border); }
+
+  /* ─── TOAST / LOADING ─── */
+  .toast {
+    position: fixed; bottom: 24px; left: 50%;
+    transform: translateX(-50%) translateY(80px);
+    background: var(--text); color: white;
+    font-size: 13px; padding: 12px 20px;
+    border-radius: 24px; z-index: 300;
+    transition: transform 0.3s cubic-bezier(0.32, 0.72, 0, 1);
+    white-space: nowrap; max-width: 90vw; text-align: center;
+  }
+  .toast.show { transform: translateX(-50%) translateY(0); }
+  .toast.success { background: var(--green-dark); }
+  .toast.error { background: var(--danger); }
+
+  .loading-overlay {
+    position: fixed; inset: 0;
+    background: rgba(255,255,255,0.85);
+    display: flex; align-items: center; justify-content: center;
+    z-index: 200; opacity: 0; pointer-events: none; transition: opacity 0.2s;
+  }
+  .loading-overlay.show { opacity: 1; pointer-events: all; }
+
+  .spinner {
+    width: 36px; height: 36px;
+    border: 3px solid var(--border);
+    border-top-color: var(--red);
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  
+</style>
+<style>
+[hidden]{display:none!important}.att-info{min-width:0}.att-name,.att-branch,.header-greeting{overflow-wrap:anywhere}.form-row>div{min-width:0}.form-input,.form-select{min-width:0;max-width:100%}.modal-sheet{max-height:90dvh;overflow-y:auto}.toast{white-space:normal}.form-label{display:block}.note{font-size:12px;color:var(--text-secondary);margin-bottom:14px}.shortcut-btn{font-family:'Prompt',sans-serif}.shortcut-btn[aria-current=true]{border-color:var(--red)}button:disabled{opacity:.5;cursor:default}.attendance-header{gap:8px}.status-label{font-size:11px;color:var(--text-secondary)}.status-label.active{color:var(--green-dark)}.att-avatar{background:var(--soft);color:var(--red)}
+@media(max-width:430px){.form-row{flex-direction:column;gap:0}.attendance-item{gap:8px}.add-advance-btn{flex-shrink:0}.modal-sheet{padding:20px 16px 28px}}
+</style></head><body><div class="app-header"><div class="header-top"><div class="header-logo">EASY</div><button class="logout-btn" onclick="location.href='/admin.html'">← Admin</button></div><div class="header-greeting">จัดการข้อมูล</div><div class="header-date">ดูรายละเอียดและลบรายการที่ไม่เชื่อมกับข้อมูลอื่น</div></div>
+<div class="app-body" id="data-body" hidden><div class="card" style="padding:16px">
+<label class="form-label" for="kind">ประเภทข้อมูล</label><select class="form-select" id="kind"><option value="timesheets">ลงเวลา</option><option value="advances">เงินเบิก</option><option value="leaves">วันลา</option><option value="stock_logs">Stock</option><option value="driver_jobs">งาน Driver</option><option value="payroll_runs">รอบ Payroll</option></select>
+<div class="form-row"><div><label class="form-label" for="from">จากวันที่</label><input type="date" class="form-input" id="from"></div><div><label class="form-label" for="to">ถึงวันที่</label><input type="date" class="form-input" id="to"></div></div>
+<label class="form-label" for="person">พนักงาน</label><select class="form-select" id="person"></select><label class="form-label" for="branch">สาขา</label><select class="form-select" id="branch"></select><label class="form-label" for="search">ค้นหา</label><input class="form-input" id="search" placeholder="ชื่อหรือรายละเอียด"><button class="modal-btn primary" id="filter">ค้นหา / รีเฟรช</button><p class="note">วันที่ Stock ใช้วันปฏิทินเวลาไทย ส่วน Payroll ใช้วันจ่าย แสดงครั้งละ 50 รายการล่าสุด</p></div>
+<div class="card"><div class="attendance-header" id="count"></div><div class="attendance-list" id="records"></div></div><div class="modal-btn-row"><button class="modal-btn secondary" id="prev">ก่อนหน้า</button><button class="modal-btn secondary" id="next">ถัดไป</button></div>
+<div class="card" id="detail" hidden style="padding:16px;overflow-wrap:anywhere"><div class="section-title">รายละเอียดรายการ</div><div id="fields"></div><p class="note" id="blocked"></p><button class="modal-btn primary" id="remove">ลบรายการนี้</button></div></div><div class="app-body" id="error" role="alert"></div><script src="/firebase-client.js"></script><script src="/data.js"></script></body></html>
