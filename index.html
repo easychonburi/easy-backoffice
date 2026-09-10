@@ -6,7 +6,6 @@
 <title>EASY หมี่ไก่ฉีก</title>
 <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   
-  <link rel="manifest" href="/manifest.json">
 <meta name="theme-color" content="#E5232B">
 <link rel="apple-touch-icon" href="/icon-192.png">
 <style>
@@ -156,7 +155,7 @@
   <div class="pin-error" id="pin-error"></div>
 </div>
 
-<div class="version-tag">EASY Back-Office v1.0</div>
+<div class="version-tag">EASY Firebase SIMPLE · ข้อมูลทดสอบเท่านั้น</div>
 
 <div class="loading-overlay" id="loading">
   <div class="spinner"></div>
@@ -169,16 +168,15 @@
   <div class="welcome-role" id="welcome-role">—</div>
 </div>
 
+<script src="/firebase-client.js"></script>
 <script>
-const API_URL = 'https://script.google.com/macros/s/AKfycbxxTjC7xOGHlgyStVBf6SimoU5RA7xX3VPwxIUtfGlpMNO89OQPDaRewKDDEmWGK4kk/exec';
-const SESSION_KEY = 'easy_session';
-const SESSION_HOURS = 3;
 
 let pinBuffer = '';
 
-window.addEventListener('load', () => {
-  const session = loadSession();
-  if (session) redirectByRole(session.role);
+window.addEventListener('load', async () => {
+  if (!sessionStorage.getItem('easy_firebase_token')) return;
+  try { await easyApi('me'); redirectByRole(); }
+  catch { sessionStorage.removeItem('easy_firebase_token'); }
 });
 
 function pinPress(digit) {
@@ -203,22 +201,15 @@ function updateDots() {
 }
 
 async function verifyPin() {
+  if (pinBuffer.length !== 4) return;
   showLoading(true);
   try {
-    const res = await fetch(`${API_URL}?action=getStaffByPin&pin=${pinBuffer}`);
-    const data = await res.json();
-    if (data.success) {
-      saveSession(data.data);
-      showWelcome(data.data);
-    } else {
-      pinBuffer = '';
-      document.querySelectorAll('.pin-dot').forEach(d => d.classList.add('error'));
-      document.getElementById('pin-error').textContent = 'PIN ไม่ถูกต้อง กรุณาลองใหม่';
-      setTimeout(updateDots, 700);
-    }
-  } catch {
+    const data = await easyApi('login', {pin: pinBuffer});
+    sessionStorage.setItem('easy_firebase_token', data.token);
+    showWelcome(data.staff);
+  } catch (error) {
     pinBuffer = '';
-    document.getElementById('pin-error').textContent = 'เชื่อมต่อไม่ได้ กรุณาลองใหม่';
+    document.getElementById('pin-error').textContent = error.message || 'เชื่อมต่อไม่ได้ กรุณาลองใหม่';
     updateDots();
   }
   showLoading(false);
@@ -234,30 +225,7 @@ function showWelcome(staff) {
 }
 
 function redirectByRole(role) {
-  if (role === 'admin') {
-    window.location.href = '/dashboard.html';
-  } else if (role === 'driver') {
-    window.location.href = '/driver.html';
-  } else {
-    window.location.href = '/clock.html';
-  }
-}
-
-function saveSession(staff) {
-  localStorage.setItem(SESSION_KEY, JSON.stringify({
-    staff, role: staff.role || 'staff',
-    expires: Date.now() + (staff.role === 'driver' ? 8 : SESSION_HOURS) * 60 * 60 * 1000
-  }));
-}
-
-function loadSession() {
-  try {
-    const raw = localStorage.getItem(SESSION_KEY);
-    if (!raw) return null;
-    const data = JSON.parse(raw);
-    if (Date.now() > data.expires) { localStorage.removeItem(SESSION_KEY); return null; }
-    return data;
-  } catch { return null; }
+  window.location.href = '/foundation.html';
 }
 
 function showLoading(s) { document.getElementById('loading').classList.toggle('show', s); }

@@ -1,0 +1,6 @@
+{
+  "name": "easy-firebase-simple", "private": true, "main": "index.js",
+  "engines": {"node": "22"},
+  "scripts": {"start": "functions-framework --target=api", "check": "node --check index.js && node --check bootstrap.js"},
+  "dependencies": {"@google-cloud/functions-framework": "^3.4.6", "firebase-admin": "^13.4.0"}
+}

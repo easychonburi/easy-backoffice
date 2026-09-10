@@ -1,0 +1,8 @@
+{
+  "firestore": {"rules": "firestore.rules"},
+  "hosting": {
+    "public": "public",
+    "rewrites": [{"source": "/api", "run": {"serviceId": "easy-simple-api", "region": "asia-southeast1"}}],
+    "headers": [{"source": "**", "headers": [{"key": "Cache-Control", "value": "no-store"}]}]
+  }
+}

@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="th"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>EASY · Foundation ทดสอบ</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#f5f7fb;color:#1f2937;font:16px system-ui,sans-serif}header{background:#e5232b;color:white;padding:24px}h1{font-size:24px;margin:0;color:#ffc928}main{max-width:600px;margin:auto;padding:20px}section{background:white;padding:20px;border-radius:16px;margin:16px 0}label{display:block;margin:14px 0 6px}input,select,button{font:inherit;max-width:100%;min-width:0;padding:12px;border:1px solid #ddd;border-radius:10px}input,select{width:100%}button{cursor:pointer;margin-top:12px;background:#e5232b;color:white}p{overflow-wrap:anywhere}article{border-top:1px solid #ddd;padding:12px 0}#message{min-height:24px}small{color:#666}
+</style></head><body><header><h1>EASY</h1>Firebase SIMPLE · ข้อมูลทดสอบเท่านั้น</header><main>
+<p id="welcome">กำลังตรวจสอบการเข้าสู่ระบบ…</p><p>รอบนี้ทดสอบการเข้าสู่ระบบและบัญชีพนักงาน ยังไม่เปิดลงเวลา สต็อก หรือเงินเดือน</p>
+<button id="logout">ออกจากระบบ</button><p id="message" role="status"></p>
+<section id="admin" hidden><h2>บัญชีพนักงานทดสอบ</h2><p>เพิ่มหรือแก้บัญชีและ PIN ได้ที่นี่ บัญชีที่กำลังใช้งานแก้ไม่ได้ในรอบนี้</p>
+<form id="staff-form"><input type="hidden" name="staff_id"><label>ชื่อ<input name="name" maxlength="80" required></label><label>ชื่อเล่น<input name="nickname" maxlength="80"></label>
+<label>PIN ใหม่ 4 หลัก<input name="pin" type="password" inputmode="numeric" pattern="[0-9]{4}" minlength="4" maxlength="4" autocomplete="new-password" required></label>
+<small>PIN ต้องไม่ซ้ำกับบัญชีอื่น เมื่อแก้บัญชีต้องกำหนด PIN อีกครั้ง</small>
+<label>บทบาท<select name="role"><option value="staff">พนักงาน</option><option value="driver">คนขับ</option><option value="admin">ผู้ดูแล</option></select></label>
+<label>สถานะ<select name="status"><option value="active">ใช้งาน</option><option value="inactive">ปิดใช้งาน</option></select></label>
+<button type="submit">บันทึกบัญชีทดสอบ</button> <button type="reset">ล้างฟอร์ม / เพิ่มใหม่</button></form><div id="staff-list"></div></section>
+</main><script src="/firebase-client.js"></script><script>
+const form = document.getElementById('staff-form'), message = document.getElementById('message');
+let me;
+async function listStaff() {
+  const rows = await easyApi('listStaff'), list = document.getElementById('staff-list'); list.replaceChildren();
+  for (const row of rows) {
+    const item = document.createElement('article'), label = document.createElement('p');
+    label.textContent = `${row.name} (${row.nickname || '—'}) · ${row.role} · ${row.status}`; item.append(label);
+    if (row.staff_id !== me.staff_id) { const edit = document.createElement('button'); edit.textContent = 'แก้ไข'; edit.onclick = () => { for (const key of ['staff_id','name','nickname','role','status']) form.elements[key].value = row[key]; form.elements.pin.value = ''; form.scrollIntoView({behavior:'smooth'}); }; item.append(edit); }
+    list.append(item);
+  }
+}
+form.onsubmit = async event => { event.preventDefault(); const button = form.querySelector('[type=submit]'); button.disabled = true; try { await easyApi('saveStaff', Object.fromEntries(new FormData(form))); form.reset(); await listStaff(); message.textContent = 'บันทึกแล้ว'; } catch(error) { message.textContent = error.message; } finally { button.disabled = false; } };
+form.onreset = () => { form.elements.staff_id.value = ''; };
+document.getElementById('logout').onclick = async () => { try { await easyApi('logout'); sessionStorage.removeItem('easy_firebase_token'); location.href = '/index.html'; } catch(error) { message.textContent = 'ออกจากระบบไม่สำเร็จ: ' + error.message; } };
+(async () => { try { me = await easyApi('me'); document.getElementById('welcome').textContent = 'สวัสดี คุณ' + (me.nickname || me.name); if (me.role === 'admin') { document.getElementById('admin').hidden = false; await listStaff(); } } catch(error) { message.textContent = error.message; document.getElementById('welcome').textContent = 'กรุณากลับไปเข้าสู่ระบบ'; const link = document.createElement('a'); link.href = '/index.html'; link.textContent = 'เข้าสู่ระบบ'; message.append(' ', link); } })();
+</script></body></html>
