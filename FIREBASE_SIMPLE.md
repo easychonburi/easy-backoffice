@@ -1,4 +1,4 @@
-# EASY Firebase SIMPLE — staging port
+# EASY Backoffice — Pilot
 
 Source UI/flow: easy-backoffice/main d8e777b. Technical reference only:
 easybkk-backoffice/firebase-migration-v2. Original backend logic supplied in
@@ -34,8 +34,9 @@ Shop settings and notifications:
   the existing server-only rules. Only token-present booleans return to Admin;
   blank password inputs preserve values, explicit clear removes them.
 - Clock/late, stock, advance, payroll and driver notifications use the original
-  destinations. Central work orders go to LINE. Every staging message is marked
-  as test data. Failed notifications warn without retrying completed data writes.
+  destinations. Central work orders go to LINE. Messages and photo captions use
+  live wording without test prefixes. Failed notifications warn without retrying
+  completed data writes.
 - Driver packing confirmation sends each destination separately, including
   requested amounts, full/short status, actual and missing quantities. Delivery
   photos go from request memory directly to Telegram, with no persistent storage.
@@ -44,10 +45,10 @@ Run GOOGLE_CLOUD_PROJECT=easy-backoffice-simple-staging node functions/setup-sho
 once before deploying this slice. It preserves existing settings. Credentials
 are supplied separately through authenticated Admin settings, never in Git.
 
-Deploy only easy-backoffice-simple-staging, Cloud Run easy-simple-api in
+Keep the backend in easy-backoffice-simple-staging, Cloud Run easy-simple-api in
 asia-southeast1 with the existing runtime/build identities and PIN_SECRET:1.
 Run node build.js to generate the Hosting allowlist in public/. Never deploy this
-branch with the original production workflow. Synthetic/test accounts only.
+branch with the original Netlify/main production workflow.
 
 Verification on staging: admin/staff/driver PIN, staff create/edit + branch/work
 settings, clock in/out, stock/driver orders and returns, leave/OT/advance/payroll
@@ -87,7 +88,8 @@ clean build. Backend source can be packaged directly from the same commit with
 and set the Cloud Run `source-commit` label and `EASY_SOURCE_COMMIT` environment
 variable. These identify image deployments even when Cloud Run's older
 `buildConfig` source metadata has not changed. Hosting and backend deploy only
-to `easy-backoffice-simple-staging`.
+the existing backend project `easy-backoffice-simple-staging`; Pilot Hosting
+uses the separate `easy-backoffice` project as described below.
 
 ## Admin data/history details
 
@@ -112,3 +114,22 @@ records. Staff stock submission and the operational noon cutoff are unchanged.
 Validation: syntax/build plus focused in-memory API checks for allowlist/roles,
 linked deletion, standalone deletion, exact period joins, frozen paid totals,
 period boundaries and Bangkok stock dates. No browser flow matrix.
+
+## Pilot URL and legacy fallback
+
+Pilot URL: https://easy-backoffice.web.app/ (also easy-backoffice.firebaseapp.com).
+The previously empty Hosting site belongs to project easy-backoffice. Publish
+with `firebase deploy --only hosting --project easy-backoffice --config firebase.pilot.json`.
+The default firebase.json remains for the existing technical Hosting site.
+Pilot frontend calls the existing Cloud Run API directly, with CORS limited to
+the two Pilot Hosting origins. The backend, Firestore data, PIN secret, runtime
+identity and saved Telegram/LINE tokens and destination IDs stay in the existing
+project. No database migration or secret copying is required. Both URLs share
+the same backend; notifications from it use live wording.
+
+Legacy fallback: https://easybackoffice.netlify.app/ — leave Netlify, main,
+Apps Script and the old data untouched. The two systems are independent; this
+change does not add automatic synchronization between them. Before the first
+Pilot publish, the new Hosting site had no releases and returned Site Not Found.
+Telegram bot access to the five configured chats and LINE bot/group access were
+verified read-only; no diagnostic messages were sent to the shop.

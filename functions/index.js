@@ -131,6 +131,16 @@ async function dispatch(body, token) {
 }
 exports.api = async (req, res) => {
   res.set('Cache-Control', 'no-store');
+  const origin = req.headers.origin;
+  const pilotOrigins = ['https://easy-backoffice.web.app', 'https://easy-backoffice.firebaseapp.com'];
+  if (pilotOrigins.includes(origin)) {
+    res.set('Access-Control-Allow-Origin', origin);
+    res.set('Vary', 'Origin');
+    res.set('Access-Control-Allow-Methods', 'POST, OPTIONS');
+    res.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+    res.set('Access-Control-Max-Age', '600');
+  }
+  if (req.method === 'OPTIONS') return res.status(pilotOrigins.includes(origin) ? 204 : 403).end();
   if (req.method !== 'POST') return res.status(405).json({success: false, error: 'POST required'});
   try {
     configuration();
@@ -138,7 +148,7 @@ exports.api = async (req, res) => {
     const data = await dispatch(req.body, String(req.headers.authorization || '').replace(/^Bearer /, ''));
     res.json({success: true, data});
   } catch (error) {
-    res.status(error.status || 503).json({success: false, error: error.status ? error.message : 'ระบบทดสอบยังไม่พร้อมใช้งาน'});
+    res.status(error.status || 503).json({success: false, error: error.status ? error.message : 'ระบบยังไม่พร้อมใช้งาน กรุณาลองใหม่อีกครั้ง'});
   }
 };
 exports.bootstrap = async pin => { configuration(); return saveStaff({name: 'ผู้ดูแลทดสอบ', nickname: 'Admin ทดสอบ', pin, role: 'admin', status: 'active'}, null, true); };
