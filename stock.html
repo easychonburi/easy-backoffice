@@ -55,6 +55,16 @@
   .screen.active { display: block; }
   .card { background: var(--white); border-radius: var(--radius); box-shadow: var(--shadow); border: 1px solid var(--border); }
 
+  .history-date-filter { margin-bottom: 16px; }
+  .history-date-filter label { display: block; font-size: 12px; font-weight: 500; color: var(--text-secondary); margin-bottom: 6px; }
+  .history-date-controls { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px; align-items: stretch; }
+  .history-date-input { appearance: none; -webkit-appearance: none; width: 100%; min-width: 0; max-width: 100%; min-height: 46px; padding: 10px 12px; border: 1.5px solid var(--border); border-radius: var(--radius-sm); background: var(--soft); color: var(--text); font-family: 'Prompt', sans-serif; font-size: 14px; color-scheme: light; }
+  .history-date-input::-webkit-date-and-time-value { text-align: left; }
+  .history-date-input:focus { outline: none; border-color: var(--red); background: var(--white); }
+  .history-today-btn { min-height: 46px; padding: 10px 16px; border: 1px solid #FADADD; border-radius: var(--radius-sm); background: #FFF1F2; color: var(--red); font-family: 'Prompt', sans-serif; font-size: 13px; font-weight: 500; cursor: pointer; }
+  .history-today-btn:active { background: #FFE4E6; }
+  .history-today-btn:focus-visible { outline: 2px solid var(--red); outline-offset: 2px; }
+
   /* --- MODE SELECT --- */
   .mode-btn { background: var(--white); border-radius: var(--radius); padding: 24px 16px; text-align: center; border: 1.5px solid var(--border); box-shadow: var(--shadow); margin-bottom: 16px; cursor: pointer; transition: all 0.2s; }
   .mode-btn:active { transform: scale(0.98); }
@@ -177,7 +187,7 @@
         <span>📋 ประวัติ Stock</span>
         <button onclick="loadAdminHistory()" style="border:none; background:var(--blue-bg); color:var(--blue); padding: 6px 12px; border-radius: 20px; font-family:'Prompt'; font-size: 12px; font-weight:500; cursor: pointer;">↻ รีเฟรช</button>
       </div>
-      <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px"><label for="stock-history-date">วันที่</label><input type="date" id="stock-history-date" onchange="loadAdminHistory()" style="font:inherit;min-width:0;max-width:100%"><button onclick="document.getElementById('stock-history-date').value=new Date().toLocaleDateString('en-CA',{timeZone:'Asia/Bangkok'});loadAdminHistory()" style="font:inherit">วันนี้</button></div><div id="admin-history-list" style="font-size: 13px; color: var(--text-secondary);">กำลังโหลด...</div>
+      <div class="history-date-filter"><label for="stock-history-date">วันที่ดูประวัติ</label><div class="history-date-controls"><input type="date" class="history-date-input" id="stock-history-date" onchange="loadAdminHistory()"><button type="button" class="history-today-btn" onclick="document.getElementById('stock-history-date').value=new Date().toLocaleDateString('en-CA',{timeZone:'Asia/Bangkok'});loadAdminHistory()" >วันนี้</button></div></div><div id="admin-history-list" style="font-size: 13px; color: var(--text-secondary);">กำลังโหลด...</div>
     </div>
   </div>
 

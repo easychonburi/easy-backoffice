@@ -6,6 +6,7 @@ initializeApp();
 const db = getFirestore();
 const operations = require('./operations');
 const dataAdmin = require('./data-admin');
+const employee = require('./employee');
 const digest = value => crypto.createHash('sha256').update(value).digest('hex');
 function configuration() {
   const project = process.env.GOOGLE_CLOUD_PROJECT || process.env.GCLOUD_PROJECT || '';
@@ -116,6 +117,7 @@ async function dispatch(body, token) {
   if (!staff || staff.status !== 'active' || staff.version !== session.version) fail('กรุณาเข้าสู่ระบบใหม่', 401);
   if (body.action === 'logout') { await ref.delete(); return true; }
   if (body.action === 'me') return safe(staff);
+  if (employee.actions.has(body.action)) return employee.handle(body, staff);
   if (['listDataRecords','deleteDataRecord','getPayrollPeriod','getStockHistory'].includes(body.action)) return dataAdmin.handle(body,staff,safe);
   if (operations.actions.has(body.action)) return operations.handle(body, staff, safe);
   if (staff.role !== 'admin') fail('เฉพาะผู้ดูแล', 403);

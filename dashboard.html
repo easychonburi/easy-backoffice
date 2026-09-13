@@ -397,6 +397,7 @@
 *{min-width:0}.toast{white-space:normal;overflow-wrap:anywhere}.att-info,.advance-info,.payroll-item-info{min-width:0}.att-name,.advance-name,.header-greeting{overflow-wrap:anywhere}
 @media(max-width:430px){.form-row{flex-wrap:wrap}.form-row>div{flex-basis:100%}.modal-sheet{max-height:90dvh;overflow-y:auto}.cal-grid{min-width:0}.cal-cell{min-width:0}.detail-sheet{max-width:100vw}.bank-account{overflow-wrap:anywhere}}
 </style>
+<link rel="stylesheet" href="/employee.css">
 </head>
 <body>
 
@@ -410,6 +411,7 @@
 </div>
 
 <div class="app-body">
+  <section class="card employee-requests"><div class="employee-panel-top"><h2>📩 คำขอรออนุมัติ <span id="employee-request-count"></span></h2><button type="button" id="refresh-requests">รีเฟรช</button></div><div id="employee-request-list">กำลังโหลด...</div></section>
 
   <div id="ot-alert-section"></div>
 
@@ -445,6 +447,7 @@
   <div>
     <div class="section-title">⚡ ไปที่</div>
     <div class="shortcut-grid">
+      <a class="shortcut-btn" href="/admin.html#employee-request-list"><div class="shortcut-icon">📩</div><div class="shortcut-label">คำขอพนักงาน</div><div class="shortcut-sub">อนุมัติลา / เบิกเงิน</div></a>
       <a class="shortcut-btn" href="/admin.html"><div class="shortcut-icon">👥</div><div class="shortcut-label">ข้อมูลพนักงาน</div><div class="shortcut-sub">สาขา กะ ค่าแรง</div></a>
       <a class="shortcut-btn" href="/payroll.html">
         <div class="shortcut-icon">💰</div>
@@ -1326,5 +1329,6 @@ window.addEventListener('load', async () => {
 }
   
 </script>
+<script src="/employee-admin.js"></script>
 </body>
 </html>

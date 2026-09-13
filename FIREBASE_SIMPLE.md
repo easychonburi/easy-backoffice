@@ -55,7 +55,41 @@ writes and rereads passed with synthetic PORT accounts. Original pages and
 payroll detail/calendar were checked at 360px. Browser staff GPS was unavailable;
 clock writes were tested through the API with the synthetic branch coordinates.
 
-## Admin data/history slice
+## Employee requests and income
+
+Clock has three small employee buttons for leave requests, advance requests and
+current-period attendance/income. Leave requires one date, personal/sick type and
+a reason. Advance requests are accepted any day for 500/1000, with
+an upfront conditions popup before amount selection. Payout is assigned to the
+same Sunday or next Sunday in Asia/Bangkok, capped at 1000 per payout Sunday.
+Pending requests reserve allowance; rejected requests release it. Linked advance
+records are not counted twice. Transaction guards in `employee_advance_limits`
+serialize submissions/approvals for the same employee and payout Sunday. The
+deduction period follows the assigned payout Sunday. Both require admin review
+from Admin and Dashboard.
+`employee_requests` holds pending/reviewed requests. Approval transactionally
+creates the existing leave/advance record; only approved advances enter payroll
+deductions. In the legacy advances collection, `pending` means awaiting payroll
+deduction, not awaiting request approval. Rejected/pending requests do not affect
+payroll. Employee endpoints derive staff identity from the session.
+
+`functions/payroll-core.js` is shared with the admin Payroll page via build.js.
+Income uses saved totals/details for paid runs and the same current payroll
+calculation otherwise; pending OT and pending advance requests are shown
+separately. No notification messages are added. Hosting includes employee
+JS/CSS and payroll-core.
+Build and syntax checks completed; no live request/approval transactions tested.
+
+Deploy committed source from `firebase-simple`. `node build.js` writes
+`public/deployment.json` with the source commit and dirty flag; release only a
+clean build. Backend source can be packaged directly from the same commit with
+`git archive --format=zip HEAD:functions`. Tag the backend image with that commit
+and set the Cloud Run `source-commit` label and `EASY_SOURCE_COMMIT` environment
+variable. These identify image deployments even when Cloud Run's older
+`buildConfig` source metadata has not changed. Hosting and backend deploy only
+to `easy-backoffice-simple-staging`.
+
+## Admin data/history details
 
 Admin data.html exposes only timesheets, advances, leaves, stock_logs, driver_jobs
 and payroll_runs. It lists 50 records per page, filters dates/staff/branch/text,
@@ -65,8 +99,10 @@ central-close/driver-return stock and populated driver jobs. Those need a define
 joint reversal/work cancellation process; this slice does not guess one. Deleting
 an independent record does not retract Telegram/LINE messages already sent.
 
-Payroll supports arbitrary earlier/later standard periods and a calendar date
-within a period, preserving current-period payday behavior and existing formulas.
+Payroll supports earlier/later standard periods through previous, current and
+next buttons, with the viewed period and payday displayed in the header. The
+current button is highlighted and disabled when viewing the current period,
+preserving current-period payday behavior and existing formulas.
 Paid amounts come from payroll_runs, never recalculated from today's rates.
 New payments retain safe staff/details/advance snapshots. Older runs without
 snapshots show stored totals and disclose missing historical daily detail.

@@ -216,6 +216,7 @@
 *{min-width:0}.toast{white-space:normal;overflow-wrap:anywhere}.att-info,.advance-info,.payroll-item-info{min-width:0}.att-name,.advance-name,.header-greeting{overflow-wrap:anywhere}
 @media(max-width:430px){.form-row{flex-wrap:wrap}.form-row>div{flex-basis:100%}.modal-sheet{max-height:90dvh;overflow-y:auto}.cal-grid{min-width:0}.cal-cell{min-width:0}.detail-sheet{max-width:100vw}.bank-account{overflow-wrap:anywhere}}
 </style>
+<link rel="stylesheet" href="/employee.css">
 </head>
 <body>
 
@@ -255,6 +256,11 @@
     </button>
   </div>
   
+  <div class="employee-shortcuts" aria-label="บริการพนักงาน">
+    <button type="button" onclick="openEmployeePanel('leave')">🗓 ขอลา</button>
+    <button type="button" onclick="openEmployeePanel('advance')">💸 ขอเบิกเงิน</button>
+    <button type="button" onclick="openEmployeePanel('income')">เวลางาน / รายได้</button>
+  </div>
   <button class="action-btn" style="width: 100%; margin-top: 14px; background: #FEF9C3; border: 2px solid #FDE047; box-shadow: var(--shadow); color: var(--text); flex-direction: row; justify-content: center; gap: 10px; padding: 14px;" onclick="window.location.href='/stock.html'">
     <span style="font-size: 22px;">📦</span>
     <span style="font-size: 16px; font-weight: 600;">เช็คสต็อก</span>
@@ -271,6 +277,9 @@
   </div>
 </div>
 
+<div class="modal-overlay" id="employee-modal" hidden role="dialog" aria-modal="true" aria-labelledby="employee-title">
+  <div class="modal-sheet employee-sheet"><div class="employee-panel-top"><h2 id="employee-title">บริการพนักงาน</h2><button type="button" id="employee-close" aria-label="ปิด">✕</button></div><div id="employee-content"></div><p id="employee-error" role="alert"></p></div>
+</div>
 <div class="modal-overlay" id="modal-late">
   <div class="modal-sheet">
     <div class="modal-handle"></div>
@@ -574,5 +583,6 @@ function hideModal(id){document.getElementById(id).classList.remove('visible');}
 function showLoading(s){document.getElementById('loading').classList.toggle('show',s);}
 function showToast(msg,type=''){const t=document.getElementById('toast');t.textContent=msg;t.className=`toast ${type} show`;setTimeout(()=>t.classList.remove('show'),3500);}
 </script>
+<script src="/employee.js"></script>
 </body>
 </html>
