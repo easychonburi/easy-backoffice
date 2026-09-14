@@ -608,7 +608,14 @@ function renderHeader() {
 }
 
 function renderOTAlert() {
-  const pendingOTs = allTimesheets.filter(t => t.ot_status === 'pending' && Number(t.ot_hours) > 0);
+  const periods = EasyPayroll.getCurrentPeriods();
+  const pendingOTs = allTimesheets.filter(t => {
+    if(t.ot_status !== 'pending' || Number(t.ot_hours) <= 0) return false;
+    const staff = allStaff.find(s => s.staff_id === t.staff_id);
+    if(!staff) return false;
+    const daily = staff.pay_type === 'daily', date = String(t.date || '').slice(0,10);
+    return date >= (daily ? periods.ftStart : periods.ptStart) && date <= (daily ? periods.ftEnd : periods.ptEnd);
+  });
   const section = document.getElementById('ot-alert-section');
   if (pendingOTs.length === 0) { section.innerHTML = ''; return; }
   section.innerHTML = `

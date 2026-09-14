@@ -33,8 +33,8 @@
     if(!data.paid)box.append(node('p','ยอดประมาณการถึงตอนนี้ ยังไม่รวมวันทำงานที่เหลือ และอาจเปลี่ยนเมื่อแอดมินตรวจรายการก่อนจ่าย','employee-note'));
     box.append(node('h3','เวลาทำงานในรอบนี้','employee-section-title'));
     if(!data.attendance.length){box.append(node('p',data.missingHistory?'รอบเก่านี้ไม่ได้เก็บรายละเอียดเวลาไว้':'ยังไม่มีรายการลงเวลาในรอบนี้','employee-note'));return;}
-    const table=node('table','','employee-attendance');table.innerHTML='<thead><tr><th>วันที่</th><th>เข้า</th><th>ออก</th><th>OT</th></tr></thead><tbody></tbody>';
-    for(const r of data.attendance){const tr=node('tr','');for(const text of [date(r.date),r.clock_in||'—',r.clock_out||'—',Number(r.ot_hours)>0?r.ot_hours+' ชม. · '+(states[r.ot_status]||'ไม่อนุมัติ'):'—'])tr.append(node('td',text));table.tBodies[0].append(tr);}box.append(table);
+    const table=node('table','','employee-attendance');table.innerHTML='<thead><tr><th>วันที่</th><th>เข้า</th><th>ออก</th><th>OT</th><th>รายได้</th></tr></thead><tbody></tbody>';
+    for(const r of data.attendance){const tr=node('tr','');for(const text of [date(r.date),r.clock_in||'—',r.clock_out||'—',Number(r.ot_hours)>0&&Object.hasOwn(states,r.ot_status)?r.ot_hours+' ชม. · '+states[r.ot_status]:'—',r.day_total!=null?money(r.day_total):'—'])tr.append(node('td',text));table.tBodies[0].append(tr);}box.append(table);
   }
   window.openEmployeePanel=async type=>{
     if(!el('employee-modal').hidden)return;
