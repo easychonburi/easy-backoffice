@@ -4,7 +4,8 @@ const {getFirestore}=require('firebase-admin/firestore');
 const crypto=require('node:crypto');
 const notify=require('./notifications');
 const shop=require('./shop-settings');
-const {getItemsListByMode,calcLateMin,calcOtMins,calcHoursWorked,haversine}=require('./legacy-rules');
+const payroll=require('./payroll-core');
+const {getItemsListByMode,calcHoursWorked,haversine}=require('./legacy-rules');
 const db=()=>getFirestore();
 const list=async name=>(await db().collection(name).get()).docs.map(d=>({...d.data(),_id:d.id}));
 const get=async(name,id)=>(await db().collection(name).doc(String(id)).get()).data();
@@ -23,7 +24,7 @@ function driver(user){if(!['admin','driver'].includes(user.role))fail('เฉพ
 const settings=async()=>({shift_morning_start:'09:00',shift_morning_end:'17:00',shift_night_start:'17:00',shift_night_end:'01:00',ot_rate_per_hour:50,late_grace_min:15,ot_grace_min:15,...await get('settings','work')});
 const tsId=(staffId,date)=>staffId+'_'+date;
 async function staff(id){const row=await get('staff',id);if(!row)fail('ไม่พบพนักงาน');return row;}
-async function timesheets(body,user){let rows=user.role==='admin'?await list('timesheets'):(await db().collection('timesheets').where('staff_id','==',user.staff_id).get()).docs.map(d=>d.data());return rows.filter(r=>(!body.staff_id||r.staff_id===body.staff_id)&&(!body.date_from||r.date>=body.date_from)&&(!body.date_to||r.date<=body.date_to));}
+async function timesheets(body,user){let rows=user.role==='admin'?await list('timesheets'):(await db().collection('timesheets').where('staff_id','==',user.staff_id).get()).docs.map(d=>d.data());rows=rows.filter(r=>(!body.staff_id||r.staff_id===body.staff_id)&&(!body.date_from||r.date>=body.date_from)&&(!body.date_to||r.date<=body.date_to));const cfg=await settings(),people=user.role==='admin'?await list('staff'):[user];return rows.map(r=>{const person=people.find(s=>s.staff_id===r.staff_id);return person?{...r,ot_hours:payroll.attendance(person,r,cfg).ot_hours}:r;});}
 async function paid(staffId,date){return (await list('payroll_runs')).some(p=>p.staff_id===staffId&&p.status==='paid'&&p.period_start<=date&&p.period_end>=date);}
 async function clockIn(body,user){
   const branches=(await list('branches')).filter(b=>b.status==='active');let near=null,distance=Infinity;
@@ -31,7 +32,7 @@ async function clockIn(body,user){
   for(const b of branches){if(b.lat==null||b.lng==null)continue;const d=haversine(lat,lng,Number(b.lat),Number(b.lng));if(d<=Number(b.allowed_radius_m)&&d<distance){near=b;distance=d;}}
   if(!near)fail('คุณอยู่นอกพื้นที่สาขา ไม่สามารถบันทึกได้');
   const cfg=await settings(),date=day(),clock_in=clock(),ref=db().collection('timesheets').doc(tsId(user.staff_id,date));
-  const late_min=calcLateMin(user.shift==='night'?cfg.shift_night_start:cfg.shift_morning_start,clock_in);
+  const late_min=payroll.attendance(user,{date,clock_in},cfg).late_min;
   const row={record_id:ref.id,staff_id:user.staff_id,staff_name:user.nickname||user.name,branch_id:near.branch_id,branch_name:near.name,date,clock_in,clock_out:'',hours_worked:'',late_min,late_reason:txt(body.late_reason),ot_hours:'',ot_requested:'',ot_reason:'',ot_status:'',early_out_min:'',early_out_flag:'',early_out_note:'',note:'',status:'active',clock_in_lat:lat,clock_in_lng:lng,clock_out_lat:'',clock_out_lng:'',location_flagged:false,created_at:now()};
   await db().runTransaction(async tx=>{const old=await tx.get(ref);if(old.exists)fail('บันทึกเข้างานวันนี้แล้ว');tx.create(ref,row);});
   return {success:true,record_id:ref.id,branch_name:near.name,clock_in,late_min,...await notify.after(()=>notify.telegram(`✅ ${user.nickname||user.name} เข้างานแล้ว ${clock_in} (${near.name})${late_min>15?'\n⚠️ สาย '+late_min+' นาที':''}${late_min>15&&row.late_reason?'\nเหตุผล: '+row.late_reason:''}`,'telegram_chat_clock'))};
@@ -39,10 +40,10 @@ async function clockIn(body,user){
 async function clockOut(body,user){
   const rows=await timesheets({},user),record=rows.find(r=>r.staff_id===user.staff_id&&r.clock_out===''&&(r.date===day()||r.date===day(-1)));
   if(!record)fail('ไม่พบข้อมูลการเข้างานที่ค้างอยู่');
-  const cfg=await settings(),clock_out=clock(),shift_end=user.shift==='night'?cfg.shift_night_end:cfg.shift_morning_end;
-  const hours_worked=calcHoursWorked(record.clock_in,clock_out),ot_mins=calcOtMins(shift_end,clock_out),has_ot=ot_mins>(Number(cfg.ot_grace_min)||15);
+  const cfg=await settings(),clock_out=clock(),work=payroll.attendance(user,{...record,clock_out},cfg),shift_end=work.shift.end;
+  const hours_worked=work.hours_worked,ot_mins=work.ot_mins,has_ot=work.ot_hours>0;
   const ref=db().collection('timesheets').doc(record.record_id);
-  await db().runTransaction(async tx=>{const current=await tx.get(ref);if(!current.exists||current.data().clock_out)fail('บันทึกออกงานแล้ว');tx.update(ref,{clock_out,clock_out_lat:body.lat??'',clock_out_lng:body.lng??'',hours_worked,ot_hours:has_ot?Number((ot_mins/60).toFixed(2)):0,ot_requested:body.ot_requested==='yes'?'yes':'no',ot_reason:txt(body.ot_reason),ot_status:body.ot_requested==='yes'?'pending':'no',status:'complete'});});
+  await db().runTransaction(async tx=>{const current=await tx.get(ref);if(!current.exists||current.data().clock_out)fail('บันทึกออกงานแล้ว');tx.update(ref,{clock_out,clock_out_lat:body.lat??'',clock_out_lng:body.lng??'',hours_worked,ot_hours:has_ot?Number((ot_mins/60).toFixed(2)):0,ot_requested:body.ot_requested==='yes'?'yes':'no',ot_reason:txt(body.ot_reason),ot_status:has_ot&&body.ot_requested==='yes'?'pending':'no',status:'complete'});});
   return {success:true,clock_out,hours_worked,ot_mins,has_ot,shift_end,...await notify.after(()=>notify.telegram(`🚪 ${user.nickname||user.name} ออกงานแล้ว ${clock_out}${has_ot&&body.ot_requested==='yes'?'\n⏰ ขอ OT '+ot_mins+' นาที':''}`,'telegram_chat_clock'))};
 }
 async function upsert(body){
@@ -51,9 +52,8 @@ async function upsert(body){
   const ref=db().collection('timesheets').doc(tsId(person.staff_id,d));
   if(body.record_id&&body.record_id!==ref.id)fail('รายการเวลาไม่ตรงกับพนักงานและวันที่');
   const cfg=await settings(),branch=await get('branches',person.branch_id||'_none');
-  const shiftStart=person.custom_shift_start||(person.shift==='night'?cfg.shift_night_start:cfg.shift_morning_start),shiftEnd=person.custom_shift_end||(person.shift==='night'?cfg.shift_night_end:cfg.shift_morning_end);
-  const late=person.staff_type==='fulltime'?calcLateMin(shiftStart,start):0,ot=calcOtMins(shiftEnd,end);
-  await ref.set({record_id:ref.id,staff_id:person.staff_id,staff_name:person.nickname||person.name,branch_id:person.branch_id||'',branch_name:branch?.name||'',date:d,clock_in:start,clock_out:end,hours_worked:calcHoursWorked(start,end),late_min:late,late_reason:late?'แก้ไขโดยแอดมิน: '+note:'',ot_hours:ot>(Number(cfg.ot_grace_min)||15)?Number((ot/60).toFixed(2)):0,ot_requested:'no',ot_reason:'',ot_status:'no',note:'แก้ไขเวลาโดยแอดมิน: '+note,status:'complete',clock_in_lat:'',clock_in_lng:'',clock_out_lat:'',clock_out_lng:'',location_flagged:false},{merge:true});
+  const work=payroll.attendance(person,{date:d,clock_in:start,clock_out:end},cfg),late=work.late_min;
+  await ref.set({record_id:ref.id,staff_id:person.staff_id,staff_name:person.nickname||person.name,branch_id:person.branch_id||'',branch_name:branch?.name||'',date:d,clock_in:start,clock_out:end,hours_worked:calcHoursWorked(start,end),late_min:late,late_reason:late?'แก้ไขโดยแอดมิน: '+note:'',ot_hours:work.ot_hours,ot_requested:'no',ot_reason:'',ot_status:'no',note:'แก้ไขเวลาโดยแอดมิน: '+note,status:'complete',clock_in_lat:'',clock_in_lng:'',clock_out_lat:'',clock_out_lng:'',location_flagged:false},{merge:true});
   return {success:true,record_id:ref.id};
 }
 async function savePayroll(body,safe){

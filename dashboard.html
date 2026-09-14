@@ -509,6 +509,7 @@
 
 <script src="/firebase-client.js"></script>
 <script src="/easy-page.js"></script>
+<script src="/payroll-core.js"></script>
 <script>
 const SESSION_KEY = 'easy_firebase_page';
 
@@ -596,27 +597,7 @@ function getCurrentPeriods() {
 }
 
 function calcGroupTotal(staffList, timesheets, start, end) {
-  const rate_ot = parseFloat(settings.ot_rate_per_hour) || 50;
-  const lateGrace = parseInt(settings.late_grace_min) || 15;
-  let total = 0;
-  staffList.forEach(staff => {
-    const ts = timesheets.filter(t => {
-      const td = typeof t.date === 'string' ? t.date.substring(0,10) : toDateStr(new Date(t.date));
-      return t.staff_id === staff.staff_id && td >= start && td <= end;
-    });
-    const rate = parseFloat(staff.rate) || 0;
-    ts.forEach(t => {
-      if (!t.clock_in) return;
-      if (staff.pay_type === 'daily') {
-        total += rate;
-        const lateMin = parseInt(t.late_min) || 0;
-        if (lateMin > lateGrace) total -= (rate / 480) * lateMin;
-      } else { total += rate * (parseFloat(t.hours_worked) || 0); }
-      const otH = parseFloat(t.ot_hours) || 0;
-      if (otH > 0 && t.ot_status === 'approved') total += otH * rate_ot;
-    });
-  });
-  return Math.round(total);
+  return Math.round(staffList.reduce((sum,staff)=>sum+EasyPayroll.calculate(staff,timesheets,[],settings,start,end).subtotal,0));
 }
 
 function renderHeader() {
@@ -627,7 +608,7 @@ function renderHeader() {
 }
 
 function renderOTAlert() {
-  const pendingOTs = allTimesheets.filter(t => t.ot_status === 'pending');
+  const pendingOTs = allTimesheets.filter(t => t.ot_status === 'pending' && Number(t.ot_hours) > 0);
   const section = document.getElementById('ot-alert-section');
   if (pendingOTs.length === 0) { section.innerHTML = ''; return; }
   section.innerHTML = `

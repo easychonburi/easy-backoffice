@@ -1,5 +1,39 @@
 // Shared calculation used by admin Payroll and employee income.
 (function(root){
+// Accept sheet HH:mm:ss and ISO time values without parseFloat('21:00') mistakes.
+function parseTime(value){
+  if(typeof value==='number')return value>=0&&value<1?Math.round(value*1440)%1440:null;
+  const match=String(value??'').trim().match(/^(?:\d{4}-\d{2}-\d{2}T)?(\d{1,2}):(\d{2})(?::\d{2}(?:\.\d+)?)?(?:Z|[+-]\d{2}:\d{2})?$/);
+  if(!match||Number(match[1])>23||Number(match[2])>59)return null;
+  return Number(match[1])*60+Number(match[2]);
+}
+function formatTime(n){return String(Math.floor(n/60)%24).padStart(2,'0')+':'+String(n%60).padStart(2,'0');}
+function getEffectiveShift(staff,date,settings={}){
+  let start,end;
+  if(new Date(String(date).slice(0,10)+'T12:00:00').getDay()===0){start='10:30';end='20:00';}
+  else if(staff.custom_shift_start){start=staff.custom_shift_start;end=staff.custom_shift_end;}
+  else if(staff.staff_type!=='fulltime')return {start:null,end:null,flexible:true};
+  else {const night=staff.shift==='night';start=settings[night?'shift_night_start':'shift_morning_start']||(night?'17:00':'09:00');end=settings[night?'shift_night_end':'shift_morning_end']||(night?'01:00':'17:00');}
+  const s=parseTime(start),e=parseTime(end);
+  return {start:s===null?null:formatTime(s),end:e===null?null:formatTime(e),flexible:s===null||e===null};
+}
+function attendance(staff,row,settings={}){
+  const shift=getEffectiveShift(staff,row.date,settings),s=parseTime(shift.start),e=parseTime(shift.end);
+  let i=parseTime(row.clock_in),o=parseTime(row.clock_out);
+  const empty={shift,late_min:0,ot_mins:0,ot_hours:0,hours_worked:0,base_hours:0,effective_clock_in:null,effective_clock_out:null};
+  if(i===null)return empty;
+  // A clock-in after midnight belongs to the end of an overnight shift.
+  if(!shift.flexible&&e<s&&i<s-360)i+=1440;
+  const late=staff.staff_type==='fulltime'&&s!==null?Math.max(0,i-s):0;
+  if(o===null)return {...empty,late_min:late};
+  if(o<i)o+=1440;
+  const end=shift.flexible?null:e+(e<s?1440:0);
+  const raw=end===null?0:Math.max(0,o-Math.max(end,i));
+  const grace=Number(settings.ot_grace_min??15);
+  const ot=raw>(Number.isFinite(grace)&&grace>=0?grace:15)?raw:0;
+  const a=shift.flexible?i:Math.max(i,s),b=shift.flexible?o:Math.min(o,end);
+  return {shift,late_min:late,ot_mins:raw,ot_hours:Number((ot/60).toFixed(2)),hours_worked:Number(((o-i)/60).toFixed(2)),base_hours:Number((Math.max(0,b-a)/60).toFixed(2)),effective_clock_in:a!==i?formatTime(a):null,effective_clock_out:b!==o?formatTime(b):null};
+}
 function toDateStr(d){return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}
 function addDays(value,n){const d=new Date(value+'T00:00:00');d.setDate(d.getDate()+n);return toDateStr(d);}
 function getCurrentPeriods(onDate) {
@@ -68,41 +102,6 @@ function totalAdvanceAmount(staffId, periodStart, periodEnd) {
     .reduce((sum, a) => sum + parseFloat(a.amount || 0), 0);
 }
 
-// ─── PAYROLL CALC ───
-function getEffectiveShift(staff, dateStr, settings) {
-  // วันอาทิตย์ → ทุกคนทุกสาขาใช้ 10:30–20:00
-  const d = new Date(dateStr + 'T00:00:00');
-  if (d.getDay() === 0) return { start: '10:30', end: '20:00', flexible: false };
-
-  // ใช้ custom shift ต่อคน (จาก Sheets)
-  if (staff.custom_shift_start) {
-    return {
-      start: staff.custom_shift_start,
-      end: staff.custom_shift_end || null,
-      flexible: !staff.custom_shift_end
-    };
-  }
-
-  // 🔴 FIXED: ถ้าเป็น part-time และไม่ได้ใส่เวลา ให้เป็น Flexible ทันที ห้ามดึงค่า Global
-  if (staff.staff_type !== 'fulltime') {
-    return { start: null, end: null, flexible: true };
-  }
-
-  // fallback → global settings (สำหรับ fulltime เท่านั้น)
-  const start = staff.shift === 'night' ? (settings.shift_night_start || '17:00') : (settings.shift_morning_start || '09:00');
-  const end   = staff.shift === 'night' ? (settings.shift_night_end   || '01:00') : (settings.shift_morning_end   || '17:00');
-  return { start, end, flexible: false };
-}
-
-function calcHoursBetween(startStr, endStr, shift) {
-  if (!startStr || !endStr) return 0;
-  const [sh, sm] = startStr.split(':').map(Number);
-  const [eh, em] = endStr.split(':').map(Number);
-  let s = sh * 60 + sm, e = eh * 60 + em;
-  if (shift === 'night' && e < s) e += 1440;
-  return Math.max(0, parseFloat(((e - s) / 60).toFixed(2)));
-}
-
 function calcPayroll(staff, timesheets, periodStart, periodEnd) {
   const ts = timesheets.filter(t => {
     const td = typeof t.date === 'string' ? t.date.substring(0,10) : toDateStr(new Date(t.date));
@@ -121,7 +120,8 @@ function calcPayroll(staff, timesheets, periodStart, periodEnd) {
   ts.forEach(t => {
     if (!t.clock_in) return;
     const lateMin = parseInt(t.late_min) || 0;
-    const otHours = parseFloat(t.ot_hours) || 0;
+    const work = attendance(staff,t,settings);
+    const otHours = work.ot_hours;
     const otApproved = t.ot_status === 'approved';
     const otPending = t.ot_status === 'pending';
 
@@ -139,19 +139,9 @@ function calcPayroll(staff, timesheets, periodStart, periodEnd) {
       // Part-time hourly: ตัดเวลาตาม shift จริงของแต่ละคน/วัน
       let hrs = parseFloat(t.hours_worked) || 0;
       if (t.clock_in && t.clock_out) {
-        const shiftInfo = getEffectiveShift(staff, t.date, settings);
-        let eIn = t.clock_in, eOut = t.clock_out;
-        if (!shiftInfo.flexible) {
-          if (shiftInfo.start && t.clock_in < shiftInfo.start) {
-            eIn = shiftInfo.start;
-            effectiveClockIn = shiftInfo.start;
-          }
-          if (shiftInfo.end && t.clock_out > shiftInfo.end) {
-            eOut = shiftInfo.end;
-            effectiveClockOut = shiftInfo.end;
-          }
-        }
-        hrs = calcHoursBetween(eIn, eOut, staff.shift);
+        hrs = work.base_hours;
+        effectiveClockIn = work.effective_clock_in;
+        effectiveClockOut = work.effective_clock_out;
       }
       dayBase = parseFloat((rate * hrs).toFixed(2));
       hoursWorked += parseFloat(hrs.toFixed(2));
@@ -162,7 +152,7 @@ function calcPayroll(staff, timesheets, periodStart, periodEnd) {
       otPay += dayOT;
     }
 
-    if (otPending) {
+    if (otPending && otHours > 0) {
       pendingOTs.push({ record_id: t.record_id, date: t.date, ot_hours: otHours, ot_reason: t.ot_reason || '—' });
     }
 
@@ -201,5 +191,5 @@ function calcPayroll(staff, timesheets, periodStart, periodEnd) {
 
 return calcPayroll(staff,timesheets,start,end);
 }
-const api={getCurrentPeriods,calculate};if(typeof module!=='undefined')module.exports=api;else root.EasyPayroll=api;
+const api={getCurrentPeriods,calculate,parseTime,getEffectiveShift,attendance};if(typeof module!=='undefined')module.exports=api;else root.EasyPayroll=api;
 })(typeof window==='undefined'?globalThis:window);

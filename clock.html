@@ -333,6 +333,7 @@
 
 <script src="/firebase-client.js"></script>
 <script src="/easy-page.js"></script>
+<script src="/payroll-core.js"></script>
 <script>
 const SESSION_KEY = 'easy_firebase_page';
 
@@ -491,8 +492,9 @@ async function handleCheckIn() {
   if (!gpsOk || !currentPosition) { showToast('GPS ยังไม่พร้อม', 'error'); return; }
   if (currentStaff.staff_type !== 'fulltime') { await doClockIn(''); return; }
   const now = new Date();
-  const shift = currentStaff.shift === 'night' ? settings.shift_night_start : settings.shift_morning_start;
-  const lateMin = calcLateMin(shift, now);
+  const work = EasyPayroll.attendance(currentStaff,{date:getDateStr(),clock_in:getTimeStr(now)},settings);
+  const shift = work.shift.start;
+  const lateMin = work.late_min;
   if (lateMin >= 11) {
     document.getElementById('late-shift-time').textContent = shift;
     document.getElementById('late-actual-time').textContent = getTimeStr(now);
@@ -523,10 +525,10 @@ async function handleCheckOut() {
   if (!gpsOk || !currentPosition) { showToast('GPS ยังไม่พร้อม', 'error'); return; }
   if (currentStaff.staff_type !== 'fulltime') { await doClockOut('no', ''); return; }
   const now = new Date();
-  const shift = currentStaff.shift === 'night' ? settings.shift_night_end : settings.shift_morning_end;
-  const otMin = calcOTMin(shift, now);
-  const grace = parseInt(settings.ot_grace_min) || 15;
-  if (otMin >= grace + 1) {
+  const work = EasyPayroll.attendance(currentStaff,{...todayRecord,clock_out:getTimeStr(now)},settings);
+  const shift = work.shift.end;
+  const otMin = work.ot_mins;
+  if (work.ot_hours > 0) {
     document.getElementById('ot-shift-end').textContent = shift;
     document.getElementById('ot-actual-time').textContent = getTimeStr(now);
     document.getElementById('ot-minutes').textContent = `${otMin} นาที`;
@@ -572,7 +574,6 @@ async function doClockOut(otRequested, otReason) {
 }
 
 function calcLateMin(s, now) { const [sh,sm]=s.split(':').map(Number); return Math.max(0,(now.getHours()*60+now.getMinutes())-(sh*60+sm)); }
-function calcOTMin(s, now) { const [eh,em]=s.split(':').map(Number); let n=now.getHours()*60+now.getMinutes(),e=eh*60+em; if(n<e-300)n+=1440; return Math.max(0,n-e); }
 function haversine(a,b,c,d){const R=6371000,dL=(c-a)*Math.PI/180,dN=(d-b)*Math.PI/180,x=Math.sin(dL/2)**2+Math.cos(a*Math.PI/180)*Math.cos(c*Math.PI/180)*Math.sin(dN/2)**2;return R*2*Math.atan2(Math.sqrt(x),Math.sqrt(1-x));}
 function getTimeStr(d=new Date()){return`${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;}
 function getDateStr(d=new Date()){return`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;}
