@@ -121,6 +121,19 @@ async function dispatch(body, token) {
   if (['listDataRecords','deleteDataRecord','getPayrollPeriod','getStockHistory'].includes(body.action)) return dataAdmin.handle(body,staff,safe);
   if (operations.actions.has(body.action)) return operations.handle(body, staff, safe);
   if (staff.role !== 'admin') fail('เฉพาะผู้ดูแล', 403);
+  // Explicit admin-only reveal; never include PINs in staff lists or sessions.
+  if (body.action === 'getStaffPin') {
+    if (!validId(body.staff_id)) fail('รหัสพนักงานไม่ถูกต้อง');
+    const person=(await db.collection('staff').doc(body.staff_id).get()).data();
+    if (!person) fail('ไม่พบพนักงาน',404);
+    // The existing four-digit PIN can be matched against its keyed lookup,
+    // so no plaintext PIN storage or authentication migration is needed.
+    for(let n=0;n<10000;n++){
+      const pin=String(n).padStart(4,'0');
+      if(lookup(pin)===person.pin_lookup && crypto.scryptSync(pin,person.pin_salt,32).toString('hex')===person.pin_hash)return {pin};
+    }
+    fail('ไม่พบ PIN เดิม กรุณากำหนด PIN ใหม่');
+  }
   if (body.action === 'listStaff') return (await db.collection('staff').get()).docs.map(doc => safe(doc.data()));
   if (body.action === 'saveStaff') return saveStaff(body, staff);
   if (body.action === 'listBranches') return (await db.collection('branches').get()).docs.map(doc => doc.data());

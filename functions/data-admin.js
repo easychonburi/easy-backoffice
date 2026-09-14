@@ -39,5 +39,5 @@ exports.handle=async(body,user,safe)=>{
   const [records,runs,advances]=await Promise.all([read(type),read('payroll_runs'),read('advances')]);
   const filtered=records.filter(r=>(!body.date_from||dateOf(r,type)>=body.date_from)&&(!body.date_to||dateOf(r,type)<=body.date_to)&&(!body.staff_id||r.staff_id===body.staff_id)&&(!body.branch_id||r.branch_id===body.branch_id)&&(!body.search||JSON.stringify(r).toLowerCase().includes(String(body.search).toLowerCase()))).sort((a,b)=>dateOf(b,type).localeCompare(dateOf(a,type))||String(b.created_at||b.checked_at||b._id).localeCompare(String(a.created_at||a.checked_at||a._id)));
   const offset=Math.max(0,Number(body.offset)||0);
-  return {total:filtered.length,records:filtered.slice(offset,offset+50).map(r=>({...r,delete_blocked:reason(type,r,runs,advances)}))};
+  return {total:filtered.length,records:filtered.slice(offset,offset+10).map(r=>({...r,delete_blocked:reason(type,r,runs,advances)}))};
 };
