@@ -9,9 +9,9 @@ function setup(){
 }
 const user={staff_id:'one',role:'staff'};
 test('birthday and bank persist; invalid calendar dates and missing bank are rejected',async()=>{
-  const s=setup(),body={action:'saveEmployeeProfile',name:'Sample',nickname:'N',age:'28',address:'Home',bank_account:'0012345678',bank_name:'Sample Bank',birthday:'1998-02-28'};
+  const s=setup(),body={action:'saveEmployeeProfile',first_name:'Sample',last_name:'User',nickname:'N',age:'28',address:'Home',bank_account:'0012345678',bank_name:'Sample Bank',birthday:'1998-02-28'};
   await s.handle(body,user);const saved=await s.handle({action:'getEmployeeProfile'},user);assert.equal(saved.birthday,body.birthday);assert.equal(saved.bank_name,body.bank_name);
-  for(const change of [{birthday:'2025-02-29'},{birthday:'2099-01-01'},{bank_name:''}])await assert.rejects(s.handle({...body,...change},user));
+  for(const change of [{birthday:'2025-02-29'},{birthday:'2099-01-01'},{bank_name:''},{first_name:''},{last_name:''},{nickname:''},{age:''},{address:''},{birthday:''},{bank_account:''}])await assert.rejects(s.handle({...body,...change},user));
 });
 test('employee cannot read or change another employee, even by forged staff_id',async()=>{
   const s=setup();for(const action of ['getEmployeeProfile','saveEmployeeProfile','getEmployeeDocument','saveEmployeeDocument'])await assert.rejects(s.handle({action,staff_id:'two'},user),e=>e.status===403);assert.equal(s.access(),0);
@@ -23,7 +23,7 @@ test('profile response omits authentication and payroll fields',async()=>{
   const p=await setup().handle({action:'getEmployeeProfile'},user);assert(!('pin_hash' in p));assert(!('rate' in p));assert(!('role' in p));
 });
 test('self edits only allowed fields, preserving leading zero and login/payroll data',async()=>{
-  const s=setup();await s.handle({action:'saveEmployeeProfile',name:'New Name',nickname:'New',age:'27',address:'Current address',bank_account:'0012345678',role:'admin',rate:9000,pin:'0000'},user);
+  const s=setup();await s.handle({action:'saveEmployeeProfile',first_name:'New',last_name:'Name',nickname:'New',age:'27',birthday:'1999-01-01',address:'Current address',bank_account:'0012345678',bank_name:'Bank',role:'admin',rate:9000,pin:'0000'},user);
   const r=s.records.get('staff/one');assert.equal(r.name,'New Name');assert.equal(r.bank_account,'0012345678');assert.equal(r.role,'staff');assert.equal(r.rate,500);assert.equal(r.pin_hash,'private');assert.equal(s.records.get('employee_profiles/one').age,27);
 });
 test('document replacement is private and rejects invalid kinds or oversized data',async()=>{
