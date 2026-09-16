@@ -259,6 +259,7 @@
   <div class="employee-shortcuts" aria-label="บริการพนักงาน">
     <button type="button" onclick="openEmployeePanel('leave')">🗓 ขอลา</button>
     <button type="button" onclick="openEmployeePanel('advance')">💸 ขอเบิกเงิน</button>
+    <button type="button" onclick="openMyProfile()">👤 ข้อมูลของฉัน</button>
     <button type="button" onclick="openEmployeePanel('income')">เวลางาน / รายได้</button>
   </div>
   <button class="action-btn" style="width: 100%; margin-top: 14px; background: #FEF9C3; border: 2px solid #FDE047; box-shadow: var(--shadow); color: var(--text); flex-direction: row; justify-content: center; gap: 10px; padding: 14px;" onclick="window.location.href='/stock.html'">
@@ -584,6 +585,6 @@ function hideModal(id){document.getElementById(id).classList.remove('visible');}
 function showLoading(s){document.getElementById('loading').classList.toggle('show',s);}
 function showToast(msg,type=''){const t=document.getElementById('toast');t.textContent=msg;t.className=`toast ${type} show`;setTimeout(()=>t.classList.remove('show'),3500);}
 </script>
-<script src="/employee.js"></script>
+<script src="/employee.js"></script><script src="/profile.js"></script>
 </body>
 </html>

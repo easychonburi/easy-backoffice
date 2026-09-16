@@ -5,7 +5,7 @@ if (fs.existsSync('public/foundation.html')) fs.unlinkSync('public/foundation.ht
 for (const file of ['index.html', 'dashboard.html', 'clock.html', 'driver.html', 'payroll.html', 'stock.html', 'manifest.json', 'admin.html', 'admin.js', 'data.html', 'data.js', 'easy-page.js', 'firebase-client.js', 'icon-192.png', 'icon-512.png']) fs.copyFileSync(file, `public/${file}`);
 
 fs.copyFileSync('functions/payroll-core.js', 'public/payroll-core.js');
-for (const file of ['employee.js','employee.css','employee-admin.js']) fs.copyFileSync(file, 'public/'+file);
+for (const file of ['employee.js','employee.css','employee-admin.js','profile.js']) fs.copyFileSync(file, 'public/'+file);
 // Keep the deployed source identifiable without exposing any credentials.
 const {execFileSync} = require('node:child_process');
 const git = (...args) => execFileSync('git', args, {encoding: 'utf8'}).trim();

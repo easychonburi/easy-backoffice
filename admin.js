@@ -20,6 +20,7 @@ function render() {
   for(const row of staffRows) {
     const branch=branches.find(b=>b.branch_id===row.branch_id);
     line($(row.status==='inactive'?'inactive-staff-list':'staff-list'),row.nickname||row.name,`${roles[row.role]} · ${branch?.name||'ยังไม่กำหนดสาขา'} · ฿${row.rate}/${row.pay_type==='hourly'?'ชม.':'วัน'} · OT ฿${row.ot_rate??work.ot_rate_per_hour}/ชม.`,row.status,()=>editStaff(row));
+    const view=document.createElement('button');view.type='button';view.className='profile-admin-link';view.textContent='👤 ข้อมูล / เอกสาร';view.onclick=()=>openMyProfile(row.staff_id);$(row.status==='inactive'?'inactive-staff-list':'staff-list').lastElementChild.querySelector('.att-info').append(view);
   }
   for(const row of branches) line($('branch-list'),row.name,row.lat==null?'ยังไม่กำหนดพิกัด':`${row.lat}, ${row.lng} · รัศมี ${row.allowed_radius_m} ม.`,row.status,()=>editBranch(row));
   if(!staffRows.some(r=>r.status==='active')) $('staff-list').textContent='ยังไม่มีพนักงาน';

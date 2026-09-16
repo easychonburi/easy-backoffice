@@ -1,4 +1,4 @@
-.employee-shortcuts{display:grid;grid-template-columns:1fr 1fr 1.3fr;gap:6px;margin-top:12px}
+.employee-shortcuts{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:12px}
 .employee-shortcuts button{min-height:44px;padding:8px 4px;font:500 12px 'Prompt',sans-serif;color:var(--text-secondary);background:var(--white);border:1px solid var(--border);border-radius:10px;cursor:pointer}
 #employee-modal[hidden]{display:none!important}.employee-sheet{max-height:90dvh;overflow-y:auto;max-width:620px;margin:0 auto}
 .employee-panel-top{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:14px}.employee-panel-top h2{font-size:16px;font-weight:600}.employee-panel-top button{border:0;background:var(--soft);border-radius:10px;padding:10px;font:12px 'Prompt',sans-serif;color:var(--text-secondary);cursor:pointer}
