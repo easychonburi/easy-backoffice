@@ -12,15 +12,19 @@ exports.handle=async(body,user)=>{
   if(body.action==='getEmployeeProfile'){
     const [s,p]=await Promise.all([staffRef.get(),profileRef.get()]);if(!s.exists)fail('ไม่พบพนักงาน',404);
     const staff=s.data(),profile=p.data()||{};
-    return {staff_id:id,name:staff.name||'',nickname:staff.nickname||'',age:profile.age??'',address:profile.address||'',bank_account:staff.bank_account||'',documents:profile.documents||{}};
+    return {staff_id:id,name:staff.name||'',nickname:staff.nickname||'',age:profile.age??'',birthday:profile.birthday||'',bank_name:staff.bank_name||'',address:profile.address||'',bank_account:staff.bank_account||'',documents:profile.documents||{}};
   }
   if(body.action==='saveEmployeeProfile'){
     const name=text(body.name,80,'ชื่อ / นามสกุล'),nickname=text(body.nickname,80,'ชื่อเล่น'),address=text(body.address,1000,'ที่อยู่'),bank_account=text(body.bank_account,40,'เลขบัญชี');
+    const bank_name=body.bank_name===undefined?undefined:text(body.bank_name,80,'ธนาคาร');
+    if(bank_account&&bank_name==='')fail('กรุณากรอกชื่อธนาคาร');
+    const birthday=body.birthday===undefined?undefined:text(body.birthday,10,'วันเกิด');
+    if(birthday){const parsed=new Date(birthday+'T00:00:00Z');if(!/^\d{4}-\d{2}-\d{2}$/.test(birthday)||!Number.isFinite(parsed.getTime())||parsed.toISOString().slice(0,10)!==birthday||birthday>new Date().toLocaleDateString('en-CA',{timeZone:'Asia/Bangkok'}))fail('วันเกิดไม่ถูกต้อง');}
     if(!name)fail('กรุณากรอกชื่อ / นามสกุล');
     const age=body.age===''?null:Number(body.age);
     if(age!==null&&(!/^\d{1,3}$/.test(String(body.age))||!Number.isInteger(age)||age<1||age>120))fail('อายุไม่ถูกต้อง');
     if(bank_account&&!/^[0-9 -]{5,40}$/.test(bank_account))fail('กรุณากรอกเลขบัญชีธนาคารให้ถูกต้อง');
-    await db.runTransaction(async tx=>{const s=await tx.get(staffRef);if(!s.exists)fail('ไม่พบพนักงาน',404);tx.update(staffRef,{name,nickname,bank_account});tx.set(profileRef,{age,address,updated_at:new Date().toISOString()},{merge:true});});
+    await db.runTransaction(async tx=>{const s=await tx.get(staffRef);if(!s.exists)fail('ไม่พบพนักงาน',404);tx.update(staffRef,{name,nickname,bank_account,...(bank_name!==undefined?{bank_name}:{})});tx.set(profileRef,{age,address,...(birthday!==undefined?{birthday}:{}),updated_at:new Date().toISOString()},{merge:true});});
     return {success:true};
   }
   if(!kinds.includes(body.kind))fail('ประเภทเอกสารไม่ถูกต้อง');

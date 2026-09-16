@@ -63,6 +63,7 @@
   .logout-btn:active { background: rgba(255,255,255,0.35); }
 
   .header-greeting { font-size: 20px; font-weight: 600; color: white; margin-bottom: 2px; }
+  .header-person{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:4px}.header-person .header-greeting{flex:1;min-width:0}.header-profile{display:inline-flex;align-items:center;gap:6px;flex-shrink:0;min-height:42px;padding:6px 10px 6px 6px;border:1px solid rgba(255,255,255,.3);border-radius:24px;background:rgba(255,255,255,.16);color:#fff;font:500 11px 'Prompt',sans-serif;cursor:pointer}.header-profile-icon{display:grid;place-items:center;width:28px;height:28px;border-radius:50%;background:#fff3;font-size:17px}.header-profile:active{background:rgba(255,255,255,.28)}.header-profile:focus-visible{outline:2px solid var(--yellow);outline-offset:3px}
   .header-branch { font-size: 13px; color: rgba(255,255,255,0.75); font-weight: 300; }
 
   .app-body { padding: 20px 16px; display: flex; flex-direction: column; gap: 14px; }
@@ -225,7 +226,7 @@
     <div class="header-logo">EASY</div>
     <button class="logout-btn" onclick="logout()">ออกจากระบบ</button>
   </div>
-  <div class="header-greeting" id="greeting">สวัสดี —</div>
+  <div class="header-person"><div class="header-greeting" id="greeting">สวัสดี —</div><button type="button" class="header-profile" onclick="openMyProfile()"><span class="header-profile-icon" aria-hidden="true">👤</span><span>ข้อมูลของฉัน</span></button></div>
   <div class="header-branch" id="branch-label">สาขา: —</div>
 </div>
 
@@ -259,7 +260,6 @@
   <div class="employee-shortcuts" aria-label="บริการพนักงาน">
     <button type="button" onclick="openEmployeePanel('leave')">🗓 ขอลา</button>
     <button type="button" onclick="openEmployeePanel('advance')">💸 ขอเบิกเงิน</button>
-    <button type="button" onclick="openMyProfile()">👤 ข้อมูลของฉัน</button>
     <button type="button" onclick="openEmployeePanel('income')">เวลางาน / รายได้</button>
   </div>
   <button class="action-btn" style="width: 100%; margin-top: 14px; background: #FEF9C3; border: 2px solid #FDE047; box-shadow: var(--shadow); color: var(--text); flex-direction: row; justify-content: center; gap: 10px; padding: 14px;" onclick="window.location.href='/stock.html'">

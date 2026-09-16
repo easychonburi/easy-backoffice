@@ -8,6 +8,11 @@ function setup(){
   return {handle:context.exports.handle,records,access:()=>access};
 }
 const user={staff_id:'one',role:'staff'};
+test('birthday and bank persist; invalid calendar dates and missing bank are rejected',async()=>{
+  const s=setup(),body={action:'saveEmployeeProfile',name:'Sample',nickname:'N',age:'28',address:'Home',bank_account:'0012345678',bank_name:'Sample Bank',birthday:'1998-02-28'};
+  await s.handle(body,user);const saved=await s.handle({action:'getEmployeeProfile'},user);assert.equal(saved.birthday,body.birthday);assert.equal(saved.bank_name,body.bank_name);
+  for(const change of [{birthday:'2025-02-29'},{birthday:'2099-01-01'},{bank_name:''}])await assert.rejects(s.handle({...body,...change},user));
+});
 test('employee cannot read or change another employee, even by forged staff_id',async()=>{
   const s=setup();for(const action of ['getEmployeeProfile','saveEmployeeProfile','getEmployeeDocument','saveEmployeeDocument'])await assert.rejects(s.handle({action,staff_id:'two'},user),e=>e.status===403);assert.equal(s.access(),0);
 });
