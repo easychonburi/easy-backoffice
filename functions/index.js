@@ -8,6 +8,7 @@ const operations = require('./operations');
 const dataAdmin = require('./data-admin');
 const employee = require('./employee');
 const profile = require('./profile');
+const salesSnapshot = require('./sales-snapshot.json');
 const digest = value => crypto.createHash('sha256').update(value).digest('hex');
 function configuration() {
   const project = process.env.GOOGLE_CLOUD_PROJECT || process.env.GCLOUD_PROJECT || '';
@@ -123,6 +124,7 @@ async function dispatch(body, token) {
   if (['listDataRecords','deleteDataRecord','getPayrollPeriod','getStockHistory'].includes(body.action)) return dataAdmin.handle(body,staff,safe);
   if (operations.actions.has(body.action)) return operations.handle(body, staff, safe);
   if (staff.role !== 'admin') fail('เฉพาะผู้ดูแล', 403);
+  if (body.action === 'getSalesPreview') return salesSnapshot;
   // Explicit admin-only reveal; never include PINs in staff lists or sessions.
   if (body.action === 'getStaffPin') {
     if (!validId(body.staff_id)) fail('รหัสพนักงานไม่ถูกต้อง');
