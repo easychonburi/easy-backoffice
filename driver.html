@@ -310,7 +310,12 @@
     <div class="app-body">
       <div class="branch-shout"><div style="font-size: 1.2rem;">📍 สาขา<span id="packing-title"></span></div></div>
       <div id="packing-list-container"></div>
-      <button id="btn-next-branch" class="big-btn primary hidden" onclick="finishBranch()">เรียบร้อย → ไปต่อ</button>
+      <div id="packing-summary" class="card hidden" aria-labelledby="packing-summary-title">
+        <h2 id="packing-summary-title" style="font-size:1rem;margin-bottom:6px;">สรุปก่อนยืนยันสาขา</h2>
+        <p id="packing-summary-counts" style="font-size:0.9rem;"></p>
+        <ul id="packing-summary-shortages" class="hidden" style="padding-inline-start:20px;margin-top:8px;font-size:0.9rem;"></ul>
+      </div>
+      <button id="btn-next-branch" class="big-btn primary hidden" onclick="finishBranch()">ยืนยันและไปต่อ</button>
     </div>
   </section>
 
@@ -667,7 +672,25 @@
                 </div>
                 ${item.status === 'partial' ? `<input type="number" class="input-qty" value="${item.actualQty || ''}" placeholder="ระบุจำนวนที่จัดได้..." oninput="updateItemQty(this,'${item.name}',this.value)">` : ''}</div>`;
       }).join('');
-      document.getElementById('btn-next-branch').classList.toggle('hidden', !(state.packingData[bName] || []).every(i => i.status !== 'pending' && (i.status !== 'partial' || String(i.actualQty ?? '').trim() !== '')));
+      const items = state.packingData[bName] || [];
+      const ready = items.length > 0 && items.every(i => i.status !== 'pending' && (i.status !== 'partial' || String(i.actualQty ?? '').trim() !== ''));
+      document.getElementById('packing-summary').classList.toggle('hidden', !ready);
+      const next = document.getElementById('btn-next-branch');
+      next.classList.toggle('hidden', !ready);
+      if (!ready) return;
+      next.textContent = state.currentBranchIdx < BRANCHES.length - 1 ? 'ยืนยันและไปสาขาถัดไป' : 'ยืนยันการจัดของ';
+      const complete = items.filter(i => i.status === 'ok').length;
+      const partial = items.filter(i => i.status === 'partial').length;
+      document.getElementById('packing-summary-counts').textContent =
+        `ครบ ${complete} รายการ · ขาด ${partial} รายการ · ไม่มี ${items.length - complete - partial} รายการ`;
+      const shortages = document.getElementById('packing-summary-shortages');
+      const exceptions = items.filter(i => i.status !== 'ok').map(item => {
+        const row = document.createElement('li');
+        row.textContent = item.status === 'partial' ? `${item.name} · จัดได้ ${item.actualQty}` : `${item.name} · ไม่มี`;
+        return row;
+      });
+      shortages.replaceChildren(...exceptions);
+      shortages.classList.toggle('hidden', exceptions.length === 0);
     }
     function updateItem(name, status) { const bName = BRANCHES[state.currentBranchIdx]; const item = (state.packingData[bName] || []).find(i => i.name === name); if(item) { state.packingConfirmed[bName]=false; item.status = status; if(status !== 'partial') item.actualQty = ''; saveState(); renderPackingList(); } }
     function updateItemQty(el, name, qty) { const bName = BRANCHES[state.currentBranchIdx]; const item = (state.packingData[bName] || []).find(i => i.name === name); if(item) { state.packingConfirmed[bName]=false; item.actualQty = qty; saveState(); renderPackingList(); } }
