@@ -83,7 +83,7 @@ async function saveStock(body,user){
   const lineNotice=workOrders.length?await notify.after(()=>notify.line('📝 ใบสั่งงานครัวกลาง ('+day()+')\n\n'+workOrders.map(w=>`👉 ${w.name}: +${w.qty} ${w.unit}`).join('\n'))):{};
   return {success:true,log_id,workOrders,...notice,...lineNotice};
 }
-exports.actions=new Set(['getCentralTargets','updateCentralTarget','getDriverOrderQuantities','updateDriverOrderQuantity','getNotificationSettings','saveNotificationSettings','submitDriverPacking','getStaff','getBranches','getSettings','clockIn','clockOut','getTodayStatus','getTimesheets','upsertTimesheet','updateTimesheetOT','getPayrollRuns','savePayrollRun','markAdvancesDeducted','sendPayrollNotify','getAdvances','saveAdvance','getLeaves','saveLeave','deleteLeave','getStockItems','saveStockLog','getTodayStockOrders','getDriverOrders','getPickups','getPickupItemPhoto','getPendingPurchases','approvePurchase','submitDriverReturn','uploadDriverPhoto']);
+exports.actions=new Set(['getCentralTargets','updateCentralTarget','getDriverOrderQuantities','updateDriverOrderQuantity','getNotificationSettings','saveNotificationSettings','submitDriverPacking','getStaff','getBranches','getSettings','clockIn','clockOut','getTodayStatus','getTimesheets','upsertTimesheet','updateTimesheetOT','getPayrollRuns','savePayrollRun','markAdvancesDeducted','sendPayrollNotify','getAdvances','saveAdvance','getLeaves','saveLeave','deleteLeave','getStockItems','saveStockLog','getTodayStockOrders','getDriverOrders','getPickups','getPickupItemPhoto','getDriverPurchase','updateDriverPurchase','getPendingPurchases','approvePurchase','submitDriverReturn','uploadDriverPhoto']);
 exports.handle=async(body,user,safe)=>{
   const action=body.action;
   if(action==='getBranches')return ok((await list('branches')).filter(b=>b.status==='active'));
@@ -100,26 +100,34 @@ exports.handle=async(body,user,safe)=>{
     if(action==='submitDriverPacking')return packing(body,user);
     if(action==='submitDriverReturn'){if(!Array.isArray(body.items))fail('รายการไม่ถูกต้อง');const log_id=id('ST_DRV');await db().collection('stock_logs').doc(log_id).set({log_id,branch_id:'DRIVER',branch_name:'รถคนขับ',mode:'return',items_json:JSON.stringify(body.items),orders_json:'[]',staff_id:user.staff_id,staff_name:user.nickname||user.name,checked_at:now()});return {success:true,...await notify.after(()=>notify.telegram(`📥 ${user.nickname||user.name} คืนสต็อกเรียบร้อย!\n${body.items.map(i=>i.name+' '+(i.qty??i.value??'')+' '+(i.unit||'')).join('\n')}`,'telegram_chat_driver'))};}
     if(action==='getPickups'||action==='getPickupItemPhoto'){
-      const job=(await db().collection('driver_jobs').where('date','==',day()).get()).docs
-        .map(doc=>({...doc.data(),id:doc.id})).sort((a,b)=>b.created_at.localeCompare(a.created_at))[0];
+      const job=await latestPurchase();
       const items=job?JSON.parse(job.items_json):[];
       if(action==='getPickupItemPhoto'){
         const index=Number(body.index);
-        if(!job||body.job_id!==job.id||!Number.isInteger(index)||!items[index]?.has_photo)fail('ไม่พบรูปสินค้า',404);
-        const photo=await jobPhotoRef(job.id,index).get();
+        const photoIndex=body.photo_index??items[index]?.photo_index??index;
+        if(!job||body.job_id!==job.id||!Number.isInteger(photoIndex)||!items.some((item,i)=>item.has_photo&&(item.photo_index??i)===photoIndex))fail('ไม่พบรูปสินค้า',404);
+        const photo=await jobPhotoRef(job.id,photoIndex).get();
         if(!photo.exists)fail('ไม่พบรูปสินค้า',404);
         return ok({image:photo.data().image});
       }
       const group=Object.create(null);
       items.forEach((item,index)=>{
         const label=`${item.name} ${item.qty} ${item.unit}`.trim();
-        (group[item.location]??=[]).push(body.with_photos==='1'&&item.has_photo?{label,job_id:job.id,index}:label);
+        (group[item.location]??=[]).push(body.with_photos==='1'&&item.has_photo?{label,job_id:job.id,index,photo_index:item.photo_index??index}:label);
       });
-      return ok(group);
+      return ok(body.with_revision==='1'?{job_id:job?.id||'',locations:group}:group);
     }
     const group={};for(const log of (await list('stock_logs')).filter(l=>l.mode==='close'&&Date.parse(l.checked_at)>=Date.now()-18*3600000&&l.branch_id!=='BR005'&&!l.branch_name.includes('หนองตำลึง'))){const key=log.branch_name||log.branch_id;for(const item of JSON.parse(log.orders_json||'[]')){group[key]??=[];if(!group[key].includes(item))group[key].push(item);}}return ok(group);
   }
   admin(user);
+  if(action==='getDriverPurchase'){
+    const job=await latestPurchase();
+    return ok(job?{id:job.id,version:job.version||'',items:JSON.parse(job.items_json)}:null);
+  }
+  if(action==='updateDriverPurchase'){
+    await updateDriverPurchase(body);
+    return {success:true};
+  }
   if(action==='getNotificationSettings')return ok(await notify.read());
   if(action==='saveNotificationSettings')return ok(await notify.save(body));
   if(action==='getCentralTargets')return ok(await shop.targets());
@@ -149,6 +157,32 @@ exports.handle=async(body,user,safe)=>{
   }
   fail('ไม่พบรายการ',404);
 };
+
+async function latestPurchase(transaction){
+  const query=db().collection('driver_jobs').where('date','==',day());
+  const snapshot=await (transaction?transaction.get(query):query.get());
+  return snapshot.docs.map(doc=>({...doc.data(),id:doc.id})).sort((a,b)=>b.created_at.localeCompare(a.created_at)||b.id.localeCompare(a.id))[0];
+}
+
+async function updateDriverPurchase(body){
+  if(!Array.isArray(body.items)||body.items.length>150)fail('รายการสั่งซื้อต้องไม่เกิน 150 รายการ');
+  await db().runTransaction(async tx=>{
+    const job=await latestPurchase(tx);
+    if(!job||job.id!==body.job_id||(job.version||'')!==body.version)fail('ใบสั่งซื้อเปลี่ยนแล้ว กรุณาปิดแล้วเปิดใหม่',409);
+    const previous=JSON.parse(job.items_json),seen=new Set();
+    const items=body.items.map(item=>{
+      if(!item)fail('รายการไม่ถูกต้อง');
+      const name=txt(item.name),qty=txt(item.qty),unit=txt(item.unit),location=txt(item.location);
+      if(!name||name.length>250||!qty||!Number.isFinite(Number(qty))||Number(qty)<=0||qty.length>32||unit.length>80||!location||location.length>150)fail('กรุณากรอกชื่อ จุดรับ และจำนวนที่มากกว่า 0');
+      const index=item.original_index;
+      if(index!==null&&(!Number.isInteger(index)||!previous[index]||seen.has(index)))fail('รายการเดิมไม่ถูกต้อง');
+      seen.add(index);
+      const original=previous[index];
+      return {name,qty,unit,location,...(original?.has_photo?{has_photo:true,photo_index:original.photo_index??index}:{})};
+    });
+    tx.update(db().collection('driver_jobs').doc(job.id),{items_json:JSON.stringify(items),version:crypto.randomUUID(),updated_at:now()});
+  });
+}
 
 function jobPhotoRef(jobId,index){
   return db().collection('driver_jobs').doc(jobId).collection('item_photos').doc(String(index));
