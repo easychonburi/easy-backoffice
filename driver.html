@@ -69,6 +69,7 @@
 
   .logout-btn:active { background: rgba(255,255,255,0.35); }
 
+  .header-person{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:4px}.header-person .header-greeting{flex:1;min-width:0}.header-profile{display:inline-flex;align-items:center;gap:6px;flex-shrink:0;min-height:42px;padding:6px 10px 6px 6px;border:1px solid rgba(255,255,255,.3);border-radius:24px;background:rgba(255,255,255,.16);color:#fff;font:500 11px 'Prompt',sans-serif;cursor:pointer}.header-profile-icon{display:grid;place-items:center;width:28px;height:28px;border-radius:50%;background:#fff3;font-size:17px}.header-profile:active{background:rgba(255,255,255,.28)}.header-profile:focus-visible{outline:2px solid var(--yellow);outline-offset:3px}
   .header-greeting { font-size: 20px; font-weight: 600; color: white; margin-bottom: 2px; }
   .header-branch { font-size: 13px; color: rgba(255,255,255,0.75); font-weight: 300; }
 
@@ -206,7 +207,7 @@
         <div class="header-logo">EASY</div>
         <button type="button" class="logout-btn" onclick="toggleMenu()">เมนู <span aria-hidden="true">☰</span></button>
       </div>
-      <h1 class="header-greeting" id="userNameDisplay">สวัสดี...</h1>
+      <div class="header-person"><h1 class="header-greeting" id="userNameDisplay">สวัสดี...</h1><button type="button" class="header-profile" onclick="openMyProfile()"><span class="header-profile-icon" aria-hidden="true">👤</span><span>ข้อมูลของฉัน</span></button></div>
       <div class="header-branch">พนักงานจัดส่ง</div>
     </div>
 
@@ -864,5 +865,6 @@
       }
     }
   </script>
+<script src="/profile.js"></script>
 </body>
 </html>

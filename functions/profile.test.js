@@ -32,3 +32,19 @@ test('document replacement is private and rejects invalid kinds or oversized dat
   await assert.rejects(s.handle({action:'getEmployeeDocument',staff_id:'one',kind:'id_card'},{staff_id:'two',role:'staff'}),e=>e.status===403);
   for(const body of [{kind:'../id_card',image},{kind:'id_card',image:'data:image/svg+xml;base64,AA=='},{kind:'id_card',image:'x'.repeat(700001)}])await assert.rejects(s.handle({action:'saveEmployeeDocument',...body},user));
 });
+
+test('driver license is available to its owner and admin readers only',async()=>{
+  const s=setup(),driver={staff_id:'one',role:'driver'},admin={staff_id:'admin',role:'admin'};
+  const image='data:image/jpeg;base64,'+Buffer.from([255,216,1,2,255,217]).toString('base64');
+  const save={action:'saveEmployeeDocument',kind:'driver_license',image};
+  const read={action:'getEmployeeDocument',kind:'driver_license'};
+  await assert.rejects(s.handle(save,user),{status:403});
+  await assert.rejects(s.handle(read,user),{status:403});
+  s.records.get('staff/one').role='driver';
+  assert.equal((await s.handle({action:'getEmployeeProfile'},driver)).can_use_driver_license,true);
+  await s.handle(save,driver);
+  assert.equal((await s.handle(read,driver)).image,image);
+  assert.equal((await s.handle({...read,staff_id:'one'},admin)).image,image);
+  await assert.rejects(s.handle({...save,staff_id:'one'},admin),{status:403});
+  await assert.rejects(s.handle({...read,staff_id:'one'},{staff_id:'two',role:'driver'}),{status:403});
+});

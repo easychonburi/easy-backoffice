@@ -40,7 +40,9 @@ if(key==='age'){input.min=1;input.max=120;input.step=1;}if(key==='bank_account'|
       }
       content.append(form);
       const note=node('p',readOnly?'เอกสารส่วนตัวของพนักงาน':'ใช้รูปเอกสารตัวจริงหรือสำเนาก็ได้ กรุณาให้ตัวหนังสืออ่านชัด · รูปจะบันทึกทันทีเมื่อเลือกสำเร็จ');note.className='profile-note';content.append(note);
-      for(const [kind,label] of [['id_card','รูปบัตรประชาชน'],['house_registration','รูปทะเบียนบ้าน']]){
+      const documents=[['id_card','รูปบัตรประชาชน'],['house_registration','รูปทะเบียนบ้าน']];
+      if(data.can_use_driver_license)documents.push(['driver_license','รูปใบขับขี่']);
+      for(const [kind,label] of documents){
         const section=node('section');section.className='profile-doc';const heading=node('h3',label),status=node('p',data.documents[kind]?'มีรูปที่บันทึกไว้แล้ว':'ยังไม่มีรูป'),actions=node('div'),preview=node('div');status.className='profile-note';actions.className='profile-doc-actions';section.append(heading,status,actions,preview);content.append(section);
         const showImage=image=>{const img=node('img');img.src=image;img.alt=label;preview.replaceChildren(img);};
         const view=node('button','ดูรูปที่บันทึกไว้');view.type='button';view.hidden=!data.documents[kind];actions.append(view);

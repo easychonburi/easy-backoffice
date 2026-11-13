@@ -1,6 +1,6 @@
 'use strict';
 const {getFirestore}=require('firebase-admin/firestore');
-const kinds=['id_card','house_registration'];
+const kinds=['id_card','house_registration','driver_license'];
 const fail=(message,status=400)=>{throw Object.assign(Error(message),{status});};
 const text=(value,max,label)=>{if(typeof value!=='string'||value.trim().length>max)fail(label+'ไม่ถูกต้อง');return value.trim();};
 exports.actions=new Set(['getEmployeeProfile','saveEmployeeProfile','getEmployeeDocument','saveEmployeeDocument']);
@@ -12,7 +12,7 @@ exports.handle=async(body,user)=>{
   if(body.action==='getEmployeeProfile'){
     const [s,p]=await Promise.all([staffRef.get(),profileRef.get()]);if(!s.exists)fail('ไม่พบพนักงาน',404);
     const staff=s.data(),profile=p.data()||{},parts=String(staff.name||'').trim().split(/\s+/);
-    return {staff_id:id,name:staff.name||'',first_name:parts[0]||'',last_name:parts.slice(1).join(' '),nickname:staff.nickname||'',age:profile.age??'',birthday:profile.birthday||'',bank_name:staff.bank_name||'',address:profile.address||'',bank_account:staff.bank_account||'',documents:profile.documents||{}};
+    return {staff_id:id,can_use_driver_license:staff.role==='driver',name:staff.name||'',first_name:parts[0]||'',last_name:parts.slice(1).join(' '),nickname:staff.nickname||'',age:profile.age??'',birthday:profile.birthday||'',bank_name:staff.bank_name||'',address:profile.address||'',bank_account:staff.bank_account||'',documents:profile.documents||{}};
   }
   if(body.action==='saveEmployeeProfile'){
     const first_name=text(body.first_name,80,'ชื่อ'),last_name=text(body.last_name,80,'นามสกุล'),name=(first_name+' '+last_name).trim(),nickname=text(body.nickname,80,'ชื่อเล่น'),address=text(body.address,1000,'ที่อยู่'),bank_account=text(body.bank_account,40,'เลขบัญชี');
@@ -29,6 +29,11 @@ exports.handle=async(body,user)=>{
     return {success:true};
   }
   if(!kinds.includes(body.kind))fail('ประเภทเอกสารไม่ถูกต้อง');
+  if(body.kind==='driver_license'){
+    const staff=await staffRef.get();
+    if(!staff.exists)fail('ไม่พบพนักงาน',404);
+    if(staff.data().role!=='driver')fail('ใบขับขี่ใช้ได้เฉพาะบัญชีคนขับ',403);
+  }
   const ref=db.collection('employee_documents').doc(id+'_'+body.kind);
   if(body.action==='getEmployeeDocument'){
     const doc=await ref.get();if(!doc.exists)fail('ยังไม่มีรูปเอกสาร',404);
