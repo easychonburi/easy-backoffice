@@ -324,8 +324,17 @@
     <div class="app-body"><div class="card"><div id="delivery-overview-list"></div></div></div>
   </section>
 
+  <section id="delivery-review-section" class="hidden">
+    <div class="dashboard-header app-header section-header"><h1>รีเช็กของก่อนส่ง</h1><button onclick="goDeliveryOverview()" class="logout-btn">← กลับ</button></div>
+    <div class="app-body">
+      <div class="branch-shout" id="delivery-review-branch"></div>
+      <div class="card"><ul id="delivery-review-items" style="padding-inline-start:20px;"></ul></div>
+      <button type="button" class="big-btn primary" onclick="openDeliveryAction(state.currentDeliveryBranch)">ไปหน้าถ่ายรูป</button>
+    </div>
+  </section>
+
   <section id="delivery-action-section" class="hidden">
-    <div class="dashboard-header app-header section-header"><h1>ถ่ายรูปยืนยัน</h1><button onclick="showSection('delivery-overview-section')" class="logout-btn">← กลับ</button></div>
+    <div class="dashboard-header app-header section-header"><h1>ถ่ายรูปยืนยัน</h1><button onclick="reviewDelivery(BRANCHES.indexOf(state.currentDeliveryBranch))" class="logout-btn">← กลับ</button></div>
     <div class="app-body">
       <div class="branch-shout"><div style="font-size: 1.2rem;">🚚 สาขา<span id="delivery-title"></span></div></div>
       <div class="card">
@@ -704,7 +713,23 @@
     }
 
     // --- ด่าน 2: ส่งของ ---
-    function goDeliveryOverview() { document.getElementById('delivery-overview-list').innerHTML = BRANCHES.map((b, i) => { const done = state.deliveryData[b] === 'done'; return `<div class="overview-item ${done ? 'disabled' : ''}" onclick="${done ? '' : `openDeliveryAction('${b}')`}"><span class="overview-name">${i+1}. สาขา${b}</span><span class="badge ${done ? 'done' : 'todo'}">${done ? 'ส่งแล้ว' : 'รอส่ง'}</span></div>`; }).join(''); showSection('delivery-overview-section'); }
+    function goDeliveryOverview() { document.getElementById('delivery-overview-list').innerHTML = BRANCHES.map((b, i) => { const done = state.deliveryData[b] === 'done'; return `<div class="overview-item ${done ? 'disabled' : ''}" onclick="${done ? '' : `reviewDelivery(${i})`}"><span class="overview-name">${i+1}. สาขา${b}</span><span class="badge ${done ? 'done' : 'todo'}">${done ? 'ส่งแล้ว' : 'รอส่ง'}</span></div>`; }).join(''); showSection('delivery-overview-section'); }
+    function reviewDelivery(index) {
+      const branch = BRANCHES[index];
+      if (!branch || state.deliveryData[branch] === 'done') return;
+      state.currentDeliveryBranch = branch;
+      document.getElementById('delivery-review-branch').textContent = 'สาขา ' + branch;
+      const rows = (state.packingData[branch] || []).map(item => {
+        const row = document.createElement('li');
+        const status = item.status === 'ok' ? 'จัดครบ' : item.status === 'no' ? 'ไม่มีของ' :
+          item.status === 'partial' ? 'จัดได้ ' + item.actualQty : 'ยังไม่ได้ยืนยัน';
+        row.textContent = item.name + ' · ' + status;
+        row.style.paddingBlock = '6px';
+        return row;
+      });
+      document.getElementById('delivery-review-items').replaceChildren(...rows);
+      showSection('delivery-review-section');
+    }
     function openDeliveryAction(b) { state.currentDeliveryBranch = b; document.getElementById('delivery-title').innerText = " " + b; currentPhotoBase64 = ""; document.getElementById('real-photo-upload').value = ""; document.getElementById('photo-placeholder').classList.remove('hidden'); document.getElementById('photo-preview-container').classList.add('hidden'); document.getElementById('btn-confirm-delivery').classList.add('btn-disabled'); document.getElementById('btn-confirm-delivery').innerText = "ยืนยันส่งของ ✅"; showSection('delivery-action-section'); }
     function handlePhotoUpload(e) { const f = e.target.files[0]; if(!f) return; const btn = document.getElementById('btn-confirm-delivery'); btn.innerText = "⏳ แปลงรูป..."; btn.classList.add('btn-disabled'); document.getElementById('photo-preview-img').src = URL.createObjectURL(f); document.getElementById('photo-placeholder').classList.add('hidden'); document.getElementById('photo-preview-container').classList.remove('hidden'); const r = new FileReader(); r.onload = function(ev) { const img = new Image(); img.onload = function() { const c = document.createElement('canvas'); const scale = Math.min(1, 500 / img.width); c.width = Math.round(img.width * scale); c.height = Math.round(img.height * scale); const ctx = c.getContext('2d'); ctx.drawImage(img, 0, 0, c.width, c.height); currentPhotoBase64 = c.toDataURL('image/jpeg', 0.5).split(',')[1]; btn.classList.remove('btn-disabled'); btn.innerText = "ยืนยันส่งของ ✅"; }; img.src = ev.target.result; }; r.readAsDataURL(f); }
     async function finishDelivery() {

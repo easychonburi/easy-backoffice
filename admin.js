@@ -70,7 +70,7 @@ async function loadShopSection(section){
     for(const r of rows){line(box,r.item_name,'เป้าหมาย '+r.target_qty+' '+r.reporting_unit+' · '+(r.trigger_type==='zero'?'ผลิตเมื่อหมด':'ผลิตส่วนที่ขาด'),'active',()=>{fill($('central-form'),r);$('central-info').textContent=r.item_name+' · '+r.conversion_ratio+' '+r.reporting_unit+' ต่อ '+r.production_unit;modal('central-modal');});}
   }else if(section==='quantities'){
     const items=(await easyApi('getDriverOrderQuantities')).data;box.replaceChildren();
-    for(const [name,value] of Object.entries(items))line(box,name,value,'active',()=>{const m=value.match(/^(\S+)\s+(.+)$/);fill($('quantity-form'),{item_name:name,qty:m?.[1]||'',unit:m?.[2]||''});$('quantity-info').textContent=name;modal('quantity-modal');});
+    for(const [name,value] of Object.entries(items))line(box,name,value,'active',()=>openQuantity(name,value));
   }else{
     const config=(await easyApi('getNotificationSettings')).data;box.replaceChildren();const form=document.createElement('form');form.id='notifications-form';
     const note=document.createElement('p');note.className='note';note.textContent='Token เก็บฝั่ง backend เท่านั้น เว้นว่างเพื่อใช้ค่าเดิม แจ้งเตือนส่งไปยังห้องและกลุ่มที่ตั้งไว้';form.append(note);
@@ -78,4 +78,10 @@ async function loadShopSection(section){
     const save=document.createElement('button');save.className='modal-btn primary';save.textContent='บันทึก';form.append(save);form.onsubmit=async e=>{e.preventDefault();save.disabled=true;try{await easyApi('saveNotificationSettings',Object.fromEntries(new FormData(form)));form.reset();await loadShopSection('notifications');toast('บันทึกเรียบร้อย');}catch(e){toast(e.message);}finally{save.disabled=false;}};box.append(form);
   }
 }
+function openQuantity(name='',value=''){
+  const match=value.match(/^(\S+)\s+(.+)$/);
+  fill($('quantity-form'),{item_name:name,new_item_name:name,qty:match?.[1]||'',unit:match?.[2]||''});
+  modal('quantity-modal');
+}
+$('add-quantity').onclick=()=>openQuantity();
 for(const [kind,action,section] of [['central','updateCentralTarget','central'],['quantity','updateDriverOrderQuantity','quantities']])$(kind+'-form').onsubmit=async e=>{e.preventDefault();const button=e.target.querySelector('button:not([type=button])');button.disabled=true;try{await easyApi(action,Object.fromEntries(new FormData(e.target)));closeModal(kind+'-modal');await loadShopSection(section);toast('บันทึกเรียบร้อย');}catch(e){toast(e.message);}finally{button.disabled=false;}};
