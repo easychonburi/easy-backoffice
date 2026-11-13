@@ -948,7 +948,7 @@ function renderPurchaseSheet() {
     <div style="padding: 16px; padding-bottom: 100px;">
     <div style="margin-bottom:16px;">
   <button onclick="showDriverView()" style="width:100%; padding:12px; background:#EFF6FF; border:1.5px solid #BFDBFE; border-radius:12px; font-family:'Prompt',sans-serif; font-size:14px; color:#1D4ED8; cursor:pointer;">
-    👀 ดูว่าตอนนี้คนขับเห็นอะไร
+    ✏️ ดูและแก้ใบสั่งซื้อที่ส่งแล้ว
   </button>
 </div>
   `;
@@ -1344,28 +1344,70 @@ window.addEventListener('load', async () => {
 });
 
   async function showDriverView() {
-  try {
-    const res = await apiGet('action=getPickups');
-    if (!res.success) { showToast('โหลดไม่สำเร็จ', 'error'); return; }
-    const data = res.data;
-    const locs = Object.keys(data);
-    if (locs.length === 0) {
-      alert('ตอนนี้คนขับยังไม่มีจุดรับของ');
-      return;
-    }
-    let msg = '📋 จุดรับของที่คนขับเห็นตอนนี้\n\n';
-    locs.forEach(loc => {
-      msg += `📍 ${loc}\n`;
-      data[loc].forEach(item => { msg += `   • ${item}\n`; });
-      msg += '\n';
-    });
-    alert(msg);
-  } catch {
-    showToast('เชื่อมต่อไม่ได้', 'error');
+    const dialog=document.getElementById('driver-purchase-editor');
+    const list=document.getElementById('driver-purchase-rows');
+    const message=document.getElementById('driver-purchase-message');
+    try {
+      const {data:job}=await apiGet('action=getDriverPurchase');
+      if(!job){showToast('ยังไม่มีใบสั่งซื้อที่ส่งให้คนขับวันนี้');return;}
+      list.replaceChildren();
+      message.textContent='';
+      function addRow(item={},index=null){
+        const row=document.createElement('fieldset');
+        row.style.cssText='display:grid;gap:6px;margin-bottom:12px;padding:12px;border:1px solid var(--border);border-radius:10px';
+        row.dataset.index=index??'';
+        for(const [key,label] of [['location','จุดรับ'],['name','ชื่อรายการ'],['qty','จำนวน'],['unit','หน่วย']]){
+          const field=document.createElement('label'),input=document.createElement('input');
+          field.textContent=label;
+          input.name=key;
+          input.value=item[key]??'';
+          input.required=key!=='unit';
+          input.style.cssText='display:block;width:100%;padding:8px';
+          if(key==='qty')input.inputMode='decimal';
+          field.append(input);
+          row.append(field);
+        }
+        const remove=document.createElement('button');
+        remove.type='button';
+        remove.textContent='ลบรายการ';
+        remove.onclick=()=>row.remove();
+        row.append(remove);
+        list.append(row);
+      }
+      job.items.forEach(addRow);
+      document.getElementById('driver-purchase-add').onclick=()=>addRow({location:list.lastElementChild?.querySelector('[name=location]').value||''});
+      const form=dialog.querySelector('form');
+      form.onsubmit=async event=>{
+        event.preventDefault();
+        const items=Array.from(list.children,row=>Object.fromEntries([
+          ['original_index',row.dataset.index===''?null:Number(row.dataset.index)],
+          ...Array.from(row.querySelectorAll('input'),input=>[input.name,input.value])
+        ]));
+        if(!items.length&&!confirm('ลบทุกรายการจากใบสั่งซื้อนี้ใช่ไหม?'))return;
+        const save=form.querySelector('[type=submit]');
+        save.disabled=true;
+        try {
+          await apiPost({action:'updateDriverPurchase',job_id:job.id,version:job.version,items});
+          dialog.close();
+          showToast('อัปเดตรายการของคนขับแล้ว');
+        }catch(error){message.textContent=error.message;}
+        finally{save.disabled=false;}
+      };
+      if(!dialog.open)dialog.showModal();
+    }catch(error){showToast(error.message,'error');}
   }
-}
   
 </script>
+<dialog id="driver-purchase-editor" aria-label="แก้ใบสั่งซื้อที่ส่งแล้ว" style="margin:auto;width:min(92vw,560px);max-height:85vh;padding:16px;border:0;border-radius:16px;">
+  <form>
+    <h2>แก้ใบสั่งซื้อที่ส่งแล้ว</h2>
+    <p id="driver-purchase-message" role="status"></p>
+    <div id="driver-purchase-rows"></div>
+    <button type="button" id="driver-purchase-add">+ เพิ่มรายการ</button>
+    <button type="button" onclick="this.closest('dialog').close()">ยกเลิก</button>
+    <button type="submit">บันทึกการแก้ไข</button>
+  </form>
+</dialog>
 <script src="/employee-admin.js"></script>
 </body>
 </html>

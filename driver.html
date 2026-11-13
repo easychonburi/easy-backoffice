@@ -664,14 +664,22 @@
 
    async function fetchPickupData() {
       try {
-        const res = await easyLegacyFetch(`action=getPickups&with_photos=1`); 
+        const res = await easyLegacyFetch(`action=getPickups&with_photos=1&with_revision=1`); 
         const json = await res.json();
         if (json.success && json.data) {
-          PICKUP_ITEMS_MAP = json.data; 
-          PICKUP_LOCS = Object.keys(json.data);
-          PICKUP_LOCS.forEach(loc => { if (!state.pickupData[loc]) state.pickupData[loc] = 'pending'; });
-          saveState(); 
+          const {job_id,locations}=json.data;
+          const signatures=Object.fromEntries(Object.entries(locations).map(([loc,items])=>[
+            loc,JSON.stringify([job_id,items.map(item=>typeof item==='string'?item:[item.label,item.photo_index])])
+          ]));
+          for(const loc of Object.keys(state.pickupData)){
+            if(!Object.hasOwn(signatures,loc)||(state.pickupSignatures && state.pickupSignatures[loc]!==signatures[loc]))delete state.pickupData[loc];
+          }
+          state.pickupSignatures=signatures;
+          PICKUP_ITEMS_MAP=locations;
+          PICKUP_LOCS=Object.keys(locations);
+          saveState();
           restoreUIFromState();
+          return true;
         }
       } catch (e) {}
     }
@@ -788,7 +796,7 @@
     }
 
     // --- ด่าน 3: รับของ ---
-    function goPickupOverview() { if(PICKUP_LOCS.length === 0) { showToast("ไม่มีจุดรับของ"); return; } document.getElementById('pickup-overview-list').innerHTML = PICKUP_LOCS.map((l) => { const done = state.pickupData[l] === 'done'; return `<div class="overview-item ${done ? 'disabled' : ''}" onclick="${done ? '' : `openPickupAction('${l}')`}"><span class="overview-name">${l}</span><span class="badge ${done ? 'done' : 'todo'}">${done ? 'รับแล้ว' : 'รอรับ'}</span></div>`; }).join(''); showSection('pickup-overview-section'); }
+    async function goPickupOverview() { await fetchPickupData(); if(PICKUP_LOCS.length === 0) { showToast("ไม่มีจุดรับของ"); return; } document.getElementById('pickup-overview-list').innerHTML = PICKUP_LOCS.map((l) => { const done = state.pickupData[l] === 'done'; return `<div class="overview-item ${done ? 'disabled' : ''}" onclick="${done ? '' : `openPickupAction('${l}')`}"><span class="overview-name">${l}</span><span class="badge ${done ? 'done' : 'todo'}">${done ? 'รับแล้ว' : 'รอรับ'}</span></div>`; }).join(''); showSection('pickup-overview-section'); }
     function openPickupAction(location) {
       state.currentPickupLoc = location;
       document.getElementById('pickup-title').textContent = location;
@@ -816,7 +824,7 @@
           button.onclick = async () => {
             button.disabled = true;
             try {
-              const result = await easyPost({action:'getPickupItemPhoto',job_id:item.job_id,index:item.index});
+              const result = await easyPost({action:'getPickupItemPhoto',job_id:item.job_id,index:item.index,photo_index:item.photo_index});
               const dialog = document.getElementById('pickup-photo-dialog');
               const image = dialog.querySelector('img');
               image.alt = label;
@@ -835,7 +843,23 @@
       document.getElementById('pickup-list-container').replaceChildren(card);
       showSection('pickup-section');
     }
-    function finishPickup() { state.pickupData[state.currentPickupLoc] = 'done'; saveState(); if (PICKUP_LOCS.every(loc => state.pickupData[loc] === 'done')) { restoreUIFromState(); showSection('tasks-section'); } else goPickupOverview(); }
+    async function finishPickup() {
+      const loc=state.currentPickupLoc,signature=state.pickupSignatures?.[loc];
+      const button=document.getElementById('btn-next-pickup');
+      if(button.disabled)return;
+      button.disabled=true;
+      try{
+        if(!await fetchPickupData()){showToast('ตรวจรายการล่าสุดไม่ได้ กรุณาลองใหม่');return;}
+        if(!Object.hasOwn(PICKUP_ITEMS_MAP,loc)||signature!==state.pickupSignatures?.[loc]){
+          showToast('ใบสั่งซื้อเปลี่ยนแล้ว กรุณาตรวจรายการอีกครั้ง');
+          if(Object.hasOwn(PICKUP_ITEMS_MAP,loc))openPickupAction(loc);
+          else if(PICKUP_LOCS.length)await goPickupOverview();
+          else showSection('tasks-section');
+          return;
+        }
+        state.pickupData[state.currentPickupLoc] = 'done'; saveState(); if (PICKUP_LOCS.every(loc => state.pickupData[loc] === 'done')) { restoreUIFromState(); showSection('tasks-section'); } else await goPickupOverview();
+      }finally{button.disabled=false;}
+    }
 
     // --- ด่าน 4: เช็คสต็อกคืน (อัปเกรดจำค่าที่กรอกค้างไว้) ---
     function goReturnStock() {
