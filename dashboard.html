@@ -947,8 +947,9 @@ function renderPurchaseSheet() {
     </div>
     <div style="padding: 16px; padding-bottom: 100px;">
     <div style="margin-bottom:16px;">
+  <button type="button" onclick="openPackingEditor()" style="width:100%;padding:12px;margin-bottom:8px;">แก้รายการจัดของตามสาขา</button>
   <button onclick="showDriverView()" style="width:100%; padding:12px; background:#EFF6FF; border:1.5px solid #BFDBFE; border-radius:12px; font-family:'Prompt',sans-serif; font-size:14px; color:#1D4ED8; cursor:pointer;">
-    ✏️ ดูและแก้ใบสั่งซื้อที่ส่งแล้ว
+    👀 ดูว่าตอนนี้คนขับเห็นอะไร
   </button>
 </div>
   `;
@@ -1343,69 +1344,82 @@ window.addEventListener('load', async () => {
   showLoading(false);
 });
 
-  async function showDriverView() {
-    const dialog=document.getElementById('driver-purchase-editor');
-    const list=document.getElementById('driver-purchase-rows');
-    const message=document.getElementById('driver-purchase-message');
+  async function openPackingEditor(){
+    const dialog=document.getElementById('packing-editor'),form=dialog.querySelector('form');
+    const select=form.elements.branch,rows=document.getElementById('packing-editor-rows'),message=document.getElementById('packing-editor-status');
     try {
-      const {data:job}=await apiGet('action=getDriverPurchase');
-      if(!job){showToast('ยังไม่มีใบสั่งซื้อที่ส่งให้คนขับวันนี้');return;}
-      list.replaceChildren();
-      message.textContent='';
-      function addRow(item={},index=null){
+      const {data}=await apiGet('action=getPackingOrdersForAdmin');
+      select.replaceChildren(...data.branches.map(branch=>new Option(branch,branch)));
+      if(!select.options.length){showToast('ไม่พบสาขา');return;}
+      function addRow(item=''){
+        const match=item.match(/^(.*?)\s+(\d+(?:\.\d+)?)\s+(.+)$/);
         const row=document.createElement('fieldset');
-        row.style.cssText='display:grid;gap:6px;margin-bottom:12px;padding:12px;border:1px solid var(--border);border-radius:10px';
-        row.dataset.index=index??'';
-        for(const [key,label] of [['location','จุดรับ'],['name','ชื่อรายการ'],['qty','จำนวน'],['unit','หน่วย']]){
+        row.style.cssText='display:grid;gap:8px;border:1px solid var(--border);padding:10px;margin:8px 0';
+        for(const [key,label,value] of [['name','ชื่อรายการ',match?.[1]??item],['qty','จำนวน',match?.[2]??''],['unit','หน่วย',match?.[3]??'']]){
           const field=document.createElement('label'),input=document.createElement('input');
           field.textContent=label;
-          input.name=key;
-          input.value=item[key]??'';
-          input.required=key!=='unit';
-          input.style.cssText='display:block;width:100%;padding:8px';
+          Object.assign(input,{name:key,value,required:key==='name'});
           if(key==='qty')input.inputMode='decimal';
-          field.append(input);
-          row.append(field);
+          input.style.cssText='display:block;width:100%;padding:8px';
+          field.append(input); row.append(field);
         }
         const remove=document.createElement('button');
-        remove.type='button';
-        remove.textContent='ลบรายการ';
-        remove.onclick=()=>row.remove();
-        row.append(remove);
-        list.append(row);
+        remove.type='button'; remove.textContent='ลบรายการ'; remove.onclick=()=>row.remove();
+        row.append(remove); rows.append(row);
       }
-      job.items.forEach(addRow);
-      document.getElementById('driver-purchase-add').onclick=()=>addRow({location:list.lastElementChild?.querySelector('[name=location]').value||''});
-      const form=dialog.querySelector('form');
+      const render=()=>{rows.replaceChildren();message.textContent='';(Object.hasOwn(data.orders,select.value)?data.orders[select.value]:[]).forEach(addRow);};
+      select.onchange=render;
+      document.getElementById('packing-editor-add').onclick=()=>addRow();
+      render();
       form.onsubmit=async event=>{
         event.preventDefault();
-        const items=Array.from(list.children,row=>Object.fromEntries([
-          ['original_index',row.dataset.index===''?null:Number(row.dataset.index)],
-          ...Array.from(row.querySelectorAll('input'),input=>[input.name,input.value])
-        ]));
-        if(!items.length&&!confirm('ลบทุกรายการจากใบสั่งซื้อนี้ใช่ไหม?'))return;
-        const save=form.querySelector('[type=submit]');
-        save.disabled=true;
-        try {
-          await apiPost({action:'updateDriverPurchase',job_id:job.id,version:job.version,items});
+        const branch=select.value;
+        const items=Array.from(rows.children,row=>Object.fromEntries(Array.from(row.querySelectorAll('input'),input=>[input.name,input.value])));
+        if(!items.length&&!confirm('ลบทุกรายการจัดของของสาขานี้วันนี้ใช่ไหม?'))return;
+        const controls=Array.from(form.elements);
+        controls.forEach(control=>control.disabled=true);
+        try{
+          await apiPost({action:'savePackingOrders',date:data.date,branch,version:Object.hasOwn(data.versions,branch)?data.versions[branch]:'',original_items:Object.hasOwn(data.orders,branch)?data.orders[branch]:[],items});
           dialog.close();
-          showToast('อัปเดตรายการของคนขับแล้ว');
+          showToast('บันทึกรายการจัดของแล้ว');
         }catch(error){message.textContent=error.message;}
-        finally{save.disabled=false;}
+        finally{controls.forEach(control=>control.disabled=false);}
       };
       if(!dialog.open)dialog.showModal();
     }catch(error){showToast(error.message,'error');}
   }
+  async function showDriverView() {
+  try {
+    const res = await apiGet('action=getPickups');
+    if (!res.success) { showToast('โหลดไม่สำเร็จ', 'error'); return; }
+    const data = res.data;
+    const locs = Object.keys(data);
+    if (locs.length === 0) {
+      alert('ตอนนี้คนขับยังไม่มีจุดรับของ');
+      return;
+    }
+    let msg = '📋 จุดรับของที่คนขับเห็นตอนนี้\n\n';
+    locs.forEach(loc => {
+      msg += `📍 ${loc}\n`;
+      data[loc].forEach(item => { msg += `   • ${item}\n`; });
+      msg += '\n';
+    });
+    alert(msg);
+  } catch {
+    showToast('เชื่อมต่อไม่ได้', 'error');
+  }
+}
   
 </script>
-<dialog id="driver-purchase-editor" aria-label="แก้ใบสั่งซื้อที่ส่งแล้ว" style="margin:auto;width:min(92vw,560px);max-height:85vh;padding:16px;border:0;border-radius:16px;">
+<dialog id="packing-editor" aria-label="แก้รายการจัดของตามสาขา" style="margin:auto;width:min(92vw,560px);max-height:85vh;padding:16px;border:0;border-radius:16px">
   <form>
-    <h2>แก้ใบสั่งซื้อที่ส่งแล้ว</h2>
-    <p id="driver-purchase-message" role="status"></p>
-    <div id="driver-purchase-rows"></div>
-    <button type="button" id="driver-purchase-add">+ เพิ่มรายการ</button>
+    <h2>แก้รายการจัดของตามสาขา</h2>
+    <label>สาขา <select name="branch"></select></label>
+    <p id="packing-editor-status" role="status"></p>
+    <div id="packing-editor-rows"></div>
+    <button type="button" id="packing-editor-add">+ เพิ่มรายการ</button>
     <button type="button" onclick="this.closest('dialog').close()">ยกเลิก</button>
-    <button type="submit">บันทึกการแก้ไข</button>
+    <button type="submit">บันทึก</button>
   </form>
 </dialog>
 <script src="/employee-admin.js"></script>
