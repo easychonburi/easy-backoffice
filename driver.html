@@ -395,6 +395,10 @@
     </div>
   </div>
 
+  <dialog id="pickup-photo-dialog" aria-label="รูปสินค้า" style="margin:auto;width:min(92vw,560px);border:0;border-radius:16px;padding:16px;">
+    <img alt="" style="display:block;max-width:100%;max-height:70vh;object-fit:contain;margin:0 auto 12px;">
+    <form method="dialog"><button class="big-btn secondary">ปิดรูป</button></form>
+  </dialog>
   <div id="toast"></div>
 
   <script src="/firebase-client.js"></script>
@@ -660,7 +664,7 @@
 
    async function fetchPickupData() {
       try {
-        const res = await easyLegacyFetch(`action=getPickups`); 
+        const res = await easyLegacyFetch(`action=getPickups&with_photos=1`); 
         const json = await res.json();
         if (json.success && json.data) {
           PICKUP_ITEMS_MAP = json.data; 
@@ -762,7 +766,7 @@
     function handlePhotoUpload(e) { const f = e.target.files[0]; if(!f) return; const btn = document.getElementById('btn-confirm-delivery'); btn.innerText = "⏳ แปลงรูป..."; btn.classList.add('btn-disabled'); document.getElementById('photo-preview-img').src = URL.createObjectURL(f); document.getElementById('photo-placeholder').classList.add('hidden'); document.getElementById('photo-preview-container').classList.remove('hidden'); const r = new FileReader(); r.onload = function(ev) { const img = new Image(); img.onload = function() { const c = document.createElement('canvas'); const scale = Math.min(1, 500 / img.width); c.width = Math.round(img.width * scale); c.height = Math.round(img.height * scale); const ctx = c.getContext('2d'); ctx.drawImage(img, 0, 0, c.width, c.height); currentPhotoBase64 = c.toDataURL('image/jpeg', 0.5).split(',')[1]; btn.classList.remove('btn-disabled'); btn.innerText = "ยืนยันส่งของ ✅"; }; img.src = ev.target.result; }; r.readAsDataURL(f); }
     async function finishDelivery() {
       const btn = document.getElementById('btn-confirm-delivery'); if(btn.classList.contains('btn-disabled')) return;
-      btn.innerText = "⏳ ส่งรูปเข้า Telegram..."; btn.classList.add('btn-disabled');
+      btn.innerText = "กำลังบันทึกภาพ"; btn.classList.add('btn-disabled');
       try { 
         const res = await easyLegacyFetch('', { method: 'POST', body: JSON.stringify({ action: "uploadDriverPhoto", name: currentStaff.nickname, branch: state.currentDeliveryBranch, imageBase64: currentPhotoBase64 }) }); 
         const json = await res.json(); 
@@ -785,7 +789,52 @@
 
     // --- ด่าน 3: รับของ ---
     function goPickupOverview() { if(PICKUP_LOCS.length === 0) { showToast("ไม่มีจุดรับของ"); return; } document.getElementById('pickup-overview-list').innerHTML = PICKUP_LOCS.map((l) => { const done = state.pickupData[l] === 'done'; return `<div class="overview-item ${done ? 'disabled' : ''}" onclick="${done ? '' : `openPickupAction('${l}')`}"><span class="overview-name">${l}</span><span class="badge ${done ? 'done' : 'todo'}">${done ? 'รับแล้ว' : 'รอรับ'}</span></div>`; }).join(''); showSection('pickup-overview-section'); }
-    function openPickupAction(l) { state.currentPickupLoc = l; document.getElementById('pickup-title').innerText = l; const items = PICKUP_ITEMS_MAP[l] || []; document.getElementById('pickup-list-container').innerHTML = `<div class="card">${items.map(raw => { const m = raw.match(/^(.*?)\s+(\d+\s+.*)$/); return `<div style="display:flex; justify-content:space-between; padding:10px 0; border-bottom:1px solid #eee;"><strong>${m?m[1]:raw}</strong><strong style="color:#EF4444;">${m?m[2]:''}</strong></div>`; }).join('')}</div>`; showSection('pickup-section'); }
+    function openPickupAction(location) {
+      state.currentPickupLoc = location;
+      document.getElementById('pickup-title').textContent = location;
+      const card = document.createElement('div');
+      card.className = 'card';
+      for (const item of PICKUP_ITEMS_MAP[location] || []) {
+        const label = typeof item === 'string' ? item : item.label;
+        const match = label.match(/^(.*?)\s+(\d+(?:\.\d+)?\s+.*)$/);
+        const row = document.createElement('div');
+        row.style.cssText = 'display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;padding:10px 0;border-bottom:1px solid var(--border)';
+        const name = document.createElement('strong');
+        name.textContent = match ? match[1] : label;
+        row.append(name);
+        if (match) {
+          const qty = document.createElement('strong');
+          qty.style.color = 'var(--red)';
+          qty.textContent = match[2];
+          row.append(qty);
+        }
+        if (typeof item === 'object' && item.job_id) {
+          const button = document.createElement('button');
+          button.type = 'button';
+          button.textContent = 'ดูรูป';
+          button.style.cssText = 'min-height:44px;padding:6px 12px;border:1px solid var(--border);border-radius:8px;background:var(--soft);color:var(--text)';
+          button.onclick = async () => {
+            button.disabled = true;
+            try {
+              const result = await easyPost({action:'getPickupItemPhoto',job_id:item.job_id,index:item.index});
+              const dialog = document.getElementById('pickup-photo-dialog');
+              const image = dialog.querySelector('img');
+              image.alt = label;
+              image.src = result.data.image;
+              dialog.showModal();
+            } catch (error) {
+              showToast(error.message);
+            } finally {
+              button.disabled = false;
+            }
+          };
+          row.append(button);
+        }
+        card.append(row);
+      }
+      document.getElementById('pickup-list-container').replaceChildren(card);
+      showSection('pickup-section');
+    }
     function finishPickup() { state.pickupData[state.currentPickupLoc] = 'done'; saveState(); if (PICKUP_LOCS.every(loc => state.pickupData[loc] === 'done')) { restoreUIFromState(); showSection('tasks-section'); } else goPickupOverview(); }
 
     // --- ด่าน 4: เช็คสต็อกคืน (อัปเกรดจำค่าที่กรอกค้างไว้) ---

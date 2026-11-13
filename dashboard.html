@@ -1113,6 +1113,10 @@ function renderLocationBox(group, gIdx) {
               <input type="text" placeholder="หน่วย" value="${item.unit}" oninput="locGroups[${gIdx}].items[${iIdx}].unit=this.value" style="flex:1; padding:10px; border:1px solid var(--border); border-radius:8px; text-align:center; font-family:'Prompt';">
               <button onclick="unassignItem(${gIdx}, ${iIdx})" style="background:none; border:none; color:var(--text-secondary); font-size:18px; padding:0 5px;">✕</button>
             </div>
+            <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:8px;">
+              <label style="font-size:13px;color:var(--blue);cursor:pointer;">📷 ${item.image?'เปลี่ยนรูป':'เพิ่มรูปสินค้า'}<input type="file" accept="image/*" hidden onchange="attachPurchasePhoto(this, ${gIdx}, ${iIdx})"></label>
+              ${item.image? `<img src="${item.image}" alt="รูปสินค้า" style="width:48px;height:48px;object-fit:contain;"><button type="button" onclick="removePurchasePhoto(${gIdx}, ${iIdx})">ลบรูป</button>` : ''}
+            </div>
           </div>`;
         }).join('')}
       </div>
@@ -1233,15 +1237,57 @@ function removeLocGroup(gIdx) {
   }
 }
 
+let pendingPurchasePhotos = 0;
+async function attachPurchasePhoto(input, groupIndex, itemIndex) {
+  const file = input.files[0];
+  if (!file) return;
+  const item = locGroups[groupIndex].items[itemIndex];
+  const url = URL.createObjectURL(file);
+  pendingPurchasePhotos++;
+  input.disabled = true;
+  try {
+    if (file.size > 25 * 1024 * 1024) throw Error('เลือกรูปขนาดไม่เกิน 25 MB');
+    const image = new Image();
+    image.src = url;
+    await image.decode();
+    const canvas = document.createElement('canvas');
+    const scale = Math.min(1, 850 / Math.max(image.naturalWidth, image.naturalHeight));
+    canvas.width = Math.max(1, Math.round(image.naturalWidth * scale));
+    canvas.height = Math.max(1, Math.round(image.naturalHeight * scale));
+    const ctx = canvas.getContext('2d');
+    ctx.fillStyle = '#fff';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.drawImage(image, 0, 0, canvas.width, canvas.height);
+    const photo = [0.8, 0.65, 0.5, 0.35].map(q => canvas.toDataURL('image/jpeg', q)).find(s => s.length <= 180000 && s.startsWith('data:image/jpeg;base64,'));
+    if (!photo) throw Error('รูปใหญ่เกินไป ลองเลือกรูปใหม่');
+    if (locGroups.some(group => group.items.includes(item))) {
+      item.image = photo;
+      renderPurchaseSheet();
+    }
+  } catch (error) {
+    showToast(error.message || 'เปิดรูปไม่ได้ กรุณาเลือก JPG หรือ PNG', 'error');
+  } finally {
+    URL.revokeObjectURL(url);
+    pendingPurchasePhotos--;
+    input.value = '';
+    input.disabled = false;
+  }
+}
+function removePurchasePhoto(groupIndex, itemIndex) {
+  delete locGroups[groupIndex].items[itemIndex].image;
+  renderPurchaseSheet();
+}
 async function sendToDriver() {
+  if (pendingPurchasePhotos) return showToast('รอรูปสินค้าประมวลผลก่อนส่งใบสั่งซื้อ', 'error');
   const finalItems = [];
   locGroups.forEach(g => {
     const loc = g.location === 'อื่นๆ' ? g.customLoc : g.location;
     g.items.forEach(i => {
-      if (i.name && i.qty) finalItems.push({ name: i.name, qty: i.qty, unit: i.unit, location: loc });
+      if (i.name && i.qty) finalItems.push({ name: i.name, qty: i.qty, unit: i.unit, location: loc, ...(i.image ? {image:i.image} : {}) });
     });
   });
   if (finalItems.length === 0) return alert("ยังไม่ได้กรอกรายการสั่งของเลยครับ");
+  if (finalItems.reduce((total,item)=>total+(item.image?.length||0),0)>7000000) return showToast('รูปในใบสั่งซื้อมีขนาดรวมเกิน 7 MB', 'error');
   if (!confirm(`ยืนยันส่งงาน ${finalItems.length} รายการให้คนขับ?`)) return;
   
   const btn = document.querySelector('.sticky-footer button');
@@ -1257,7 +1303,7 @@ async function sendToDriver() {
     }
   } catch (e) {
     btn.disabled = false; btn.textContent = '🚀 ยืนยันส่งงานทั้งหมด';
-    showToast('เกิดข้อผิดพลาดในการส่งข้อมูล', 'error');
+    showToast(e.message || 'เกิดข้อผิดพลาดในการส่งข้อมูล', 'error');
   }
 }
 
