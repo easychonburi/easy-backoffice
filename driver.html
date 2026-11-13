@@ -160,6 +160,16 @@
     .overview-item.disabled{ opacity: 0.4; pointer-events: none; }
     .overview-name { font-weight:600; font-size:1.05rem; }
 
+    .delivery-review-items { list-style: none; }
+    .delivery-review-items li { display: flex; align-items: baseline; gap: 10px; padding-block: 9px; overflow-wrap: anywhere; }
+    .delivery-review-items li + li { border-top: 1px solid var(--border); }
+    .delivery-status { flex: 0 0 20px; text-align: center; font-size: 1.15rem; font-weight: 700; }
+    .delivery-status.ok { color: #15803D; }
+    .delivery-status.partial { color: #A16207; }
+    .delivery-status.no { color: #B91C1C; }
+    .delivery-status.pending { color: var(--text-secondary); }
+    .delivery-actual { display: block; color: var(--text-secondary); font-size: 0.8rem; }
+
     /* --- Photo Upload --- */
     .photo-box { display: block; border: 2px dashed #D1D5DB; border-radius: 12px; padding: 30px 20px; text-align: center; margin-bottom: 16px; cursor: pointer; background: #F9FAFB; }
     .photo-box.uploaded { border-color: #22C55E; background: #DCFCE7; }
@@ -328,7 +338,7 @@
     <div class="dashboard-header app-header section-header"><h1>รีเช็กของก่อนส่ง</h1><button onclick="goDeliveryOverview()" class="logout-btn">← กลับ</button></div>
     <div class="app-body">
       <div class="branch-shout" id="delivery-review-branch"></div>
-      <div class="card"><ul id="delivery-review-items" style="padding-inline-start:20px;"></ul></div>
+      <div class="card"><ul id="delivery-review-items" class="delivery-review-items"></ul></div>
       <button type="button" class="big-btn primary" onclick="openDeliveryAction(state.currentDeliveryBranch)">ไปหน้าถ่ายรูป</button>
     </div>
   </section>
@@ -721,10 +731,28 @@
       document.getElementById('delivery-review-branch').textContent = 'สาขา ' + branch;
       const rows = (state.packingData[branch] || []).map(item => {
         const row = document.createElement('li');
-        const status = item.status === 'ok' ? 'จัดครบ' : item.status === 'no' ? 'ไม่มีของ' :
-          item.status === 'partial' ? 'จัดได้ ' + item.actualQty : 'ยังไม่ได้ยืนยัน';
-        row.textContent = item.name + ' · ' + status;
-        row.style.paddingBlock = '6px';
+        const statuses = {
+          ok: ['✓', 'จัดครบ'],
+          partial: ['●', 'จัดได้บางส่วน'],
+          no: ['✕', 'ไม่มีของ'],
+          pending: ['–', 'ยังไม่ได้ยืนยัน']
+        };
+        const status = Object.hasOwn(statuses, item.status) ? item.status : 'pending';
+        const [symbol, label] = statuses[status];
+        const icon = document.createElement('span');
+        icon.className = 'delivery-status ' + status;
+        icon.textContent = symbol;
+        icon.setAttribute('role', 'img');
+        icon.setAttribute('aria-label', label);
+        const description = document.createElement('span');
+        description.textContent = item.name;
+        if (status === 'partial') {
+          const actual = document.createElement('small');
+          actual.className = 'delivery-actual';
+          actual.textContent = 'จัดได้ ' + item.actualQty;
+          description.append(actual);
+        }
+        row.append(icon, description);
         return row;
       });
       document.getElementById('delivery-review-items').replaceChildren(...rows);
