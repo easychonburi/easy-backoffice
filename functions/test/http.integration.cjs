@@ -1,0 +1,20 @@
+const test=require('node:test'),assert=require('node:assert/strict');const {randomUUID}=require('node:crypto');
+const enabled=process.env.EASY_HTTP_TESTS==='1';
+const endpoint='http://127.0.0.1:5000/api';
+test('HTTP login exchanges a Firebase token and enforces role authorization',{skip:!enabled},async()=>{
+ const login=await fetch(endpoint,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'getStaffByPin',staff_id:'TEST_STAFF',pin:'2345'})});
+ const l=await login.json();assert.equal(l.success,true);assert(l.customToken);assert(!l.data.pin);
+ const response=await fetch('http://127.0.0.1:9099/identitytoolkit.googleapis.com/v1/accounts:signInWithCustomToken?key=demo-key',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({token:l.customToken,returnSecureToken:true})});
+ const token=(await response.json()).idToken;assert(token);
+ const denied=await fetch(endpoint+'?action=getStaff',{headers:{Authorization:'Bearer '+token}});assert.equal(denied.status,403);
+ const good=await fetch(endpoint+'?action=getBranches',{headers:{Authorization:'Bearer '+token}});assert.equal((await good.json()).success,true);
+ const missing=await fetch(endpoint+'?action=getBranches');assert.equal(missing.status,401);
+ const getWrite=await fetch(endpoint+'?action=clockIn&lat=13&lng=101',{headers:{Authorization:'Bearer '+token,'X-Request-ID':randomUUID()}});assert.equal(getWrite.status,400);
+ const adminLogin=await fetch(endpoint,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'getStaffByPin',staff_id:'TEST_ADMIN',pin:'1234'})});
+ const a=await adminLogin.json();assert(a.success);
+ const exchange=await fetch('http://127.0.0.1:9099/identitytoolkit.googleapis.com/v1/accounts:signInWithCustomToken?key=demo-key',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({token:a.customToken,returnSecureToken:true})});
+ const adminToken=(await exchange.json()).idToken;assert(adminToken);
+ const reset=await fetch(endpoint,{method:'POST',headers:{'Content-Type':'application/json',Authorization:'Bearer '+adminToken,'X-Request-ID':randomUUID()},body:JSON.stringify({action:'setStaffPin',staff_id:'TEST_STAFF',pin:'2345'})});
+ assert.equal((await reset.json()).success,true);
+ const revoked=await fetch(endpoint+'?action=getBranches',{headers:{Authorization:'Bearer '+token}});assert.equal(revoked.status,401);
+});

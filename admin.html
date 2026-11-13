@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="th"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>EASY — จัดการระบบ</title>
+<link href="https://fonts.googleapis.com/css2?family=Prompt:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/admin.css"><script src="/firebase-config.js"></script><script src="/firebase-client.js"></script><script defer src="/admin.js"></script>
+<link rel="stylesheet" href="/mobile.css">
+</head><body>
+<header><a class="brand" href="/dashboard.html">EASY<span>จัดการร้าน</span></a><button id="logout" class="secondary">ออกจากระบบ</button></header>
+<main>
+<div id="notice" role="status" aria-live="polite"></div>
+<section id="staff-panel" hidden>
+<div class="title-row"><div><p class="eyebrow">จัดการทีม</p><h1>พนักงาน</h1><p>ดูข้อมูล เพิ่มพนักงาน หรือแก้ไขค่าแรงและกะงานได้ที่นี่</p></div><button id="add-staff">+ เพิ่มพนักงาน</button></div>
+<div class="toolbar"><label>ค้นหาพนักงาน<input id="staff-search" placeholder="ชื่อ ชื่อเล่น หรือรหัสพนักงาน" type="search"></label><label>สถานะ<select id="staff-status"><option value="all">ทั้งหมด</option><option value="active">ใช้งาน</option><option value="inactive">ปิดใช้งาน</option></select></label><button id="refresh-staff" class="secondary">รีเฟรช</button></div>
+<div id="staff-list" class="table-wrap"></div>
+</section>
+<section id="settings-panel" hidden>
+<p class="eyebrow">ตั้งค่าจากหน้าเว็บ</p><h1>ตั้งค่าร้าน</h1><p>ปรับเวลาทำงาน สาขา และค่าที่ใช้คำนวณเงินเดือน</p>
+<article><div class="title-row"><div><h2>กะการทำงาน</h2><p>ตั้งชื่อและเวลา แล้วเลือกกะให้พนักงานแต่ละคน</p></div><button id="add-shift">+ เพิ่มกะ</button></div><div id="shift-list" class="cards"></div></article>
+<article><h2>เวลาและกฎค่าแรงกลาง</h2><p>ใช้กับพนักงานที่ไม่ได้เลือกกะเฉพาะ การเปลี่ยนกฎอาจเปลี่ยนยอดรอบที่ยังไม่ยืนยัน</p><form id="settings-form"><div class="form-grid" id="setting-fields"></div><div class="form-actions"><button type="submit">บันทึกการตั้งค่า</button></div></form></article>
+<article><div class="title-row"><div><h2>สาขาและพื้นที่ GPS</h2><p>ตั้งพิกัดและระยะที่อนุญาตให้ลงเวลา</p></div><button id="add-branch">+ เพิ่มสาขา</button></div><div id="branch-list" class="cards"></div></article>
+</section>
+<section id="data-panel" hidden>
+<p class="eyebrow">ค้นหาและตรวจสอบ</p><h1>ข้อมูลระบบ</h1><p>ดูรายการย้อนหลังจากหน้าเว็บ เลือกช่วงวันที่เพื่อโหลดเฉพาะข้อมูลที่ต้องการ</p>
+<form id="data-filter" class="toolbar"><label>ข้อมูลที่ต้องการดู<select id="data-category"><option value="timesheets">เวลาทำงาน</option><option value="leaves">วันลา</option><option value="advances">เงินเบิกล่วงหน้า</option><option value="payroll_runs">เงินเดือนที่ยืนยันแล้ว</option><option value="stock_logs">ประวัติเช็กสต็อก</option><option value="driver_jobs">งานคนขับ</option><option value="audit_log">ประวัติการเปลี่ยนแปลง</option></select></label><label>ตั้งแต่วันที่<input id="data-from" type="date" required></label><label>ถึงวันที่<input id="data-to" type="date" required></label><button type="submit">ดูข้อมูล</button></form>
+<label>ค้นหาในหน้าที่โหลดแล้ว<input id="data-search" type="search" placeholder="ชื่อ รหัส หรือข้อความในรายการ"></label><p id="data-count" class="muted"></p><div id="data-list" class="table-wrap"></div><button id="load-more" class="secondary" hidden>โหลดเพิ่มอีก 100 รายการ</button>
+<p class="hint">แก้เวลา วันลา หรือเงินเดือนจากเมนูเงินเดือน เพื่อให้ข้อมูลที่เกี่ยวข้องสอดคล้องกัน</p>
+</section>
+</main>
+<dialog id="editor"><form id="editor-form"><div class="title-row"><h2 id="editor-title"></h2><button type="button" id="close-editor" class="secondary" aria-label="ปิด">✕</button></div><div id="editor-fields" class="form-grid"></div><p id="editor-error" role="alert"></p><div class="form-actions"><button id="cancel-editor" type="button" class="secondary">ยกเลิก</button><button type="submit">บันทึก</button></div></form></dialog>
+</body></html>

@@ -1,0 +1,7 @@
+{
+  "functions":[{"source":"functions","codebase":"backoffice","runtime":"nodejs22"}],
+  "hosting":{"public":"dist","ignore":["**/.*"],"rewrites":[{"source":"/api","function":{"functionId":"api","region":"asia-southeast1"}}],"headers":[{"source":"**","headers":[{"key":"Cache-Control","value":"no-store"},{"key":"X-Content-Type-Options","value":"nosniff"},{"key":"Referrer-Policy","value":"same-origin"}]}]},
+  "firestore":{"rules":"firestore.rules","indexes":"firestore.indexes.json"},
+  "storage":{"rules":"storage.rules"},
+  "emulators":{"auth":{"port":9099},"firestore":{"port":8080},"functions":{"port":5001},"hosting":{"port":5000},"ui":{"enabled":true},"singleProjectMode":true}
+}

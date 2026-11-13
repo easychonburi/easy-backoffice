@@ -1,6 +1,8 @@
 <!DOCTYPE html>
 <html lang="th">
 <head>
+<script src="/firebase-config.js"></script>
+<script src="/firebase-client.js"></script>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>EASY — เช็คสต็อก</title>
@@ -240,8 +242,8 @@
 <div class="loading-overlay" id="loading"><div class="spinner"></div></div>
 
 <script>
-const API_URL = 'https://script.google.com/macros/s/AKfycbxxTjC7xOGHlgyStVBf6SimoU5RA7xX3VPwxIUtfGlpMNO89OQPDaRewKDDEmWGK4kk/exec';
-const SESSION_KEY = 'easy_session';
+const API_URL = '/api';
+const SESSION_KEY = 'easy_firebase_session';
 
 let currentStaff = null;
 let currentBranchName = '';

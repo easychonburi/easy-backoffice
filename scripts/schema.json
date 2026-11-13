@@ -1,0 +1,150 @@
+{
+  "staff": [
+    "staff_id",
+    "name",
+    "nickname",
+    "pin",
+    "branch_id",
+    "staff_type",
+    "shift",
+    "pay_type",
+    "rate",
+    "ot_rate",
+    "late_threshold_min",
+    "pay_cycle",
+    "pay_day",
+    "status",
+    "created_at",
+    "role",
+    "bank_name",
+    "bank_account",
+    "custom_shift_start",
+    "custom_shift_end",
+    "day_off"
+  ],
+  "branches": [
+    "branch_id",
+    "name",
+    "short_name",
+    "address",
+    "lat",
+    "lng",
+    "allowed_radius_m",
+    "status"
+  ],
+  "timesheets": [
+    "record_id",
+    "staff_id",
+    "staff_name",
+    "branch_id",
+    "branch_name",
+    "date",
+    "clock_in",
+    "clock_out",
+    "hours_worked",
+    "late_min",
+    "late_reason",
+    "ot_hours",
+    "ot_requested",
+    "ot_reason",
+    "ot_status",
+    "early_out_min",
+    "early_out_flag",
+    "early_out_note",
+    "note",
+    "status",
+    "clock_in_lat",
+    "clock_in_lng",
+    "clock_out_lat",
+    "clock_out_lng",
+    "location_flagged",
+    "created_at"
+  ],
+  "payroll_runs": [
+    "run_id",
+    "staff_id",
+    "period_start",
+    "period_end",
+    "pay_date",
+    "days_worked",
+    "hours_worked",
+    "base_pay",
+    "ot_pay",
+    "late_deduct",
+    "early_out_deduct",
+    "manual_adjust",
+    "adjust_note",
+    "total_pay",
+    "status",
+    "paid_at",
+    "note"
+  ],
+  "stock_logs": [
+    "log_id",
+    "branch_id",
+    "mode",
+    "items_json",
+    "orders_json",
+    "staff_id",
+    "checked_at"
+  ],
+  "inventory": [
+    "item_id",
+    "name",
+    "unit",
+    "current_stock",
+    "min_stock",
+    "branch_id",
+    "last_updated"
+  ],
+  "driver_tasks": [
+    "task_id",
+    "date",
+    "driver_staff_id",
+    "from_branch",
+    "to_branch",
+    "items_json",
+    "status",
+    "note",
+    "completed_at"
+  ],
+  "settings": [
+    "key",
+    "value",
+    "description"
+  ],
+  "advances": [
+    "advance_id",
+    "staff_id",
+    "amount",
+    "date",
+    "note",
+    "period_start",
+    "period_end",
+    "status",
+    "created_at"
+  ],
+  "central_targets": [
+    "item_name",
+    "target_qty",
+    "reporting_unit",
+    "production_unit",
+    "conversion_ratio",
+    "trigger_type"
+  ],
+  "purchase_minimums": [
+    "item_name",
+    "min_qty"
+  ],
+  "pending_purchases": [
+    "date",
+    "items_json",
+    "status"
+  ],
+  "driver_jobs": [
+    "date",
+    "items_json",
+    "status",
+    "created_at"
+  ]
+}

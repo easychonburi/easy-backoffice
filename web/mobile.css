@@ -1,0 +1,57 @@
+/* Shared responsive presentation for the staging user-facing pages. */
+body { min-height: 100dvh; }
+img, input, select, textarea { max-width: 100%; }
+input, select, textarea { min-width: 0; }
+.modal-sheet, dialog {
+  max-height: calc(100vh - 24px);
+  max-height: calc(100dvh - 24px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+.modal-sheet { max-width: 660px; margin-inline: auto; }
+.purchase-sheet { height: 100dvh; overscroll-behavior: contain; }
+.toast, #toast { white-space: normal; overflow-wrap: anywhere; width: max-content; max-width: calc(100vw - 32px); }
+.table-wrap, #history-container { max-width: 100%; overflow-x: auto; overscroll-behavior-x: contain; }
+.form-grid > *, .form-row > *, .title-row > *, .header-top > *, .dashboard-header > * { min-width: 0; }
+.header-greeting, .header-left, .card, .modal-title, #editor-title { overflow-wrap: anywhere; }
+#menuOverlay { align-items: flex-start; }
+.menu-box { max-width: 100%; max-height: calc(100dvh - 100px); overflow-y: auto; overscroll-behavior: contain; }
+
+@media (max-width: 600px) {
+  button, [role="button"], .overview-item { min-height: 44px; }
+  button { white-space: normal; }
+  input:not([type="checkbox"]):not([type="radio"]), select, textarea { font-size: 16px !important; min-height: 44px; }
+  .pin-header { padding: 28px 20px 24px; }
+  .pin-body { padding: 20px 20px 16px; }
+  .pin-dots { margin-bottom: 20px; }
+  .pin-keypad { max-width: 280px; gap: 10px; }
+  .pin-key { aspect-ratio: auto; min-height: 60px; }
+  #staff-id { width: min(280px, 100%) !important; }
+  .app-header { padding-top: 24px; }
+  .logout-btn { padding: 10px 14px; flex-shrink: 0; }
+  html .easy-admin-nav { padding: 4px 8px; gap: 2px; max-width: 100%; }
+  html .easy-admin-nav a { display: flex; align-items: center; justify-content: center; min-height: 44px; padding: 8px 10px; font-size: 13px; flex-shrink: 0; }
+  header { padding: 12px 14px; gap: 12px; }
+  .brand span { display: block; margin-left: 0; }
+  main { min-width: 0; }
+  .title-row { flex-wrap: wrap; gap: 10px; }
+  dialog .title-row { flex-wrap: nowrap; }
+  #close-editor { min-width: 44px; flex-shrink: 0; }
+  dialog { width: calc(100% - 24px); max-width: calc(100% - 24px); padding: 18px; }
+  .modal-sheet { padding: 20px 16px max(20px, env(safe-area-inset-bottom)); }
+  .form-actions { flex-wrap: wrap; }
+  .form-actions button { flex: 1; }
+  .toolbar label, .toolbar label:first-child { min-width: 0; flex: 1 1 140px; }
+  .cards { grid-template-columns: minmax(0, 1fr); }
+  .table-wrap td, .table-wrap th { padding: 12px; }
+  .dashboard-header { padding: 22px 16px 18px; gap: 12px; }
+  .dashboard-header > div[style], .branch-shout, .item-row > div { flex-wrap: wrap; gap: 10px; }
+  .dashboard-header button { flex-shrink: 0; padding: 8px; }
+  .driver-menu-toggle { min-width: 44px; min-height: 44px; display: grid; place-items: center; background: transparent; border: 0; color: inherit; font-size: 1.8rem; }
+  .item-row > div > div { min-width: 0; max-width: 100%; }
+  .frac-btns { flex-wrap: wrap; }
+  .frac-btn { min-width: 44px; }
+  .branch-shout > * { min-width: 0; overflow-wrap: anywhere; }
+  .sheet-header { padding: 14px; gap: 10px; }
+  .sticky-footer { padding-bottom: max(16px, env(safe-area-inset-bottom)); flex-wrap: wrap; }
+}
