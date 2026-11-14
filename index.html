@@ -177,9 +177,9 @@
 let pinBuffer = '';
 
 window.addEventListener('load', async () => {
-  if (!sessionStorage.getItem('easy_firebase_token')) return;
+  if (!easyReadToken()) return;
   try { const staff = await easyApi('me'); redirectByRole(staff.role); }
-  catch { sessionStorage.removeItem('easy_firebase_token'); }
+  catch (error) { if (error.status === 401) easyClearToken(); }
 });
 
 function pinPress(digit) {
@@ -208,7 +208,9 @@ async function verifyPin() {
   showLoading(true);
   try {
     const data = await easyApi('login', {pin: pinBuffer});
+    localStorage.removeItem('easy_driver_session');
     sessionStorage.setItem('easy_firebase_token', data.token);
+    if (data.staff.role === 'driver') easyKeepDriverToken(data.token);
     showWelcome(data.staff);
   } catch (error) {
     pinBuffer = '';
