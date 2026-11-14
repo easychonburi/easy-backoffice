@@ -399,6 +399,8 @@
 /* Only narrow overflow fixes; original EASY layout remains. */
 *{min-width:0}.toast{white-space:normal;overflow-wrap:anywhere}.att-info,.advance-info,.payroll-item-info{min-width:0}.att-name,.advance-name,.header-greeting{overflow-wrap:anywhere}
 @media(max-width:430px){.form-row{flex-wrap:wrap}.form-row>div{flex-basis:100%}.modal-sheet{max-height:90dvh;overflow-y:auto}.cal-grid{min-width:0}.cal-cell{min-width:0}.detail-sheet{max-width:100vw}.bank-account{overflow-wrap:anywhere}}
+  .driver-order-action { width:100%; padding:12px; background:#EFF6FF; border:1.5px solid #BFDBFE; border-radius:12px; font-family:'Prompt',sans-serif; font-size:14px; color:#1D4ED8; cursor:pointer; }
+  .driver-order-action + .driver-order-action { margin-top:8px; }
 </style>
 <link rel="stylesheet" href="/employee.css">
 </head>
@@ -891,16 +893,24 @@ let stockMetaInfo = []; // เก็บข้อมูลว่าใครเ�
 let cartItems = []; // ของที่กดสั่ง (อยู่ในตะกร้า)
 let locGroups = []; // ของที่ถูกจัดลงกล่องสถานที่แล้ว
 
+let pickupPlan = null;
+let savingPickupPlan = false;
+const pickupText = value => String(value ?? '').replace(/[&<>"']/g, char => ({
+  '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;'
+}[char]));
+
 const LOC_LIST = ['Makro', 'Go Wholesale', 'ตลาด', 'เมืองชลเบเกอรี่', 'CMS', 'อื่นๆ'];
 
 async function openPurchaseSheet() {
   document.getElementById('purchase-overlay').classList.add('visible');
-  step = 1; cartItems = []; locGroups = [];
+  if (savingPickupPlan) return;
+  step = 1; cartItems = []; locGroups = []; pickupPlan = null;
   document.getElementById('purchase-list').innerHTML = '<div class="purchase-empty">กำลังโหลดข้อมูล...</div>';
   await fetchPendingPurchases();
 }
 
 function closePurchaseSheet(e) {
+  if (savingPickupPlan) return;
   // ปิดทันทีโดยไม่ถาม (เวลาส่งงานเสร็จ)
   if (e === 'force') {
     document.getElementById('purchase-overlay').classList.remove('visible');
@@ -916,7 +926,22 @@ function closePurchaseSheet(e) {
   
 async function fetchPendingPurchases() {
   try {
-    const res = await apiGet('action=getPendingPurchases');
+    const [res, plan] = await Promise.all([
+      apiGet('action=getPendingPurchases'),
+      apiGet('action=getPickupPlan')
+    ]);
+    pickupPlan = plan.data;
+    pickupPlan.items.forEach((item, originalIndex) => {
+      const location = LOC_LIST.includes(item.location) && item.location !== 'อื่นๆ' ? item.location : 'อื่นๆ';
+      const customLoc = location === 'อื่นๆ' ? item.location : '';
+      let group = locGroups.find(g => g.location === location && g.customLoc === customLoc);
+      if (!group) {
+        group = {location, customLoc, items: []};
+        locGroups.push(group);
+      }
+      group.items.push({...item, originalIndex});
+    });
+    if (pickupPlan.jobId) step = 2;
     if (res.success && res.data.length > 0) {
         stockPool = JSON.parse(res.data[0].items_json || '[]');
         stockMetaInfo = JSON.parse(res.data[0].meta_info || '[]'); // 🟢 ดึงข้อมูลคนเช็คมาเก็บไว้
@@ -925,7 +950,7 @@ async function fetchPendingPurchases() {
     }
     renderPurchaseSheet();
   } catch {
-    document.getElementById('purchase-list').innerHTML = '<div class="purchase-empty">โหลดไม่สำเร็จ</div>';
+    document.getElementById('purchase-list').innerHTML = '<div class="purchase-empty">โหลดไม่สำเร็จ <button class="modal-btn secondary" onclick="openPurchaseSheet()">ลองอีกครั้ง</button> <button class="modal-btn secondary" onclick="closePurchaseSheet(&quot;force&quot;)">ปิด</button></div>';
   }
 }
 
@@ -947,9 +972,10 @@ function renderPurchaseSheet() {
     </div>
     <div style="padding: 16px; padding-bottom: 100px;">
     <div style="margin-bottom:16px;">
-  <button type="button" onclick="openPackingEditor()" style="width:100%;padding:12px;margin-bottom:8px;">แก้รายการจัดของตามสาขา</button>
-  <button onclick="showDriverView()" style="width:100%; padding:12px; background:#EFF6FF; border:1.5px solid #BFDBFE; border-radius:12px; font-family:'Prompt',sans-serif; font-size:14px; color:#1D4ED8; cursor:pointer;">
-    👀 ดูว่าตอนนี้คนขับเห็นอะไร
+  <button type="button" class="driver-order-action" onclick="openPackingEditor()">📦 แก้รายการจัดของตามสาขา</button>
+  <button type="button" class="driver-order-action" onclick="showPackingPreview()">👀 ดูรายการจัดของที่คนขับเห็น</button>
+  <button type="button" class="driver-order-action" onclick="showDriverView()">
+    👀 ดูจุดรับของที่คนขับเห็น
   </button>
 </div>
   `;
@@ -1066,7 +1092,16 @@ function renderStep2() {
     html += `<div style="text-align:center; padding:10px; color:var(--green-dark); font-weight:600; background:var(--green-bg); border-radius:12px; margin-bottom:24px;">✅ จัดของลงกล่องครบแล้ว!</div>`;
   }
 
-  html += `<div style="font-weight:600; margin-bottom:12px; color:var(--text-secondary);">📍 รายการที่จัดไว้แล้ว</div>`;
+  html += `
+    <div style="font-weight:600;margin-bottom:12px;color:var(--text-secondary);">📍 จุดรับของที่จัดไว้</div>
+    <div style="display:flex;gap:8px;margin-bottom:12px;">
+      <select id="new-pickup-location" class="modal-btn secondary" aria-label="เลือกจุดรับของ">
+        ${LOC_LIST.map(location => `<option>${location}</option>`).join('')}
+      </select>
+      <button class="modal-btn secondary" onclick="addPickupLocation()">+ เพิ่มจุดรับของ</button>
+    </div>
+    ${locGroups.length ? '' : '<p class="purchase-empty">ยังไม่มีจุดรับของ</p>'}
+  `;
   locGroups.forEach((group, gIdx) => {
     html += renderLocationBox(group, gIdx);
   });
@@ -1074,7 +1109,7 @@ function renderStep2() {
   html += `
     <div class="sticky-footer">
       <button style="width:100%; padding:16px; border-radius:12px; border:none; background:var(--green-dark); color:white; font-family:'Prompt'; font-size:16px; font-weight:600; cursor:pointer; box-shadow:0 4px 12px rgba(22,163,74,0.3);" onclick="sendToDriver()">
-        🚀 ยืนยันส่งงานทั้งหมด
+        ${pickupPlan?.jobId ? 'บันทึกการแก้ไข' : '🚀 ยืนยันส่งงานทั้งหมด'}
       </button>
     </div>
   `;
@@ -1082,15 +1117,24 @@ function renderStep2() {
 }
 
 // 🌟 ฟังก์ชันตัวช่วยเรนเดอร์กล่องสถานที่
+function addPickupLocation() {
+  const location = document.getElementById('new-pickup-location').value;
+  if (location !== 'อื่นๆ' && locGroups.some(group => group.location === location)) {
+    return showToast('จุดรับของนี้อยู่ในรายการแล้ว');
+  }
+  locGroups.push({location, customLoc:'', items:[]});
+  addBlankRow(locGroups.length - 1);
+}
+
 function renderLocationBox(group, gIdx) {
   return `
     <div class="loc-box">
       <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; border-bottom:1px solid var(--border); padding-bottom:12px;">
         <div style="font-weight:600; font-size:16px; color:var(--red);">📌 ${group.location}</div>
-        <button onclick="locationGroups.splice(${gIdx},1); renderSheet();" style="background:none; border:none; color:var(--danger); font-size:13px; text-decoration:underline; cursor:pointer;">ลบจุดนี้</button>
+        <button onclick="removeLocGroup(${gIdx})" style="background:none; border:none; color:var(--danger); font-size:13px; text-decoration:underline; cursor:pointer;">− ลบจุดนี้</button>
       </div>
       
-      ${group.location === 'อื่นๆ' ? `<input type="text" placeholder="ระบุชื่อสถานที่..." value="${group.customLoc || ''}" oninput="locGroups[${gIdx}].customLoc=this.value" style="width:100%; padding:10px; border-radius:8px; border:1px solid var(--border); margin-bottom:12px; font-family:'Prompt';">` : ''}
+      ${group.location === 'อื่นๆ' ? `<input type="text" placeholder="ระบุชื่อสถานที่..." value="${pickupText(group.customLoc)}" oninput="locGroups[${gIdx}].customLoc=this.value" style="width:100%; padding:10px; border-radius:8px; border:1px solid var(--border); margin-bottom:12px; font-family:'Prompt';">` : ''}
       
       <div style="background:var(--soft); padding:10px; border-radius:10px; margin-bottom:10px;">
         ${group.items.length === 0 ? '<div style="font-size:12px; color:var(--text-secondary); text-align:center;">ยังไม่มีของในจุดนี้</div>' : ''}
@@ -1100,8 +1144,8 @@ function renderLocationBox(group, gIdx) {
           
           // ถ้าเพิ่งกดสร้างแถวใหม่ (ยังไม่มีชื่อ) ให้โชว์เป็นช่องพิมพ์ชื่อ
           const nameDisplay = item.name 
-            ? `<span style="font-size:14px; font-weight:600; color:var(--text);">${item.name}</span>`
-            : `<input type="text" placeholder="พิมพ์ชื่อของ..." value="${item.name}" oninput="locGroups[${gIdx}].items[${iIdx}].name=this.value" style="flex:1; padding:6px 10px; border:1.5px solid var(--blue); border-radius:6px; font-size:14px; font-family:'Prompt';">`;
+            ? `<span style="font-size:14px; font-weight:600; color:var(--text);">${pickupText(item.name)}</span>`
+            : `<input type="text" placeholder="พิมพ์ชื่อของ..." value="${pickupText(item.name)}" oninput="locGroups[${gIdx}].items[${iIdx}].name=this.value" style="flex:1; padding:6px 10px; border:1.5px solid var(--blue); border-radius:6px; font-size:14px; font-family:'Prompt';">`;
 
           return `
           <div style="display:flex; flex-direction:column; margin-bottom:12px; border-bottom:1px dashed #eee; padding-bottom:8px;">
@@ -1110,13 +1154,13 @@ function renderLocationBox(group, gIdx) {
               <span style="font-size:11px; color:var(--orange); font-weight:400; flex-shrink:0;">${remainingHint}</span>
             </div>
             <div style="display:flex; gap:6px; align-items:center;">
-              <input type="number" step="0.5" placeholder="จำนวน" value="${item.qty}" oninput="locGroups[${gIdx}].items[${iIdx}].qty=this.value" style="flex:1; padding:10px; border:1px solid var(--border); border-radius:8px; text-align:center; font-family:'Prompt';">
-              <input type="text" placeholder="หน่วย" value="${item.unit}" oninput="locGroups[${gIdx}].items[${iIdx}].unit=this.value" style="flex:1; padding:10px; border:1px solid var(--border); border-radius:8px; text-align:center; font-family:'Prompt';">
+              <input type="number" step="0.5" placeholder="จำนวน" value="${pickupText(item.qty)}" oninput="locGroups[${gIdx}].items[${iIdx}].qty=this.value" style="flex:1; padding:10px; border:1px solid var(--border); border-radius:8px; text-align:center; font-family:'Prompt';">
+              <input type="text" placeholder="หน่วย" value="${pickupText(item.unit)}" oninput="locGroups[${gIdx}].items[${iIdx}].unit=this.value" style="flex:1; padding:10px; border:1px solid var(--border); border-radius:8px; text-align:center; font-family:'Prompt';">
               <button onclick="unassignItem(${gIdx}, ${iIdx})" style="background:none; border:none; color:var(--text-secondary); font-size:18px; padding:0 5px;">✕</button>
             </div>
             <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:8px;">
-              <label style="font-size:13px;color:var(--blue);cursor:pointer;">📷 ${item.image?'เปลี่ยนรูป':'เพิ่มรูปสินค้า'}<input type="file" accept="image/*" hidden onchange="attachPurchasePhoto(this, ${gIdx}, ${iIdx})"></label>
-              ${item.image? `<img src="${item.image}" alt="รูปสินค้า" style="width:48px;height:48px;object-fit:contain;"><button type="button" onclick="removePurchasePhoto(${gIdx}, ${iIdx})">ลบรูป</button>` : ''}
+              <label style="font-size:13px;color:var(--blue);cursor:pointer;">📷 ${item.image || (item.has_photo && !item.removePhoto) ? 'เปลี่ยนรูป' : 'เพิ่มรูปสินค้า'}<input type="file" accept="image/*" hidden onchange="attachPurchasePhoto(this, ${gIdx}, ${iIdx})"></label>
+              ${item.image? `<img src="${item.image}" alt="รูปสินค้า" style="width:48px;height:48px;object-fit:contain;"><button type="button" onclick="removePurchasePhoto(${gIdx}, ${iIdx})">ลบรูป</button>` : item.has_photo && !item.removePhoto ? `<button type="button" class="modal-btn secondary" onclick="removePurchasePhoto(${gIdx}, ${iIdx})">ลบรูปเดิม</button>` : ''}
             </div>
           </div>`;
         }).join('')}
@@ -1192,12 +1236,15 @@ function removeManualFromCart(id) {
 function assignSelectedItems() {
   const locSelect = document.getElementById('bulk_loc').value;
   if (!locSelect) return showToast('กรุณาเลือกจุดรับของก่อนครับ', 'error');
+  if (!cartItems.filter(c => !c.assigned).some((_, i) => document.getElementById('chk_u_' + i)?.checked)) {
+    return showToast('กรุณาติ๊กเลือกของอย่างน้อย 1 อย่างครับ', 'error');
+  }
 
   const unassigned = cartItems.filter(c => !c.assigned);
   let checkedCount = 0;
 
   // หาหรือสร้างกล่องสถานที่
-  let group = locGroups.find(g => g.location === locSelect);
+  let group = locGroups.find(g => g.location === locSelect && !g.customLoc);
   if (!group) {
     group = { location: locSelect, customLoc: '', items: [] };
     locGroups.unshift(group);
@@ -1275,36 +1322,51 @@ async function attachPurchasePhoto(input, groupIndex, itemIndex) {
   }
 }
 function removePurchasePhoto(groupIndex, itemIndex) {
-  delete locGroups[groupIndex].items[itemIndex].image;
+  const item = locGroups[groupIndex].items[itemIndex];
+  delete item.image;
+  item.removePhoto = true;
   renderPurchaseSheet();
 }
 async function sendToDriver() {
+  if (savingPickupPlan) return;
   if (pendingPurchasePhotos) return showToast('รอรูปสินค้าประมวลผลก่อนส่งใบสั่งซื้อ', 'error');
   const finalItems = [];
-  locGroups.forEach(g => {
-    const loc = g.location === 'อื่นๆ' ? g.customLoc : g.location;
-    g.items.forEach(i => {
-      if (i.name && i.qty) finalItems.push({ name: i.name, qty: i.qty, unit: i.unit, location: loc, ...(i.image ? {image:i.image} : {}) });
-    });
-  });
-  if (finalItems.length === 0) return alert("ยังไม่ได้กรอกรายการสั่งของเลยครับ");
-  if (finalItems.reduce((total,item)=>total+(item.image?.length||0),0)>7000000) return showToast('รูปในใบสั่งซื้อมีขนาดรวมเกิน 7 MB', 'error');
-  if (!confirm(`ยืนยันส่งงาน ${finalItems.length} รายการให้คนขับ?`)) return;
-  
-  const btn = document.querySelector('.sticky-footer button');
-  btn.disabled = true; btn.textContent = '⏳ กำลังส่งงาน...';
-  
-  try {
-    const res = await apiPost({ action: 'approvePurchase', items: finalItems });
-    if (res.success) { 
-      showToast('🚀 ส่งงานสำเร็จ!'); 
-      document.getElementById('purchase-overlay').classList.remove('visible'); 
-    } else {
-      throw new Error(res.message);
+  for (const group of locGroups) {
+    const location = (group.location === 'อื่นๆ' ? group.customLoc : group.location).trim();
+    if (!location || !group.items.length) return showToast('กรุณาระบุชื่อจุดรับและเพิ่มของอย่างน้อย 1 รายการ', 'error');
+    for (const item of group.items) {
+      const name = item.name.trim(), qty = String(item.qty ?? '').trim();
+      if (!name || !qty) return showToast('กรุณากรอกชื่อและจำนวนสินค้าให้ครบ', 'error');
+      finalItems.push({name, qty, unit:item.unit ?? '', location,
+        originalIndex:item.originalIndex, removePhoto:item.removePhoto,
+        ...(item.image ? {image:item.image} : {})});
     }
-  } catch (e) {
-    btn.disabled = false; btn.textContent = '🚀 ยืนยันส่งงานทั้งหมด';
-    showToast(e.message || 'เกิดข้อผิดพลาดในการส่งข้อมูล', 'error');
+  }
+  const editing = Boolean(pickupPlan?.jobId);
+  if (!finalItems.length) {
+    if (!editing) return showToast('ยังไม่มีรายการสั่งของ', 'error');
+    if (!confirm('ยืนยันลบจุดรับของทั้งหมดสำหรับวันนี้?')) return;
+  } else if (!editing && !confirm(`ยืนยันส่งงาน ${finalItems.length} รายการให้คนขับ?`)) return;
+
+  const overlay = document.getElementById('purchase-overlay');
+  const list = document.getElementById('purchase-list');
+  const button = list.querySelector('.sticky-footer button');
+  const label = button.textContent;
+  savingPickupPlan = true;
+  list.inert = true;
+  button.textContent = 'กำลังบันทึก…';
+  try {
+    await apiPost(editing
+      ? {action:'savePickupPlan', date:pickupPlan.date, jobId:pickupPlan.jobId, items:finalItems}
+      : {action:'approvePurchase', items:finalItems});
+    overlay.classList.remove('visible');
+    showToast(editing ? 'บันทึกจุดรับของแล้ว' : 'ส่งงานสำเร็จ!');
+  } catch (error) {
+    showToast(error.message || 'เกิดข้อผิดพลาดในการบันทึก', 'error');
+  } finally {
+    savingPickupPlan = false;
+    list.inert = false;
+    button.textContent = label;
   }
 }
 
@@ -1348,7 +1410,7 @@ window.addEventListener('load', async () => {
     const dialog=document.getElementById('packing-editor'),form=dialog.querySelector('form');
     const select=form.elements.branch,rows=document.getElementById('packing-editor-rows'),message=document.getElementById('packing-editor-status');
     try {
-      const {data}=await apiGet('action=getPackingOrdersForAdmin');
+      let {data}=await apiGet('action=getPackingOrdersForAdmin');
       select.replaceChildren(...data.branches.map(branch=>new Option(branch,branch)));
       if(!select.options.length){showToast('ไม่พบสาขา');return;}
       function addRow(item=''){
@@ -1364,7 +1426,7 @@ window.addEventListener('load', async () => {
           field.append(input); row.append(field);
         }
         const remove=document.createElement('button');
-        remove.type='button'; remove.textContent='ลบรายการ'; remove.onclick=()=>row.remove();
+        remove.type='button'; remove.className='modal-btn secondary'; remove.textContent='ลบรายการ'; remove.onclick=()=>row.remove();
         row.append(remove); rows.append(row);
       }
       const render=()=>{rows.replaceChildren();message.textContent='';(Object.hasOwn(data.orders,select.value)?data.orders[select.value]:[]).forEach(addRow);};
@@ -1378,15 +1440,32 @@ window.addEventListener('load', async () => {
         if(!items.length&&!confirm('ลบทุกรายการจัดของของสาขานี้วันนี้ใช่ไหม?'))return;
         const controls=Array.from(form.elements);
         controls.forEach(control=>control.disabled=true);
+        message.textContent='กำลังบันทึก…';
         try{
           await apiPost({action:'savePackingOrders',date:data.date,branch,version:Object.hasOwn(data.versions,branch)?data.versions[branch]:'',original_items:Object.hasOwn(data.orders,branch)?data.orders[branch]:[],items});
-          dialog.close();
-          showToast('บันทึกรายการจัดของแล้ว');
+          try {
+            ({data}=await apiGet('action=getPackingOrdersForAdmin'));
+            render();
+            message.textContent='บันทึกแล้ว · สาขา '+branch;
+          } catch {
+            dialog.close();
+            showToast('บันทึกแล้ว แต่โหลดรายการล่าสุดไม่สำเร็จ');
+          }
         }catch(error){message.textContent=error.message;}
         finally{controls.forEach(control=>control.disabled=false);}
       };
       if(!dialog.open)dialog.showModal();
     }catch(error){showToast(error.message,'error');}
+  }
+  async function showPackingPreview() {
+    try {
+      const {data}=await apiGet('action=getPackingOrdersForAdmin');
+      const branches=Object.entries(data.orders).filter(([,items])=>items.length);
+      const summary=branches.map(([branch,items])=>branch+'\n'+items.map(item=>' • '+item).join('\n')).join('\n\n');
+      alert(summary ? 'รายการจัดของขึ้นรถ\n\n'+summary : 'วันนี้ยังไม่มีรายการจัดของขึ้นรถ');
+    } catch (error) {
+      showToast(error.message,'error');
+    }
   }
   async function showDriverView() {
   try {
@@ -1417,9 +1496,11 @@ window.addEventListener('load', async () => {
     <label>สาขา <select name="branch"></select></label>
     <p id="packing-editor-status" role="status"></p>
     <div id="packing-editor-rows"></div>
-    <button type="button" id="packing-editor-add">+ เพิ่มรายการ</button>
-    <button type="button" onclick="this.closest('dialog').close()">ยกเลิก</button>
-    <button type="submit">บันทึก</button>
+    <button type="button" class="driver-order-action" id="packing-editor-add">+ เพิ่มรายการ</button>
+    <div class="modal-btn-row">
+      <button type="button" class="modal-btn secondary" onclick="this.closest('dialog').close()">ยกเลิก</button>
+      <button type="submit" class="modal-btn primary">บันทึก</button>
+    </div>
   </form>
 </dialog>
 <script src="/employee-admin.js"></script>
