@@ -210,7 +210,7 @@ async function verifyPin() {
     const data = await easyApi('login', {pin: pinBuffer});
     localStorage.removeItem('easy_driver_session');
     sessionStorage.setItem('easy_firebase_token', data.token);
-    if (data.staff.role === 'driver') easyKeepDriverToken(data.token);
+    if (data.staff.role === 'driver') easyKeepDriverToken(data.token, data.expires);
     showWelcome(data.staff);
   } catch (error) {
     pinBuffer = '';
