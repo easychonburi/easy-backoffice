@@ -83,7 +83,7 @@ async function saveStock(body,user){
   const lineNotice=workOrders.length?await notify.after(()=>notify.line('📝 ใบสั่งงานครัวกลาง ('+day()+')\n\n'+workOrders.map(w=>`👉 ${w.name}: +${w.qty} ${w.unit}`).join('\n'))):{};
   return {success:true,log_id,workOrders,...notice,...lineNotice};
 }
-exports.actions=new Set(['getCentralTargets','updateCentralTarget','getDriverOrderQuantities','updateDriverOrderQuantity','getNotificationSettings','saveNotificationSettings','submitDriverPacking','getStaff','getBranches','getSettings','clockIn','clockOut','getTodayStatus','getTimesheets','upsertTimesheet','updateTimesheetOT','getPayrollRuns','savePayrollRun','markAdvancesDeducted','sendPayrollNotify','getAdvances','saveAdvance','getLeaves','saveLeave','deleteLeave','getStockItems','saveStockLog','getTodayStockOrders','getDriverOrders','getPickups','getPickupItemPhoto','getPackingOrdersForAdmin','savePackingOrders','getPendingPurchases','approvePurchase','submitDriverReturn','uploadDriverPhoto']);
+exports.actions=new Set(['getCentralTargets','updateCentralTarget','getDriverOrderQuantities','updateDriverOrderQuantity','getNotificationSettings','saveNotificationSettings','submitDriverPacking','getStaff','getBranches','getSettings','clockIn','clockOut','getTodayStatus','getTimesheets','upsertTimesheet','updateTimesheetOT','getPayrollRuns','savePayrollRun','markAdvancesDeducted','sendPayrollNotify','getAdvances','saveAdvance','getLeaves','saveLeave','deleteLeave','getStockItems','saveStockLog','getTodayStockOrders','getDriverOrders','getPickups','getPickupItemPhoto','getPickupPlan','savePickupPlan','getPackingOrdersForAdmin','savePackingOrders','getPendingPurchases','approvePurchase','submitDriverReturn','uploadDriverPhoto']);
 exports.handle=async(body,user,safe)=>{
   const action=body.action;
   if(action==='getBranches')return ok((await list('branches')).filter(b=>b.status==='active'));
@@ -100,13 +100,12 @@ exports.handle=async(body,user,safe)=>{
     if(action==='submitDriverPacking')return packing(body,user);
     if(action==='submitDriverReturn'){if(!Array.isArray(body.items))fail('รายการไม่ถูกต้อง');const log_id=id('ST_DRV');await db().collection('stock_logs').doc(log_id).set({log_id,branch_id:'DRIVER',branch_name:'รถคนขับ',mode:'return',items_json:JSON.stringify(body.items),orders_json:'[]',staff_id:user.staff_id,staff_name:user.nickname||user.name,checked_at:now()});return {success:true,...await notify.after(()=>notify.telegram(`📥 ${user.nickname||user.name} คืนสต็อกเรียบร้อย!\n${body.items.map(i=>i.name+' '+(i.qty??i.value??'')+' '+(i.unit||'')).join('\n')}`,'telegram_chat_driver'))};}
     if(action==='getPickups'||action==='getPickupItemPhoto'){
-      const job=(await db().collection('driver_jobs').where('date','==',day()).get()).docs
-        .map(doc=>({...doc.data(),id:doc.id})).sort((a,b)=>b.created_at.localeCompare(a.created_at))[0];
+      const job=await latestPickupJob(day());
       const items=job?JSON.parse(job.items_json):[];
       if(action==='getPickupItemPhoto'){
         const index=Number(body.index);
         if(!job||body.job_id!==job.id||!Number.isInteger(index)||!items[index]?.has_photo)fail('ไม่พบรูปสินค้า',404);
-        const photo=await jobPhotoRef(job.id,index).get();
+        const photo=await jobPhotoRef(items[index].photo_job_id || job.id,items[index].photo_index ?? index).get();
         if(!photo.exists)fail('ไม่พบรูปสินค้า',404);
         return ok({image:photo.data().image});
       }
@@ -120,6 +119,12 @@ exports.handle=async(body,user,safe)=>{
     return ok(await packingOrders());
   }
   admin(user);
+  if(action==='getPickupPlan'){
+    const date=day(), job=await latestPickupJob(date);
+    const items=job ? JSON.parse(job.items_json).map(({name,qty,unit,location,has_photo})=>({name,qty,unit,location,has_photo})) : [];
+    return ok({date,jobId:job?.id || '',items});
+  }
+  if(action==='savePickupPlan')return savePickupPlan(body);
   if(action==='getPackingOrdersForAdmin')return ok(await packingOrders(true));
   if(action==='savePackingOrders')return savePackingOrders(body);
   if(action==='getNotificationSettings')return ok(await notify.read());
@@ -155,6 +160,52 @@ exports.handle=async(body,user,safe)=>{
 function jobPhotoRef(jobId,index){
   return db().collection('driver_jobs').doc(jobId).collection('item_photos').doc(String(index));
 }
+async function latestPickupJob(date, transaction){
+  const query=db().collection('driver_jobs').where('date','==',date);
+  const snapshot=transaction ? await transaction.get(query) : await query.get();
+  return snapshot.docs.map(doc=>({...doc.data(),id:doc.id}))
+    .sort((a,b)=>b.created_at.localeCompare(a.created_at) || b.id.localeCompare(a.id))[0];
+}
+
+async function savePickupPlan(body){
+  const date=day();
+  if(body.date!==date)fail('เปลี่ยนวันแล้ว กรุณาเปิดรายการใหม่',409);
+  if(!Array.isArray(body.items)||body.items.length>150||typeof body.jobId!=='string')fail('รายการจุดรับของไม่ถูกต้อง');
+  const ref=db().collection('driver_jobs').doc();
+  await db().runTransaction(async transaction=>{
+    const current=await latestPickupJob(date,transaction);
+    if(!current||current.id!==body.jobId)fail('มีรายการใหม่แล้ว กรุณาเปิดหน้าจุดรับของอีกครั้ง',409);
+    const previous=JSON.parse(current.items_json);
+    const saved=body.items.map((item,index)=>{
+      if(!item)fail('รายการจุดรับของไม่ถูกต้อง');
+      const {name,qty,unit,location}=Object.fromEntries(['name','qty','unit','location'].map(key=>[key,txt(item[key])]));
+      if(!name||!qty||!location||[name,qty,unit,location].some(value=>value.length>250||/[<>"'`\\\x00-\x1f]/.test(value)))fail('กรอกชื่อ จำนวน และจุดรับของให้ครบ');
+      const row={name,qty,unit,location};
+      const original=Number.isInteger(item.originalIndex)?previous[item.originalIndex]:undefined;
+      if(item.image!==undefined){
+        validatePurchasePhoto(item.image);
+        transaction.set(jobPhotoRef(ref.id,index),{image:item.image});
+        row.has_photo=true;
+      } else if(original?.has_photo&&!item.removePhoto){
+        row.has_photo=true;
+        row.photo_job_id=original.photo_job_id||current.id;
+        row.photo_index=original.photo_index??item.originalIndex;
+      }
+      return row;
+    });
+    if(body.items.reduce((total,item)=>total+(item.image?.length||0),0)>7000000)fail('รูปในใบสั่งซื้อมีขนาดรวมเกิน 7 MB');
+    const created_at=new Date(Math.max(Date.now(),Date.parse(current.created_at)+1)).toISOString();
+    transaction.set(ref,{date,items_json:JSON.stringify(saved),status:current.status||'pending',created_at});
+  });
+  return {success:true};
+}
+
+function validatePurchasePhoto(image){
+  if(typeof image!=='string'||image.length>180000||!/^data:image\/jpeg;base64,[A-Za-z0-9+/]+={0,2}$/.test(image))fail('รูปสินค้าไม่ถูกต้องหรือใหญ่เกินไป');
+  const bytes=Buffer.from(image.split(',')[1],'base64');
+  if(bytes.length<4||bytes[0]!==255||bytes[1]!==216||bytes[bytes.length-2]!==255||bytes[bytes.length-1]!==217)fail('ไฟล์รูปสินค้าไม่ถูกต้อง');
+}
+
 async function savePurchase(items){
   if(!Array.isArray(items)||!items.length||items.length>150||
      items.some(item=>!item||!item.name||!item.location||!item.qty))fail('กรอกรายการสั่งของให้ครบ (สูงสุด 150 รายการ)');
@@ -162,9 +213,7 @@ async function savePurchase(items){
   let total=0;
   const saved=items.map(({name,qty,unit,location,image},index)=>{
     if(image===undefined)return {name,qty,unit,location};
-    if(typeof image!=='string'||image.length>180000||!/^data:image\/jpeg;base64,[A-Za-z0-9+/]+={0,2}$/.test(image))fail('รูปสินค้าไม่ถูกต้องหรือใหญ่เกินไป');
-    const bytes=Buffer.from(image.split(',')[1],'base64');
-    if(bytes.length<4||bytes[0]!==255||bytes[1]!==216||bytes[bytes.length-2]!==255||bytes[bytes.length-1]!==217)fail('ไฟล์รูปสินค้าไม่ถูกต้อง');
+    validatePurchasePhoto(image);
     total+=image.length;
     if(total>7000000)fail('รูปในใบสั่งซื้อมีขนาดรวมเกิน 7 MB');
     batch.set(jobPhotoRef(ref.id,index),{image});
