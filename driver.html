@@ -522,7 +522,10 @@
       const saved = localStorage.getItem(DRIVER_STATE_KEY);
       if (saved) { try { state = {...state, ...JSON.parse(saved)}; } catch {} }
       const today = new Date().toLocaleDateString('th-TH');
-      if (state.lastDate !== today) {
+      const shiftExpires = window.easyCurrentSession?.staff?.session_expires;
+      const shiftStartedOnSavedDay = Number.isFinite(shiftExpires) && shiftExpires > Date.now() &&
+        new Date(shiftExpires - 8 * 3600000).toLocaleDateString('th-TH') === state.lastDate;
+      if (state.lastDate !== today && !(state.checkedIn && shiftStartedOnSavedDay)) {
         state.packingData = {}; state.packingConfirmed = {}; state.deliveryData = {}; state.pickupData = {}; 
         state.stockChecked = false; state.returnStatus = 'locked'; state.checkedIn = false; 
         state.driverReturnValues = {}; // 🌟 ล้างค่าเช็คสต็อกเฉพาะตอนขึ้นวันใหม่
