@@ -92,6 +92,22 @@ async function saveWorkSettings(body) {
   await db.collection('settings').doc('work').set(row);
   return row;
 }
+const driverSessionMs = 8 * 3600000;
+async function driverShiftDeadline(staffId) {
+  const bangkok = time => new Date(time).toLocaleDateString('en-CA', {timeZone:'Asia/Bangkok'});
+  const now = Date.now();
+  const timesheets = db.collection('timesheets');
+  const records = await db.getAll(...[now, now - 86400000].map(time => timesheets.doc(staffId + '_' + bangkok(time))));
+  for (const record of records) {
+    const row = record.data();
+    if (row?.clock_in && !row.clock_out) {
+      const started = Date.parse(row.created_at || (row.date + 'T' + row.clock_in + ':00+07:00'));
+      if (Number.isFinite(started)) return started + driverSessionMs;
+    }
+  }
+  return null;
+}
+
 async function login(pin) {
   // Shared shop-wide limit also bounds distributed PIN guessing; includes successful attempts.
   const rate = db.collection('login_limits').doc('shop');
@@ -106,22 +122,38 @@ async function login(pin) {
   const staff = index.exists ? (await db.collection('staff').doc(index.data().staff_id).get()).data() : null;
   if (!staff || staff.status !== 'active' || !crypto.timingSafeEqual(crypto.scryptSync(pin, staff.pin_salt, 32), Buffer.from(staff.pin_hash, 'hex'))) fail('PIN ไม่ถูกต้อง', 401);
   const token = crypto.randomBytes(32).toString('base64url');
-  await db.collection('sessions').doc(digest(token)).set({staff_id: staff.staff_id, version: staff.version, expires: Date.now() + (staff.role === 'driver' ? 8 : 3) * 3600000});
-  return {staff: safe(staff), token};
+  const issuedAt = Date.now();
+  const deadline = staff.role === 'driver' ? await driverShiftDeadline(staff.staff_id) : null;
+  const expires = deadline > issuedAt ? deadline : issuedAt + (staff.role === 'driver' ? driverSessionMs : 3 * 3600000);
+  await db.collection('sessions').doc(digest(token)).set({staff_id:staff.staff_id,version:staff.version,issuedAt,expires});
+  return {staff:safe(staff),token,expires};
 }
 async function dispatch(body, token) {
   if (body.action === 'login') return login(body.pin);
   if (!/^[A-Za-z0-9_-]{43}$/.test(token)) fail('กรุณาเข้าสู่ระบบใหม่', 401);
   const ref = db.collection('sessions').doc(digest(token)), session = (await ref.get()).data();
-  if (!session || session.expires <= Date.now()) fail('เซสชันหมดอายุ', 401);
+  if (!session) fail('เซสชันหมดอายุ', 401);
   const staff = (await db.collection('staff').doc(session.staff_id).get()).data();
   if (!staff || staff.status !== 'active' || staff.version !== session.version) fail('กรุณาเข้าสู่ระบบใหม่', 401);
+  let expires = session.expires;
+  if (staff.role === 'driver') {
+    const deadline = await driverShiftDeadline(staff.staff_id);
+    const issuedAt = session.issuedAt ?? session.expires - driverSessionMs;
+    if (deadline && issuedAt < deadline && session.expires > deadline - driverSessionMs) expires = deadline;
+  }
+  if (expires <= Date.now()) fail('เซสชันหมดอายุ', 401);
   if (body.action === 'logout') { await ref.delete(); return true; }
-  if (body.action === 'me') return safe(staff);
+  if (body.action === 'me') return staff.role === 'driver' ? {...safe(staff), session_expires:expires} : safe(staff);
   if (profile.actions.has(body.action)) return profile.handle(body, staff);
   if (employee.actions.has(body.action)) return employee.handle(body, staff);
   if (['listDataRecords','deleteDataRecord','getPayrollPeriod','getStockHistory'].includes(body.action)) return dataAdmin.handle(body,staff,safe);
-  if (operations.actions.has(body.action)) return operations.handle(body, staff, safe);
+  if (operations.actions.has(body.action)) {
+    const result = await operations.handle(body, staff, safe);
+    if (body.action === 'clockIn' && staff.role === 'driver' && result.success) {
+      result.session_expires = await driverShiftDeadline(staff.staff_id);
+    }
+    return result;
+  }
   if (staff.role !== 'admin') fail('เฉพาะผู้ดูแล', 403);
   // Explicit admin-only reveal; never include PINs in staff lists or sessions.
   if (body.action === 'getStaffPin') {
