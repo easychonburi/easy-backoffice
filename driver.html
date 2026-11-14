@@ -462,14 +462,16 @@
       if (!session) { window.location.href = '/index.html'; return; }
       if (session.staff.role !== 'driver') { window.location.href = '/index.html'; return; }
       
-      currentStaff = session.staff; DRIVER_STATE_KEY += '_' + currentStaff.staff_id;
+      currentStaff = session.staff;
+      if (easyReadToken() && !localStorage.getItem('easy_driver_session')) easyKeepDriverToken(easyReadToken());
+      DRIVER_STATE_KEY += '_' + currentStaff.staff_id;
       document.getElementById('userNameDisplay').innerText = `สวัสดี ${currentStaff.nickname || currentStaff.name}`;
       
       loadState();
       setInterval(() => { document.getElementById('live-clock').innerText = new Date().toLocaleTimeString('th-TH'); }, 1000);
       
-      if (state.checkedIn) { showSection('tasks-section'); } else { showSection('dashboard-section'); }
-
+      const resume = state.activeSection;
+      const branch = state.activePackingBranch || BRANCHES[state.currentBranchIdx];
       restoreUIFromState();
       fetchHistory();
 
@@ -480,28 +482,57 @@
          showLoading(false);
       }
 
-      // 👻 สั่งเช็คสถานะเข้างานทันทีหลังโหลด ป้องกันผีหลอก
-      setTimeout(syncDriverClockIn, 800);
+      await syncDriverClockIn();
+      await restoreDriverSection(resume, branch);
     };
+
+    async function restoreDriverSection(section, packingBranch) {
+      if (!state.checkedIn || section === 'dashboard-section') return showSection('dashboard-section');
+      switch (section) {
+        case 'packing-overview-section': if (BRANCHES.length) return goPackingOverview(); break;
+        case 'packing-section':
+          if (BRANCHES.includes(packingBranch)) return startPackingListForBranch(BRANCHES.indexOf(packingBranch));
+          break;
+        case 'delivery-overview-section': return goDeliveryOverview();
+        case 'delivery-review-section':
+          if (BRANCHES.includes(state.currentDeliveryBranch) && state.deliveryData[state.currentDeliveryBranch] !== 'done')
+            return reviewDelivery(BRANCHES.indexOf(state.currentDeliveryBranch));
+          break;
+        case 'delivery-action-section':
+          if (BRANCHES.includes(state.currentDeliveryBranch) && state.deliveryData[state.currentDeliveryBranch] !== 'done')
+            return openDeliveryAction(state.currentDeliveryBranch);
+          break;
+        case 'pickup-overview-section': if (PICKUP_LOCS.length) return goPickupOverview(); break;
+        case 'pickup-section':
+          if (PICKUP_LOCS.includes(state.currentPickupLoc) && state.pickupData[state.currentPickupLoc] !== 'done')
+            return openPickupAction(state.currentPickupLoc);
+          break;
+        case 'return-stock-section': return goReturnStock();
+      }
+      showSection('tasks-section');
+    }
 
     function loadSession() { return window.easyCurrentSession; }
     
     function saveState() { 
-      localStorage.setItem(DRIVER_STATE_KEY, JSON.stringify(state)); 
+      try { localStorage.setItem(DRIVER_STATE_KEY, JSON.stringify(state)); } catch (error) { console.warn('Driver progress storage:', error); } 
     }
     
     function loadState() {
       const saved = localStorage.getItem(DRIVER_STATE_KEY);
-      if (saved) { try { state = JSON.parse(saved); } catch(e) { state = {}; } }
+      if (saved) { try { state = {...state, ...JSON.parse(saved)}; } catch {} }
       const today = new Date().toLocaleDateString('th-TH');
       if (state.lastDate !== today) {
         state.packingData = {}; state.packingConfirmed = {}; state.deliveryData = {}; state.pickupData = {}; 
         state.stockChecked = false; state.returnStatus = 'locked'; state.checkedIn = false; 
         state.driverReturnValues = {}; // 🌟 ล้างค่าเช็คสต็อกเฉพาะตอนขึ้นวันใหม่
+        state.activeSection = ''; state.activePackingBranch = ''; state.savedPickupItems = {}; state.deliveryPhoto = '';
         state.lastDate = today; saveState();
       }
       state.packingConfirmed ||= {};
       BRANCHES = Object.keys(state.packingData || {});
+      PICKUP_ITEMS_MAP = state.savedPickupItems || {};
+      PICKUP_LOCS = Object.keys(PICKUP_ITEMS_MAP);
       // ให้ชัวร์ว่าตัวแปรไม่พัง
       if (!state.driverReturnValues) state.driverReturnValues = {};
     }
@@ -516,7 +547,7 @@
         const data = await res.json();
         
         // ถ้ามีประวัติเข้างานแล้วของวันนี้
-        if (data.success && data.data.length > 0 && data.data[0].clock_in) {
+        if (data.success && data.data.length > 0 && data.data[0].clock_in && !data.data[0].clock_out) {
           if (!state.checkedIn) {
             state.checkedIn = true; 
             saveState(); 
@@ -526,7 +557,11 @@
       } catch(e) { console.log('Sync error:', e); }
     }
 
-    function showSection(id) { document.querySelectorAll('section').forEach(s => s.classList.add('hidden')); document.getElementById(id).classList.remove('hidden'); window.scrollTo(0,0); }
+    function showSection(id) {
+      state.activeSection = id;
+      if (id === 'packing-section') state.activePackingBranch = BRANCHES[state.currentBranchIdx];
+      saveState();
+      document.querySelectorAll('section').forEach(s => s.classList.add('hidden')); document.getElementById(id).classList.remove('hidden'); window.scrollTo(0,0); }
     function showLoading(s) { document.getElementById('loading').classList.toggle('show', s); }
     function showToast(m) { const t = document.getElementById('toast'); t.innerText = m; t.style.display = 'block'; setTimeout(() => t.style.display = 'none', 3000); }
     function goHome() { window.location.href = '/driver.html'; }
@@ -687,7 +722,8 @@
         const res = await easyLegacyFetch(`action=getPickups&with_photos=1`); 
         const json = await res.json();
         if (json.success && json.data) {
-          PICKUP_ITEMS_MAP = json.data; 
+          PICKUP_ITEMS_MAP = json.data;
+          state.savedPickupItems = json.data; 
           PICKUP_LOCS = Object.keys(json.data);
           PICKUP_LOCS.forEach(loc => { if (!state.pickupData[loc]) state.pickupData[loc] = 'pending'; });
           saveState(); 
@@ -754,7 +790,7 @@
         state.currentBranchIdx=BRANCHES.indexOf(branch);
         if(!state.packingConfirmed[branch])await easyPost({action:'submitDriverPacking',branch,items:state.packingData[branch]});
         state.packingConfirmed[branch]=true;saveState();
-        if(state.currentBranchIdx<BRANCHES.length-1){state.currentBranchIdx++;renderPackingList();window.scrollTo(0,0);}else{restoreUIFromState();showSection('tasks-section');}
+        if(state.currentBranchIdx<BRANCHES.length-1){state.currentBranchIdx++;renderPackingList();showSection('packing-section');}else{restoreUIFromState();showSection('tasks-section');}
       }catch(e){showToast(e.message);}finally{button.disabled=false;}
     }
 
@@ -794,8 +830,14 @@
       document.getElementById('delivery-review-items').replaceChildren(...rows);
       showSection('delivery-review-section');
     }
-    function openDeliveryAction(b) { state.currentDeliveryBranch = b; document.getElementById('delivery-title').innerText = " " + b; currentPhotoBase64 = ""; document.getElementById('real-photo-upload').value = ""; document.getElementById('photo-placeholder').classList.remove('hidden'); document.getElementById('photo-preview-container').classList.add('hidden'); document.getElementById('btn-confirm-delivery').classList.add('btn-disabled'); document.getElementById('btn-confirm-delivery').innerText = "ยืนยันส่งของ ✅"; showSection('delivery-action-section'); }
-    function handlePhotoUpload(e) { const f = e.target.files[0]; if(!f) return; const btn = document.getElementById('btn-confirm-delivery'); btn.innerText = "⏳ แปลงรูป..."; btn.classList.add('btn-disabled'); document.getElementById('photo-preview-img').src = URL.createObjectURL(f); document.getElementById('photo-placeholder').classList.add('hidden'); document.getElementById('photo-preview-container').classList.remove('hidden'); const r = new FileReader(); r.onload = function(ev) { const img = new Image(); img.onload = function() { const c = document.createElement('canvas'); const scale = Math.min(1, 500 / img.width); c.width = Math.round(img.width * scale); c.height = Math.round(img.height * scale); const ctx = c.getContext('2d'); ctx.drawImage(img, 0, 0, c.width, c.height); currentPhotoBase64 = c.toDataURL('image/jpeg', 0.5).split(',')[1]; btn.classList.remove('btn-disabled'); btn.innerText = "ยืนยันส่งของ ✅"; }; img.src = ev.target.result; }; r.readAsDataURL(f); }
+    function openDeliveryAction(b) { state.currentDeliveryBranch = b; document.getElementById('delivery-title').innerText = " " + b; currentPhotoBase64 = state.deliveryPhoto?.branch === b ? state.deliveryPhoto.data : ''; document.getElementById('real-photo-upload').value = ""; document.getElementById('photo-placeholder').classList.remove('hidden'); document.getElementById('photo-preview-container').classList.add('hidden'); document.getElementById('btn-confirm-delivery').classList.add('btn-disabled'); document.getElementById('btn-confirm-delivery').innerText = "ยืนยันส่งของ ✅"; if (currentPhotoBase64) {
+      document.getElementById('photo-preview-img').src = 'data:image/jpeg;base64,' + currentPhotoBase64;
+      document.getElementById('photo-placeholder').classList.add('hidden');
+      document.getElementById('photo-preview-container').classList.remove('hidden');
+      document.getElementById('btn-confirm-delivery').classList.remove('btn-disabled');
+    }
+    showSection('delivery-action-section'); }
+    function handlePhotoUpload(e) { const f = e.target.files[0]; if(!f) return; const btn = document.getElementById('btn-confirm-delivery'); btn.innerText = "⏳ แปลงรูป..."; btn.classList.add('btn-disabled'); document.getElementById('photo-preview-img').src = URL.createObjectURL(f); document.getElementById('photo-placeholder').classList.add('hidden'); document.getElementById('photo-preview-container').classList.remove('hidden'); const r = new FileReader(); r.onload = function(ev) { const img = new Image(); img.onload = function() { const c = document.createElement('canvas'); const scale = Math.min(1, 500 / img.width); c.width = Math.round(img.width * scale); c.height = Math.round(img.height * scale); const ctx = c.getContext('2d'); ctx.drawImage(img, 0, 0, c.width, c.height); currentPhotoBase64 = c.toDataURL('image/jpeg', 0.5).split(',')[1]; state.deliveryPhoto = {branch:state.currentDeliveryBranch,data:currentPhotoBase64}; saveState(); btn.classList.remove('btn-disabled'); btn.innerText = "ยืนยันส่งของ ✅"; }; img.src = ev.target.result; }; r.readAsDataURL(f); }
     async function finishDelivery() {
       const btn = document.getElementById('btn-confirm-delivery'); if(btn.classList.contains('btn-disabled')) return;
       btn.innerText = "กำลังบันทึกภาพ"; btn.classList.add('btn-disabled');
