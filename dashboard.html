@@ -401,6 +401,9 @@
 @media(max-width:430px){.form-row{flex-wrap:wrap}.form-row>div{flex-basis:100%}.modal-sheet{max-height:90dvh;overflow-y:auto}.cal-grid{min-width:0}.cal-cell{min-width:0}.detail-sheet{max-width:100vw}.bank-account{overflow-wrap:anywhere}}
   .driver-order-action { width:100%; padding:12px; background:#EFF6FF; border:1.5px solid #BFDBFE; border-radius:12px; font-family:'Prompt',sans-serif; font-size:14px; color:#1D4ED8; cursor:pointer; }
   .driver-order-action + .driver-order-action { margin-top:8px; }
+  .pickup-location-actions { display:flex; align-items:center; gap:6px; flex-shrink:0; }
+  .pickup-location-actions button[aria-label] { width:36px; height:36px; border:1px solid var(--border); border-radius:8px; background:var(--blue-bg); color:var(--blue); font:600 16px 'Prompt',sans-serif; cursor:pointer; }
+  .pickup-location-actions button:disabled { opacity:.4; cursor:default; }
 </style>
 <link rel="stylesheet" href="/employee.css">
 </head>
@@ -1126,12 +1129,27 @@ function addPickupLocation() {
   addBlankRow(locGroups.length - 1);
 }
 
+function movePickupLocation(index, direction) {
+  const next = index + direction;
+  if (savingPickupPlan || next < 0 || next >= locGroups.length) return;
+  [locGroups[index], locGroups[next]] = [locGroups[next], locGroups[index]];
+  renderPurchaseSheet();
+  const buttons = document.querySelectorAll('.pickup-location-actions');
+  const button = buttons[next]?.querySelectorAll('button')[direction === -1 ? 0 : 1];
+  if (button?.disabled) buttons[next].querySelector('button:not(:disabled)')?.focus();
+  else button?.focus();
+}
+
 function renderLocationBox(group, gIdx) {
   return `
     <div class="loc-box">
       <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; border-bottom:1px solid var(--border); padding-bottom:12px;">
         <div style="font-weight:600; font-size:16px; color:var(--red);">📌 ${group.location}</div>
+        <div class="pickup-location-actions">
+          <button type="button" onclick="movePickupLocation(${gIdx}, -1)" ${gIdx === 0 ? 'disabled' : ''} aria-label="เลื่อนจุดรับของขึ้น">↑</button>
+          <button type="button" onclick="movePickupLocation(${gIdx}, 1)" ${gIdx === locGroups.length - 1 ? 'disabled' : ''} aria-label="เลื่อนจุดรับของลง">↓</button>
         <button onclick="removeLocGroup(${gIdx})" style="background:none; border:none; color:var(--danger); font-size:13px; text-decoration:underline; cursor:pointer;">− ลบจุดนี้</button>
+        </div>
       </div>
       
       ${group.location === 'อื่นๆ' ? `<input type="text" placeholder="ระบุชื่อสถานที่..." value="${pickupText(group.customLoc)}" oninput="locGroups[${gIdx}].customLoc=this.value" style="width:100%; padding:10px; border-radius:8px; border:1px solid var(--border); margin-bottom:12px; font-family:'Prompt';">` : ''}
