@@ -692,8 +692,10 @@
           PICKUP_LOCS.forEach(loc => { if (!state.pickupData[loc]) state.pickupData[loc] = 'pending'; });
           saveState(); 
           restoreUIFromState();
+          return true;
         }
       } catch (e) {}
+      return false;
     }
 
     // --- ด่าน 1: จัดของ ---
@@ -818,7 +820,7 @@
     }
 
     // --- ด่าน 3: รับของ ---
-    function goPickupOverview() { if(PICKUP_LOCS.length === 0) { showToast("ไม่มีจุดรับของ"); return; } document.getElementById('pickup-overview-list').innerHTML = PICKUP_LOCS.map((l) => { const done = state.pickupData[l] === 'done'; return `<div class="overview-item ${done ? 'disabled' : ''}" onclick="${done ? '' : `openPickupAction('${l}')`}"><span class="overview-name">${l}</span><span class="badge ${done ? 'done' : 'todo'}">${done ? 'รับแล้ว' : 'รอรับ'}</span></div>`; }).join(''); showSection('pickup-overview-section'); }
+    async function goPickupOverview() { if (!(await fetchPickupData())) { showToast("โหลดจุดรับของล่าสุดไม่สำเร็จ"); return; } if(PICKUP_LOCS.length === 0) { showToast("ไม่มีจุดรับของ"); return; } document.getElementById('pickup-overview-list').innerHTML = PICKUP_LOCS.map((l) => { const done = state.pickupData[l] === 'done'; return `<div class="overview-item ${done ? 'disabled' : ''}" onclick="${done ? '' : `openPickupAction('${l}')`}"><span class="overview-name">${l}</span><span class="badge ${done ? 'done' : 'todo'}">${done ? 'รับแล้ว' : 'รอรับ'}</span></div>`; }).join(''); showSection('pickup-overview-section'); }
     function openPickupAction(location) {
       state.currentPickupLoc = location;
       document.getElementById('pickup-title').textContent = location;
