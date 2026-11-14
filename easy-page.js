@@ -7,7 +7,7 @@ window.easyPost = async body => {
 };
 window.easyGet = query => easyPost(Object.fromEntries(new URLSearchParams(query)));
 window.easyLegacyFetch = async (query,options) => {const result=options ? await easyPost(JSON.parse(options.body)) : await easyGet(query);return {json:async()=>result};};
-window.easyLogout = async () => {try {await easyApi('logout');sessionStorage.removeItem('easy_firebase_token');location.href='/index.html';}catch(error){alert(error.message);}};
+window.easyLogout = async () => {try {await easyApi('logout');easyClearToken();location.href='/index.html';}catch(error){alert(error.message);}};
 window.easyPageReady = (async()=>{
  try {const staff=await easyApi('me');window.easyCurrentSession={staff,role:staff.role};window.easyBranches=(await easyGet('action=getBranches')).data;}
  catch {window.easyCurrentSession=null;location.replace('/index.html');}
