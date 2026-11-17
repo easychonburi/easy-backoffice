@@ -155,6 +155,19 @@
 /* Only narrow overflow fixes; original EASY layout remains. */
 *{min-width:0}.toast{white-space:normal;overflow-wrap:anywhere}.att-info,.advance-info,.payroll-item-info{min-width:0}.att-name,.advance-name,.header-greeting{overflow-wrap:anywhere}
 @media(max-width:430px){.form-row{flex-wrap:wrap}.form-row>div{flex-basis:100%}.modal-sheet{max-height:90dvh;overflow-y:auto}.cal-grid{min-width:0}.cal-cell{min-width:0}.detail-sheet{max-width:100vw}.bank-account{overflow-wrap:anywhere}}
+  #delivery-notice {
+    width: min(calc(100% - 32px), 520px); margin: auto; padding: 28px 20px;
+    border: 0; border-radius: 22px; background: var(--white); color: var(--text); text-align: center;
+  }
+  #delivery-notice::backdrop { background: #000a; }
+  #delivery-notice h2 { font-size: clamp(21px, 5vw, 28px); line-height: 1.4; }
+  #delivery-notice p { font-size: 19px; margin: 14px 0 22px; }
+  #delivery-notice button { width: 100%; padding: 13px; border: 0; border-radius: 12px; background: #C81D24; color: white; font: inherit; font-weight: 600; }
+  .order-quantity { margin-top: 9px; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .order-quantity:not([hidden]) { display: flex; }
+  .order-quantity .num-input { width: 100px; }
+  #custom-order-qty { flex: 0 1 130px; min-width: 0; }
+  .custom-order-row { flex-wrap: wrap; }
 </style>
 </head>
 <body>
@@ -215,6 +228,11 @@
   <button class="btn-primary" onclick="handleSave()">บันทึกข้อมูล</button>
 </div>
 
+<dialog id="delivery-notice" aria-labelledby="delivery-notice-title">
+  <h2 id="delivery-notice-title">ระบบส่งของมีการเปลี่ยนแปลงเป็นส่งวันเว้นวัน</h2>
+  <p>กรุณาสั่งของให้เพียงพอสำหรับ <strong>2 วัน</strong></p>
+  <form method="dialog"><button value="acknowledged">รับทราบ</button></form>
+</dialog>
 <div class="summary-overlay" id="summary-sheet">
   <div class="summary-sheet">
     <div class="sheet-handle"></div>
@@ -363,7 +381,29 @@ async function loadAdminHistory(){
  }catch(e){if(request===stockHistoryVersion)container.textContent=e.message||'โหลดข้อมูลไม่สำเร็จ';}
 }
 
-async function selectMode(mode) {
+const deliveryNotice = document.getElementById('delivery-notice');
+deliveryNotice.addEventListener('cancel', event => event.preventDefault());
+deliveryNotice.addEventListener('close', () => {
+  if (deliveryNotice.returnValue === 'acknowledged') startStockCheck('close');
+});
+function isCentralBranch() {
+  return currentStaff.branch_id === 'BR005' || currentBranchName.includes('หนองตำลึง');
+}
+function requiresOrderQuantity() {
+  return currentMode === 'close' && !isCentralBranch();
+}
+function validOrderQuantity(value) {
+  return /^\d+(?:\.\d+)?$/.test(value) && Number(value) > 0 && Number(value) <= 1000000;
+}
+function selectMode(mode) {
+  if (mode === 'close' && !isCentralBranch()) {
+    deliveryNotice.returnValue = '';
+    deliveryNotice.showModal();
+    return;
+  }
+  startStockCheck(mode);
+}
+async function startStockCheck(mode) {
   // 🛠️ แก้ไข 6: แจ้งเตือนสติให้พนักงานครัวกลาง
   if (mode === 'open' && currentBranchName.includes('หนองตำลึง')) {
       alert('⚠️ กรุณาเช็ค "เฉพาะสิ่งที่ทำเสร็จแล้ว" เท่านั้นนะครับ');
@@ -417,6 +457,14 @@ function renderStockItems() {
             <div class="item-name">${item.name}</div>
             ${currentMode === 'close' ? `<button class="order-toggle" id="btn_order_${safeId}" onclick="toggleOrder('${item.name}', '${safeId}')">+ สั่งเพิ่ม</button>` : ''}
           </div>`;
+      if (requiresOrderQuantity()) {
+        html += `<div class="order-quantity" id="order_qty_row_${safeId}" hidden>
+          <label for="order_qty_${safeId}">จำนวนที่ต้องการสั่ง</label>
+          <input type="number" class="num-input" step="any" inputmode="decimal" id="order_qty_${safeId}"
+            placeholder="จำนวน" aria-label="จำนวนที่ต้องการสั่ง ${item.name}" oninput="orderRequests['${item.name}'] = this.value">
+          <span class="unit-text">${item.unit || 'หน่วย'}</span>
+        </div>`;
+      }
       if (!item.orderOnly) {
          html += `<div class="input-area">`;
          const step = item.type === 'free' ? 'any' : '1';
@@ -434,7 +482,7 @@ function renderStockItems() {
       html += `</div>`;
     });
   });
-  if (currentMode === 'close') { html += `<div class="cat-title">✍️ สั่งอื่นๆ เพิ่มเติม</div><div class="item-card"><div class="custom-order-row"><input type="text" id="custom-inp" class="custom-input" placeholder="เช่น โพสอิท, เทปใส"><button class="add-btn" onclick="addCustom()">เพิ่ม</button></div><div class="custom-list" id="custom-list"></div></div>`; }
+  if (currentMode === 'close') { html += `<div class="cat-title">✍️ สั่งอื่นๆ เพิ่มเติม</div><div class="item-card"><div class="custom-order-row"><input type="text" id="custom-inp" class="custom-input" maxlength="100" placeholder="เช่น โพสอิท, เทปใส">${requiresOrderQuantity() ? '<input type="number" id="custom-order-qty" class="custom-input" step="any" inputmode="decimal" placeholder="จำนวน (หน่วย)" aria-label="จำนวนสั่งเพิ่มเติม">' : ''}<button class="add-btn" onclick="addCustom()">เพิ่ม</button></div><div class="custom-list" id="custom-list"></div></div>`; }
   container.innerHTML = html;
 }
 
@@ -486,11 +534,21 @@ function saveValueAndUpdateUI(name, safeId, finalStr) {
 
 function toggleOrder(name, safeId) {
     const btn = document.getElementById(`btn_order_${safeId}`);
-    if(orderRequests[name]) { delete orderRequests[name]; btn.classList.remove('active'); btn.textContent = '+ สั่งเพิ่ม'; } 
-    else { orderRequests[name] = true; btn.classList.add('active'); btn.textContent = '✓ สั่งแล้ว'; }
+    const selected = !Object.hasOwn(orderRequests, name);
+    if (selected) orderRequests[name] = requiresOrderQuantity() ? '' : true;
+    else delete orderRequests[name];
+    btn.classList.toggle('active', selected);
+    btn.textContent = selected ? '✓ สั่งแล้ว' : '+ สั่งเพิ่ม';
+    if (requiresOrderQuantity()) {
+        const input = document.getElementById(`order_qty_${safeId}`);
+        input.parentElement.hidden = !selected;
+        input.required = selected;
+        input.value = '';
+        if (selected) input.focus();
+    }
     const itemDef = inventoryData.find(i => i.name === name);
     if(itemDef && itemDef.orderOnly) {
-         if(orderRequests[name]) document.getElementById(`card_${safeId}`).classList.add('filled');
+         if(selected) document.getElementById(`card_${safeId}`).classList.add('filled');
          else document.getElementById(`card_${safeId}`).classList.remove('filled');
          updateProgress();
     }
@@ -500,14 +558,39 @@ function addCustom() {
     const inp = document.getElementById('custom-inp');
     const val = inp.value.trim();
     if(!val) return;
+    const qtyInput = document.getElementById('custom-order-qty');
+    const qty = qtyInput?.value;
+    if (qtyInput && !validOrderQuantity(qty)) {
+        showToast('กรุณากรอกจำนวนที่ต้องการสั่งเพิ่ม', 'error');
+        qtyInput.focus();
+        return false;
+    }
+    if (qtyInput && (inventoryData.some(item => item.name === val) || customOrders.some(item => item.name === val))) {
+        showToast('รายการนี้มีอยู่แล้ว กรุณาแก้จำนวนที่รายการเดิม', 'error');
+        return false;
+    }
     const id = Date.now();
-    customOrders.push({id, name: val});
+    customOrders.push({id, name: val, qty});
+    if (qtyInput) qtyInput.value = '';
+
     inp.value = ''; renderCustom();
+    return true;
 }
 function delCustom(id) { customOrders = customOrders.filter(c => c.id !== id); renderCustom(); }
 function renderCustom() {
     const list = document.getElementById('custom-list');
-    list.innerHTML = customOrders.map(c => `<div class="custom-item"><span>${c.name}</span><button class="del-btn" onclick="delCustom(${c.id})">✕ ลบ</button></div>`).join('');
+    list.replaceChildren(...customOrders.map(order => {
+        const row = document.createElement('div');
+        row.className = 'custom-item';
+        const label = document.createElement('span');
+        label.textContent = order.qty ? `${order.name} ${order.qty} หน่วย` : order.name;
+        const button = document.createElement('button');
+        button.className = 'del-btn';
+        button.textContent = '✕ ลบ';
+        button.onclick = () => delCustom(order.id);
+        row.append(label, button);
+        return row;
+    }));
 }
 
 function updateProgress() {
@@ -522,12 +605,34 @@ function updateProgress() {
     if(pct === 100) document.getElementById('prog-bar').style.background = 'var(--green)'; else document.getElementById('prog-bar').style.background = 'var(--yellow)';
 }
 
+function checkOrderQuantities() {
+    if (!requiresOrderQuantity()) return true;
+    for (const [name, qty] of Object.entries(orderRequests)) {
+        if (validOrderQuantity(qty)) continue;
+        const safeId = name.replace(/[^a-zA-Z0-9ก-๙]/g, '_');
+        document.getElementById(`order_qty_${safeId}`).focus();
+        showToast('กรุณากรอกจำนวนที่ต้องการสั่ง: ' + name, 'error');
+        return false;
+    }
+    return !document.getElementById('custom-inp')?.value.trim() || addCustom();
+}
 function handleSave() {
+    if (!checkOrderQuantities()) return;
     if(currentMode === 'close') {
-        const orderList = [...Object.keys(orderRequests), ...customOrders.map(c => c.name)];
+        const orderList = [
+            ...Object.entries(orderRequests).map(([name, qty]) => requiresOrderQuantity()
+                ? `${name} ${qty} ${inventoryData.find(item => item.name === name)?.unit || 'หน่วย'}`
+                : name),
+            ...customOrders.map(order => order.qty ? `${order.name} ${order.qty} หน่วย` : order.name),
+        ];
         if(orderList.length > 0) {
             const sList = document.getElementById('summary-list');
-            sList.innerHTML = orderList.map(o => `<div class="summary-item"><span style="font-weight: 500; color: var(--text);">${o}</span><span style="color: var(--green); font-weight: 600;">✓</span></div>`).join('');
+            sList.replaceChildren(...orderList.map(label => {
+                const row = document.createElement('div');
+                row.className = 'summary-item';
+                row.textContent = label;
+                return row;
+            }));
             document.getElementById('summary-sheet').classList.add('visible');
         } else { confirmSubmit(); }
     } else { confirmSubmit(); }
@@ -535,11 +640,8 @@ function handleSave() {
 
 function closeSummary() { document.getElementById('summary-sheet').classList.remove('visible'); }
 
-// จำนวนสั่งเพิ่มจัดการจากหน้า Admin
-// Quantities are read from Admin settings on every stock submission.
-
-
 async function confirmSubmit() {
+    if (!checkOrderQuantities()) { closeSummary(); return; }
     closeSummary();
     const modal = document.getElementById('central-modal');
     const icon = document.getElementById('central-icon');
@@ -556,11 +658,16 @@ async function confirmSubmit() {
         return { name: name, value: stockValues[name], unit: iDef ? iDef.unit : '' };
     });
     
-    // Backend เติมจำนวนล่าสุดจากการตั้งค่าก่อนบันทึกคำสั่งให้ Driver
     const formattedOrders = Object.keys(orderRequests);
     const finalOrders = [...formattedOrders, ...customOrders.map(c => c.name)];
 
     const payload = { action: 'saveStockLog', branch_id: currentStaff.branch_id, mode: currentMode, staff_id: currentStaff.staff_id, progress: parseInt(pctStr) || 0, stocks: finalStocks, orders: finalOrders, order_names: formattedOrders, custom_orders: customOrders.map(c => c.name) };
+    if (requiresOrderQuantity()) {
+        payload.requested_orders = [
+            ...Object.entries(orderRequests).map(([name, qty]) => ({name, qty})),
+            ...customOrders.map(({name, qty}) => ({name, qty, custom: true})),
+        ];
+    }
     
     try {
         const res = await apiPost(payload);
@@ -583,7 +690,7 @@ async function confirmSubmit() {
         }
     } catch(e) { 
         modal.classList.remove('show');
-        showToast('เชื่อมต่อไม่สำเร็จ', 'error'); 
+        showToast(e.message || 'เชื่อมต่อไม่สำเร็จ', 'error'); 
     }
 }
 

@@ -71,13 +71,38 @@ async function savePayroll(body,safe){
   return {success:true,run_id:ref.id};
 }
 const cutoffNoon=()=>{const noon=new Date(day()+'T12:00:00+07:00');return Date.now()<noon.getTime()?noon.getTime()-86400000:noon.getTime();};
+const isCentralStock = branch => branch.branch_id === 'BR005' || (branch.branch_name || branch.name || '').includes('หนองตำลึง');
+function stockOrderQuantity(value, name) {
+  if (typeof value !== 'string' && typeof value !== 'number') fail('กรุณากรอกจำนวนที่ต้องการสั่ง: ' + name);
+  const qty = Number(value);
+  if (!/^\d+(?:\.\d+)?$/.test(String(value)) || !Number.isFinite(qty) || qty <= 0 || qty > 1000000) {
+    fail('กรุณากรอกจำนวนที่ต้องการสั่งมากกว่า 0 และไม่เกิน 1,000,000: ' + name);
+  }
+  return value;
+}
+function manualStockOrders(body, branch) {
+  const requested = body.requested_orders;
+  if (requested === undefined && !body.orders.length && !body.order_names?.length && !body.custom_orders?.length) return [];
+  if (!Array.isArray(requested) || requested.length > 150) fail('กรุณาเปิดหน้าเช็คสต็อกใหม่และกรอกจำนวนที่ต้องการสั่ง');
+  const catalogue = new Map(getItemsListByMode('close', branch.branch_id).map(item => [item.name, item]));
+  const names = new Set();
+  return requested.map(order => {
+    const name = typeof order?.name === 'string' ? order.name.trim() : '';
+    if (!name || name.length > 100 || /[\x00-\x1f\x7f]/.test(name) || names.has(name)) fail('ชื่อรายการสั่งเพิ่มไม่ถูกต้องหรือซ้ำกัน');
+    const item = catalogue.get(name);
+    if (!item && order.custom !== true) fail('ไม่พบรายการสั่งเพิ่ม: ' + name);
+    names.add(name);
+    return name + ' ' + stockOrderQuantity(order.qty, name) + ' ' + (item?.unit || 'หน่วย');
+  });
+}
 async function saveStock(body,user){
   const branchId=user.role==='admin'?body.branch_id:user.branch_id,branch=await get('branches',branchId||'_none');if(!branch||branch.status!=='active')fail('กรุณาเลือกสาขาที่เปิดใช้งาน');
   if(!['open','close'].includes(body.mode)||!Array.isArray(body.stocks)||!Array.isArray(body.orders))fail('ข้อมูลสต็อกไม่ถูกต้อง');
   const log_id=id('ST'),workOrders=[];
-  if(body.order_names){if(!Array.isArray(body.order_names)||!Array.isArray(body.custom_orders))fail('รายการสั่งเพิ่มไม่ถูกต้อง');const quantities=await shop.quantities();body.orders=[...body.order_names.map(name=>quantities[name]?`${name} ${quantities[name]}`:String(name)),...body.custom_orders.map(String)];}
+  if (body.mode === 'close' && !isCentralStock(branch)) body.orders = manualStockOrders(body, branch);
+  else if(body.order_names){if(!Array.isArray(body.order_names)||!Array.isArray(body.custom_orders))fail('รายการสั่งเพิ่มไม่ถูกต้อง');const quantities=await shop.quantities();body.orders=[...body.order_names.map(name=>quantities[name]?`${name} ${quantities[name]}`:String(name)),...body.custom_orders.map(String)];}
   const targets=await shop.targets();
-  if((branch.branch_id==='BR005'||branch.name.includes('หนองตำลึง'))&&body.mode==='open')for(const s of body.stocks){const target=targets.find(t=>t.item_name===s.name);if(!target)continue;const val=parseFloat(s.value)||0,qty=Number(target.target_qty)||0,ratio=Number(target.conversion_ratio)||1;let batches=0;if(target.trigger_type==='zero'&&val===0)batches=Math.ceil(qty/ratio);else if(target.trigger_type==='diff'&&qty>val)batches=Math.ceil((qty-val)/ratio);if(batches>0)workOrders.push({name:s.name,qty:batches,unit:target.production_unit});}
+  if(isCentralStock(branch)&&body.mode==='open')for(const s of body.stocks){const target=targets.find(t=>t.item_name===s.name);if(!target)continue;const val=parseFloat(s.value)||0,qty=Number(target.target_qty)||0,ratio=Number(target.conversion_ratio)||1;let batches=0;if(target.trigger_type==='zero'&&val===0)batches=Math.ceil(qty/ratio);else if(target.trigger_type==='diff'&&qty>val)batches=Math.ceil((qty-val)/ratio);if(batches>0)workOrders.push({name:s.name,qty:batches,unit:target.production_unit});}
   await db().collection('stock_logs').doc(log_id).set({log_id,branch_id:branchId,branch_name:branch.name,mode:body.mode,items_json:JSON.stringify(body.stocks),orders_json:JSON.stringify(body.orders),staff_id:user.staff_id,staff_name:user.nickname||user.name,checked_at:now()});
   const notice=await notify.after(()=>notify.telegram(`📦 สรุปเช็คสต็อก (${body.mode==='open'?'เปิดร้าน':'ปิดร้าน'})\n📍 สาขา: ${branch.name}\n👤 พนักงาน: ${user.nickname||user.name}\n\n🟡 สต๊อกคงเหลือ\n${body.stocks.map(s=>s.name+' '+s.value+' '+(s.unit||'')).join('\n')}${body.mode==='close'&&body.orders.length?'\n🚨 รายการที่ต้องสั่งเพิ่ม:\n'+body.orders.join('\n'):''}`,body.mode==='open'?'telegram_chat_stock_open':'telegram_chat_stock_close'));
   const lineNotice=workOrders.length?await notify.after(()=>notify.line('📝 ใบสั่งงานครัวกลาง ('+day()+')\n\n'+workOrders.map(w=>`👉 ${w.name}: +${w.qty} ${w.unit}`).join('\n'))):{};
@@ -100,7 +125,19 @@ exports.handle=async(body,user,safe)=>{
     if(action==='submitDriverPacking')return packing(body,user);
     if(action==='submitDriverReturn'){if(!Array.isArray(body.items))fail('รายการไม่ถูกต้อง');const log_id=id('ST_DRV');await db().collection('stock_logs').doc(log_id).set({log_id,branch_id:'DRIVER',branch_name:'รถคนขับ',mode:'return',items_json:JSON.stringify(body.items),orders_json:'[]',staff_id:user.staff_id,staff_name:user.nickname||user.name,checked_at:now()});return {success:true,...await notify.after(()=>notify.telegram(`📥 ${user.nickname||user.name} คืนสต็อกเรียบร้อย!\n${body.items.map(i=>i.name+' '+(i.qty??i.value??'')+' '+(i.unit||'')).join('\n')}`,'telegram_chat_driver'))};}
     if(action==='getPickups'){const job=(await list('driver_jobs')).filter(j=>j.date===day()).sort((a,b)=>b.created_at.localeCompare(a.created_at))[0],group={};for(const item of job?JSON.parse(job.items_json):[])(group[item.location]??=[]).push(`${item.name} ${item.qty} ${item.unit}`);return ok(group);}
-    const group={};for(const log of (await list('stock_logs')).filter(l=>l.mode==='close'&&Date.parse(l.checked_at)>=Date.now()-18*3600000&&l.branch_id!=='BR005'&&!l.branch_name.includes('หนองตำลึง'))){const key=log.branch_name||log.branch_id;for(const item of JSON.parse(log.orders_json||'[]')){group[key]??=[];if(!group[key].includes(item))group[key].push(item);}}return ok(group);
+    const latestByBranch = new Map();
+    const cutoff = Date.now() - 18 * 3600000;
+    for (const log of await list('stock_logs')) {
+      if (log.mode !== 'close' || isCentralStock(log) || !(Date.parse(log.checked_at) >= cutoff)) continue;
+      const previous = latestByBranch.get(log.branch_id);
+      if (!previous || log.checked_at > previous.checked_at) latestByBranch.set(log.branch_id, log);
+    }
+    const group = Object.create(null);
+    for (const log of latestByBranch.values()) {
+      const orders = [...new Set(JSON.parse(log.orders_json || '[]'))];
+      if (orders.length) group[log.branch_name || log.branch_id] = orders;
+    }
+    return ok(group);
   }
   admin(user);
   if(action==='getNotificationSettings')return ok(await notify.read());
@@ -139,7 +176,7 @@ async function packing(body,user){
   let missing=false;
   const lines=items.map(item=>{
     const name=txt(item.name);if(!name||name.length>250||!['ok','partial','no'].includes(item.status))fail('กรุณาเลือกครบ/ขาดให้ทุกรายการ');
-    const match=name.match(/^(.*?)\s+(\d+(?:\.\d+)?)\s+(.+)$/),qty=match?Number(match[2]):null,unit=match?match[3]:'';
+    const match=name.match(/^(.+)\s+(\d+(?:\.\d+)?)\s+(.+)$/),qty=match?Number(match[2]):null,unit=match?match[3]:'';
     if(item.status==='ok')return '- '+name+' — ครบ';
     missing=true;
     if(item.status==='no')return '- '+name+' — ขาดทั้งหมด'+(qty===null?' (ต้นทางไม่ระบุจำนวน)':' '+qty+' '+unit);

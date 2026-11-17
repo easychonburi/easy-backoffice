@@ -743,18 +743,21 @@
     }
     function startPackingListForBranch(idx) { state.currentBranchIdx = idx; renderPackingList(); showSection('packing-section'); }
     function startPackingList() { if (BRANCHES.length === 0) return; state.currentBranchIdx = BRANCHES.findIndex(b => (state.packingData[b] || []).some(i => i.status === 'pending')); if(state.currentBranchIdx === -1) state.currentBranchIdx = 0; renderPackingList(); showSection('packing-section'); }
+    function escapePackingText(value) {
+      return String(value).replace(/[&<>"']/g, char => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));
+    }
     function renderPackingList() {
       const bName = BRANCHES[state.currentBranchIdx]; document.getElementById('packing-title').innerText = " " + bName;
-      document.getElementById('packing-list-container').innerHTML = (state.packingData[bName] || []).map((item) => {
-        const match = item.name.match(/^(.*?)\s+(\d+(?:\.\d+)?\s+.*)$/); const n = match ? match[1].trim() : item.name; const q = match ? match[2].trim() : '';
+      document.getElementById('packing-list-container').innerHTML = (state.packingData[bName] || []).map((item, index) => {
+        const match = item.name.match(/^(.+)\s+(\d+(?:\.\d+)?\s+.*)$/); const n = match ? match[1].trim() : item.name; const q = match ? match[2].trim() : '';
         const rowDone = (item.status === 'ok') || (item.status === 'no') || (item.status === 'partial' && String(item.actualQty ?? '').trim().length > 0);
-        return `<div class="item-row ${rowDone ? 'done' : ''}"><div style="display:flex; justify-content:space-between; margin-bottom:8px;"><strong style="font-size:1.1rem;">${n}</strong><strong style="color:#EF4444;">${q}</strong></div>
+        return `<div class="item-row ${rowDone ? 'done' : ''}"><div style="display:flex; justify-content:space-between; margin-bottom:8px;"><strong style="font-size:1.1rem;">${escapePackingText(n)}</strong><strong style="color:#EF4444;">${escapePackingText(q)}</strong></div>
                 <div style="display:flex; gap:8px; margin-bottom: 8px;">
-                  <button style="flex:1; padding:8px; border-radius:8px; border:1px solid #D1D5DB; background:${item.status==='ok'?'#DCFCE7':'#fff'}; color:${item.status==='ok'?'#166534':'#333'}" onclick="updateItem('${item.name}','ok')">ครบ</button>
-                  <button style="flex:1; padding:8px; border-radius:8px; border:1px solid #D1D5DB; background:${item.status==='partial'?'#FEF9C3':'#fff'}; color:${item.status==='partial'?'#854D0E':'#333'}" onclick="updateItem('${item.name}','partial')">ขาด</button>
-                  <button style="flex:1; padding:8px; border-radius:8px; border:1px solid #D1D5DB; background:${item.status==='no'?'#FEE2E2':'#fff'}; color:${item.status==='no'?'#991B1B':'#333'}" onclick="updateItem('${item.name}','no')">ไม่มี</button>
+                  <button style="flex:1; padding:8px; border-radius:8px; border:1px solid #D1D5DB; background:${item.status==='ok'?'#DCFCE7':'#fff'}; color:${item.status==='ok'?'#166534':'#333'}" onclick="updateItem(${index},'ok')">ครบ</button>
+                  <button style="flex:1; padding:8px; border-radius:8px; border:1px solid #D1D5DB; background:${item.status==='partial'?'#FEF9C3':'#fff'}; color:${item.status==='partial'?'#854D0E':'#333'}" onclick="updateItem(${index},'partial')">ขาด</button>
+                  <button style="flex:1; padding:8px; border-radius:8px; border:1px solid #D1D5DB; background:${item.status==='no'?'#FEE2E2':'#fff'}; color:${item.status==='no'?'#991B1B':'#333'}" onclick="updateItem(${index},'no')">ไม่มี</button>
                 </div>
-                ${item.status === 'partial' ? `<input type="number" class="input-qty" value="${item.actualQty || ''}" placeholder="ระบุจำนวนที่จัดได้..." oninput="updateItemQty(this,'${item.name}',this.value)">` : ''}</div>`;
+                ${item.status === 'partial' ? `<input type="number" class="input-qty" value="${escapePackingText(item.actualQty || '')}" placeholder="ระบุจำนวนที่จัดได้..." oninput="updateItemQty(${index},this.value)">` : ''}</div>`;
       }).join('');
       const items = state.packingData[bName] || [];
       const ready = items.length > 0 && items.every(i => i.status !== 'pending' && (i.status !== 'partial' || String(i.actualQty ?? '').trim() !== ''));
@@ -776,8 +779,8 @@
       shortages.replaceChildren(...exceptions);
       shortages.classList.toggle('hidden', exceptions.length === 0);
     }
-    function updateItem(name, status) { const bName = BRANCHES[state.currentBranchIdx]; const item = (state.packingData[bName] || []).find(i => i.name === name); if(item) { state.packingConfirmed[bName]=false; item.status = status; if(status !== 'partial') item.actualQty = ''; saveState(); renderPackingList(); } }
-    function updateItemQty(el, name, qty) { const bName = BRANCHES[state.currentBranchIdx]; const item = (state.packingData[bName] || []).find(i => i.name === name); if(item) { state.packingConfirmed[bName]=false; item.actualQty = qty; saveState(); renderPackingList(); } }
+    function updateItem(index, status) { const bName = BRANCHES[state.currentBranchIdx]; const item = (state.packingData[bName] || [])[index]; if(item) { state.packingConfirmed[bName]=false; item.status = status; if(status !== 'partial') item.actualQty = ''; saveState(); renderPackingList(); } }
+    function updateItemQty(index, qty) { const bName = BRANCHES[state.currentBranchIdx]; const item = (state.packingData[bName] || [])[index]; if(item) { state.packingConfirmed[bName]=false; item.actualQty = qty; saveState(); renderPackingList(); } }
     async function finishBranch() {
       const branch=BRANCHES[state.currentBranchIdx],button=document.getElementById('btn-next-branch');button.disabled=true;
       try {
@@ -873,7 +876,7 @@
       card.className = 'card';
       for (const item of PICKUP_ITEMS_MAP[location] || []) {
         const label = typeof item === 'string' ? item : item.label;
-        const match = label.match(/^(.*?)\s+(\d+(?:\.\d+)?\s+.*)$/);
+        const match = label.match(/^(.+)\s+(\d+(?:\.\d+)?\s+.*)$/);
         const row = document.createElement('div');
         row.style.cssText = 'display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;padding:10px 0;border-bottom:1px solid var(--border)';
         const name = document.createElement('strong');
