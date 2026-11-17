@@ -10,16 +10,6 @@
   const node=(tag,text='')=>{const e=document.createElement(tag);e.textContent=text;return e;};
   function close(){if(busy)return;epoch++;dialog.close();dialog.replaceChildren();opener?.focus();}
   dialog.addEventListener('cancel',e=>{e.preventDefault();close();});
-  async function jpeg(file){
-    if(!file.type.startsWith('image/')||file.size>25*1024*1024)throw Error('กรุณาเลือกรูปภาพขนาดไม่เกิน 25 MB');
-    const url=URL.createObjectURL(file),img=new Image();
-    try{await new Promise((resolve,reject)=>{img.onload=resolve;img.onerror=()=>reject(Error('เปิดรูปนี้ไม่ได้ กรุณาใช้รูป JPG/PNG หรือถ่ายรูปใหม่'));img.src=url;});
-      const scale=Math.min(1,1600/Math.max(img.naturalWidth,img.naturalHeight)),canvas=document.createElement('canvas');canvas.width=Math.max(1,Math.round(img.naturalWidth*scale));canvas.height=Math.max(1,Math.round(img.naturalHeight*scale));
-      const ctx=canvas.getContext('2d');ctx.fillStyle='#fff';ctx.fillRect(0,0,canvas.width,canvas.height);ctx.drawImage(img,0,0,canvas.width,canvas.height);
-      for(const quality of [.88,.76,.64,.52]){const result=canvas.toDataURL('image/jpeg',quality);if(result.length<=700000)return result;}
-      throw Error('รูปมีขนาดใหญ่เกินไป กรุณาถ่ายเฉพาะเอกสารให้ชัดเจนแล้วลองใหม่');
-    }finally{URL.revokeObjectURL(url);}
-  }
   window.openMyProfile=async staffId=>{
     if(dialog.open)return;const current=++epoch,readOnly=Boolean(staffId);busy=false;opener=document.activeElement;dialog.replaceChildren();
     const top=node('div');top.className='profile-top';const title=node('h2',readOnly?'👤 ข้อมูลพนักงาน':'👤 ข้อมูลของฉัน');title.id='profile-heading';const exit=node('button','ปิด');exit.type='button';exit.onclick=close;top.append(title,exit);
@@ -49,7 +39,7 @@ if(key==='age'){input.min=1;input.max=120;input.step=1;}if(key==='bank_account'|
         view.onclick=async()=>{lock(true);message.textContent='';try{const result=await easyApi('getEmployeeDocument',{kind,...(staffId?{staff_id:staffId}:{})});showImage(result.image);}catch(error){message.textContent=error.message;}finally{lock(false);}};
         if(!readOnly)for(const camera of [true,false]){
           const button=node('button',camera?'📷 ถ่ายรูป':'เลือกรูปจากเครื่อง'),input=node('input');button.type='button';input.type='file';input.accept='image/*';input.hidden=true;if(camera)input.setAttribute('capture','environment');button.onclick=()=>input.click();actions.append(button,input);
-          input.onchange=async()=>{const file=input.files[0];if(!file)return;lock(true);message.textContent='กำลังบันทึกรูป...';saveStatus('กำลังบันทึกรูป...',true);try{const image=await jpeg(file);await easyApi('saveEmployeeDocument',{kind,image});showImage(image);view.hidden=false;status.textContent='มีรูปที่บันทึกไว้แล้ว';message.textContent='บันทึกรูปแล้ว';saveStatus('บันทึกรูปสำเร็จ');}catch(error){message.textContent=error.message;saveStatus('บันทึกรูปไม่สำเร็จ: '+error.message);}finally{input.value='';lock(false);}};
+          input.onchange=async()=>{const file=input.files[0];if(!file)return;lock(true);message.textContent='กำลังบันทึกรูป...';saveStatus('กำลังบันทึกรูป...',true);try{const image=await easyDocumentJpeg(file);await easyApi('saveEmployeeDocument',{kind,image});showImage(image);view.hidden=false;status.textContent='มีรูปที่บันทึกไว้แล้ว';message.textContent='บันทึกรูปแล้ว';saveStatus('บันทึกรูปสำเร็จ');}catch(error){message.textContent=error.message;saveStatus('บันทึกรูปไม่สำเร็จ: '+error.message);}finally{input.value='';lock(false);}};
         }
       }
     }catch(error){if(current!==epoch)return;content.textContent='';message.textContent=error.message;}

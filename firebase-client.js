@@ -41,3 +41,14 @@ window.easyApi = async function(action, values = {}) {
   if (result.data?.notification_warning) alert(result.data.notification_warning);
   return result.data;
 };
+
+window.easyDocumentJpeg = async function(file){
+    if(!file.type.startsWith('image/')||file.size>25*1024*1024)throw Error('กรุณาเลือกรูปภาพขนาดไม่เกิน 25 MB');
+    const url=URL.createObjectURL(file),img=new Image();
+    try{await new Promise((resolve,reject)=>{img.onload=resolve;img.onerror=()=>reject(Error('เปิดรูปนี้ไม่ได้ กรุณาใช้รูป JPG/PNG หรือถ่ายรูปใหม่'));img.src=url;});
+      const scale=Math.min(1,1600/Math.max(img.naturalWidth,img.naturalHeight)),canvas=document.createElement('canvas');canvas.width=Math.max(1,Math.round(img.naturalWidth*scale));canvas.height=Math.max(1,Math.round(img.naturalHeight*scale));
+      const ctx=canvas.getContext('2d');ctx.fillStyle='#fff';ctx.fillRect(0,0,canvas.width,canvas.height);ctx.drawImage(img,0,0,canvas.width,canvas.height);
+      for(const quality of [.88,.76,.64,.52]){const result=canvas.toDataURL('image/jpeg',quality);if(result.length<=700000)return result;}
+      throw Error('รูปมีขนาดใหญ่เกินไป กรุณาถ่ายเฉพาะเอกสารให้ชัดเจนแล้วลองใหม่');
+    }finally{URL.revokeObjectURL(url);}
+  };

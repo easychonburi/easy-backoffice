@@ -16,11 +16,22 @@ function line(list, name, detail, status, edit) {
   info.append(title,sub,state); item.append(avatar,info,button); list.append(item);
 }
 function render() {
-  $('staff-list').replaceChildren(); $('inactive-staff-list').replaceChildren(); $('inactive-count').textContent=staffRows.filter(r=>r.status==='inactive').length; $('branch-list').replaceChildren();
+  $('staff-list').replaceChildren();
+  $('inactive-staff-list').replaceChildren();
+  $('registration-list').replaceChildren();
+  const pendingCount = staffRows.filter(row => row.registration_pending).length;
+  $('registration-list-section').hidden = pendingCount === 0;
+  $('registration-count').textContent = pendingCount;
+  $('inactive-count').textContent = staffRows.filter(row => row.status === 'inactive').length - pendingCount;
+  $('branch-list').replaceChildren();
   for(const row of staffRows) {
     const branch=branches.find(b=>b.branch_id===row.branch_id);
-    line($(row.status==='inactive'?'inactive-staff-list':'staff-list'),row.nickname||row.name,`${roles[row.role]} · ${branch?.name||'ยังไม่กำหนดสาขา'} · ฿${row.rate}/${row.pay_type==='hourly'?'ชม.':'วัน'} · OT ฿${row.ot_rate??work.ot_rate_per_hour}/ชม.`,row.status,()=>editStaff(row));
-    const view=document.createElement('button');view.type='button';view.className='profile-admin-link';view.textContent='👤 ข้อมูล / เอกสาร';view.onclick=()=>openMyProfile(row.staff_id);$(row.status==='inactive'?'inactive-staff-list':'staff-list').lastElementChild.querySelector('.att-info').append(view);
+    const list = $(row.registration_pending ? 'registration-list' : row.status === 'inactive' ? 'inactive-staff-list' : 'staff-list');
+    line(list,row.nickname||row.name,`${roles[row.role]} · ${branch?.name||'ยังไม่กำหนดสาขา'} · ฿${row.rate}/${row.pay_type==='hourly'?'ชม.':'วัน'} · OT ฿${row.ot_rate??work.ot_rate_per_hour}/ชม.`,row.status,()=>editStaff(row));
+    if (row.registration_pending) {
+      list.lastElementChild.querySelector('.status-label').textContent = 'รอตรวจลงทะเบียน';
+    }
+    const view=document.createElement('button');view.type='button';view.className='profile-admin-link';view.textContent='👤 ข้อมูล / เอกสาร';view.onclick=()=>openMyProfile(row.staff_id);list.lastElementChild.querySelector('.att-info').append(view);
   }
   for(const row of branches) line($('branch-list'),row.name,row.lat==null?'ยังไม่กำหนดพิกัด':`${row.lat}, ${row.lng} · รัศมี ${row.allowed_radius_m} ม.`,row.status,()=>editBranch(row));
   if(!staffRows.some(r=>r.status==='active')) $('staff-list').textContent='ยังไม่มีพนักงาน';
@@ -35,7 +46,7 @@ function editStaff(row={role:'staff',status:'active',staff_type:'fulltime',pay_t
   for(const branch of branches.filter(b=>b.status==='active'||b.branch_id===row.branch_id)) $('staff-branch').add(new Option(branch.name+(branch.status==='inactive'?' (ปิดใช้งาน)':''),branch.branch_id));
   fill($('staff-form'),row); $('staff-pin').required=!row.staff_id; $('staff-pin').type='password'; delete $('staff-pin').dataset.originalPin; $('view-pin').disabled=false;
   $('pin-help').textContent=row.staff_id?'เว้นว่างเพื่อใช้ PIN เดิม เปลี่ยน PIN แล้วต้องเข้าสู่ระบบใหม่':'กำหนด PIN ตัวเลข 4 หลักที่ไม่ซ้ำ';
-  $('staff-title').textContent=row.staff_id?'👥 แก้ไขพนักงาน':'👥 เพิ่มพนักงาน';$('staff-error').textContent='';rateLabel();modal('staff-modal');
+  $('staff-title').textContent=row.registration_pending?'ตรวจข้อมูลลงทะเบียน':row.staff_id?'👥 แก้ไขพนักงาน':'👥 เพิ่มพนักงาน';$('staff-error').textContent='';rateLabel();modal('staff-modal');
 }
 function editBranch(row={status:'active',allowed_radius_m:200}) {fill($('branch-form'),row);$('branch-title').textContent=row.branch_id?'📍 แก้ไขสาขา':'📍 เพิ่มสาขา';$('branch-error').textContent='';modal('branch-modal');}
 for(const button of document.querySelectorAll('[data-section]')) button.onclick=()=>{ for(const section of ['staff','branches','work','central','quantities','notifications']) $(section+'-section').hidden=section!==button.dataset.section; for(const other of document.querySelectorAll('[data-section]')) other.setAttribute('aria-current',String(other===button)); if(['central','quantities','notifications'].includes(button.dataset.section))loadShopSection(button.dataset.section).catch(e=>toast(e.message)); };

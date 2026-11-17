@@ -35,10 +35,11 @@ function validate(body) {
   if (!['admin', 'staff', 'driver'].includes(body.role) || !['active', 'inactive'].includes(body.status)) fail('บทบาทหรือสถานะไม่ถูกต้อง');
   if (body.staff_id && !validId(body.staff_id)) fail('รหัสรายการไม่ถูกต้อง');
 }
-async function saveStaff(body, actor, first = false) {
+async function saveStaff(body, actor, first = false, registration = null) {
   validate(body);
-  const ref = body.staff_id ? db.collection('staff').doc(body.staff_id) : db.collection('staff').doc();
-  if (!first && actor.staff_id === ref.id && (body.role !== 'admin' || body.status !== 'active')) fail('ไม่สามารถปิดบัญชีหรือลดสิทธิ์ผู้ดูแลที่กำลังใช้งาน');
+  const ref = registration ? db.collection('staff').doc(registration.id) :
+    body.staff_id ? db.collection('staff').doc(body.staff_id) : db.collection('staff').doc();
+  if (!first && actor?.staff_id === ref.id && (body.role !== 'admin' || body.status !== 'active')) fail('ไม่สามารถปิดบัญชีหรือลดสิทธิ์ผู้ดูแลที่กำลังใช้งาน');
   const branchId = body.branch_id || '';
   if (branchId && !validId(branchId)) fail('สาขาไม่ถูกต้อง');
   const staffType = body.staff_type || 'fulltime', payType = body.pay_type || 'daily', shift = body.shift || 'morning';
@@ -55,10 +56,11 @@ async function saveStaff(body, actor, first = false) {
     rate: number(body.rate ?? 0, 'ค่าแรง'), ot_rate: body.ot_rate == null || body.ot_rate === '' ? null : number(body.ot_rate, 'อัตรา OT', 0.01)};
   await db.runTransaction(async tx => {
     const [old, existing, initial, branch] = await Promise.all([tx.get(ref), pinRef ? tx.get(pinRef) : null, first ? tx.get(db.collection('staff').limit(1)) : null, branchId ? tx.get(db.collection('branches').doc(branchId)) : null]);
+    if (registration && old.exists) return;
     if (first && !initial.empty) fail('มีพนักงานแล้ว ไม่สามารถ bootstrap ซ้ำ');
     if (body.staff_id && !old.exists) fail('ไม่พบพนักงาน', 404);
     if (branchId && (!branch.exists || (branch.data().status !== 'active' && old.data()?.branch_id !== branchId))) fail('กรุณาเลือกสาขาที่เปิดใช้งาน');
-    if (!first && body.role !== 'admin' && !branchId) fail('กรุณากำหนดสาขา');
+    if (!first && !registration && body.role !== 'admin' && !branchId) fail('กรุณากำหนดสาขา');
     if (existing?.exists && existing.data().staff_id !== ref.id) fail('PIN นี้ถูกใช้แล้ว');
     const previous = old.data() || {};
     row = {...previous, ...row, version: body.pin || previous.role !== row.role || previous.status !== row.status ? crypto.randomUUID() : previous.version};
@@ -66,6 +68,19 @@ async function saveStaff(body, actor, first = false) {
       if (old.exists && previous.pin_lookup !== pinRef.id) tx.delete(db.collection('pin_index').doc(previous.pin_lookup));
       Object.assign(row, {pin_lookup: pinRef.id, pin_salt: salt, pin_hash: crypto.scryptSync(body.pin, salt, 32).toString('hex')});
       tx.set(pinRef, {staff_id: ref.id});
+    }
+    if (registration) {
+      const registeredAt = new Date().toISOString();
+      row.registration_pending = true;
+      tx.create(db.collection('employee_profiles').doc(ref.id), {
+        documents: {id_card: true},
+        registration_agreement: {version: registration.version, accepted_at: registeredAt},
+      });
+      tx.create(db.collection('employee_documents').doc(ref.id + '_id_card'), {
+        staff_id: ref.id, kind: 'id_card', image: registration.image, updated_at: registeredAt,
+      });
+    } else if (row.status === 'active' && row.registration_pending) {
+      row.registration_pending = false;
     }
     tx.set(ref, row);
   });
@@ -93,15 +108,44 @@ async function saveWorkSettings(body) {
   await db.collection('settings').doc('work').set(row);
   return row;
 }
-async function login(pin) {
-  // Shared shop-wide limit also bounds distributed PIN guessing; includes successful attempts.
-  const rate = db.collection('login_limits').doc('shop');
+// Shop-wide limits bound distributed attempts, including successful submissions.
+async function limitPublicAction(key, max, message) {
+  const rate = db.collection('login_limits').doc(key);
   await db.runTransaction(async tx => {
     const snapshot = await tx.get(rate), old = snapshot.data() || {}, now = Date.now();
     const current = old.until > now ? old : {count: 0, until: now + 60000};
-    if (current.count >= 10) fail('ลองเข้าสู่ระบบมากเกินไป รอ 1 นาที', 429);
+    if (current.count >= max) fail(message, 429);
     tx.set(rate, {...current, count: current.count + 1});
   });
+}
+
+async function registerStaff(body) {
+  const version = '2026-11-17';
+  if (body.agreement_accepted !== true || body.agreement_version !== version) {
+    fail('กรุณาอ่านและยอมรับข้อตกลงฉบับล่าสุด');
+  }
+  if (typeof body.request_id !== 'string' || !/^[a-f0-9]{32}$/.test(body.request_id)) fail('คำขอลงทะเบียนไม่ถูกต้อง');
+  const requiredText = (key, label) => {
+    const value = body[key];
+    if (typeof value !== 'string' || !value.trim() || value.length > 80) fail('กรุณากรอก' + label + 'ให้ถูกต้อง');
+    return value.trim();
+  };
+  const name = requiredText('first_name', 'ชื่อ') + ' ' + requiredText('last_name', 'นามสกุล');
+  const nickname = requiredText('nickname', 'ชื่อเล่น');
+  const bankName = requiredText('bank_name', 'ธนาคาร');
+  const account = requiredText('bank_account', 'เลขบัญชี').replace(/[ -]/g, '');
+  if (!/^\d{5,20}$/.test(account)) fail('กรุณากรอกเลขบัญชีให้ถูกต้อง');
+  profile.validateDocumentImage(body.image);
+  await limitPublicAction('registration', 5, 'มีคำขอลงทะเบียนมากเกินไป กรุณาลองใหม่ใน 1 นาที');
+  await saveStaff({
+    name, nickname, pin: body.pin, bank_name: bankName, bank_account: account,
+    role: 'staff', status: 'inactive',
+  }, null, false, {id: 'reg_' + body.request_id, version, image: body.image});
+  return {submitted: true};
+}
+
+async function login(pin) {
+  await limitPublicAction('shop', 10, 'ลองเข้าสู่ระบบมากเกินไป รอ 1 นาที');
   if (typeof pin !== 'string' || !/^\d{4}$/.test(pin)) fail('PIN ไม่ถูกต้อง', 401);
   const index = await db.collection('pin_index').doc(lookup(pin)).get();
   const staff = index.exists ? (await db.collection('staff').doc(index.data().staff_id).get()).data() : null;
@@ -112,6 +156,7 @@ async function login(pin) {
 }
 async function dispatch(body, token) {
   if (body.action === 'login') return login(body.pin);
+  if (body.action === 'registerStaff') return registerStaff(body);
   if (!/^[A-Za-z0-9_-]{43}$/.test(token)) fail('กรุณาเข้าสู่ระบบใหม่', 401);
   const ref = db.collection('sessions').doc(digest(token)), session = (await ref.get()).data();
   if (!session || session.expires <= Date.now()) fail('เซสชันหมดอายุ', 401);
@@ -138,7 +183,7 @@ async function dispatch(body, token) {
     }
     fail('ไม่พบ PIN เดิม กรุณากำหนด PIN ใหม่');
   }
-  if (body.action === 'listStaff') return (await db.collection('staff').get()).docs.map(doc => safe(doc.data()));
+  if (body.action === 'listStaff') return (await db.collection('staff').get()).docs.map(doc => ({...safe(doc.data()), registration_pending: doc.get('registration_pending') === true}));
   if (body.action === 'saveStaff') return saveStaff(body, staff);
   if (body.action === 'listBranches') return (await db.collection('branches').get()).docs.map(doc => doc.data());
   if (body.action === 'saveBranch') return saveBranch(body);

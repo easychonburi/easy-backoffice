@@ -123,6 +123,37 @@
   .welcome-role { font-size: 14px; color: rgba(255,255,255,0.75); font-weight: 300; }
 
   .version-tag { text-align: center; font-size: 11px; color: var(--text-secondary); font-weight: 300; padding-bottom: 20px; opacity: 0.5; }
+
+  .register-link {
+    margin-top: 12px; padding: 8px 12px; border: 0; background: transparent;
+    color: var(--red-dark); font: inherit; font-size: 13px; text-decoration: underline; cursor: pointer;
+  }
+  .register-dialog {
+    width: min(calc(100% - 24px), 500px); max-height: 90dvh; margin: auto; padding: 20px;
+    border: 0; border-radius: var(--radius); color: var(--text); background: var(--white);
+    box-shadow: var(--shadow); overflow-y: auto; overscroll-behavior: contain;
+  }
+  .register-dialog::backdrop { background: #0008; }
+  .register-dialog h2 { font-size: 19px; }
+  .registration-header { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-bottom: 14px; }
+  .register-fields { display: grid; gap: 10px; border: 0; min-width: 0; }
+  .register-fields label { display: grid; gap: 4px; font-size: 13px; }
+  .register-fields input:not([type=checkbox]) {
+    width: 100%; min-width: 0; padding: 9px 10px; border: 1px solid var(--border);
+    border-radius: 10px; background: var(--soft); color: inherit; font: inherit; font-size: 16px;
+  }
+  .register-dialog details { padding: 10px 12px; border-radius: 10px; background: var(--soft); font-size: 13px; line-height: 1.65; }
+  .register-dialog summary { cursor: pointer; font-weight: 600; }
+  .register-dialog ul { margin: 8px 0 0 18px; }
+  .register-dialog li + li { margin-top: 6px; }
+  .register-dialog .register-accept { display: flex; align-items: flex-start; gap: 8px; padding: 4px 0; }
+  .register-accept input { margin-top: 4px; accent-color: var(--red); }
+  .register-note { font-size: 12px; color: var(--text-secondary); line-height: 1.6; }
+  .register-button { padding: 8px 12px; border: 1px solid var(--border); border-radius: 10px; font: inherit; color: inherit; background: var(--soft); cursor: pointer; }
+  .register-submit { width: 100%; border: 0; background: var(--red-dark); color: white; }
+  .register-button:disabled { opacity: .55; cursor: default; }
+  .register-status { margin-top: 10px; font-size: 13px; color: var(--red-dark); }
+  .register-success { font-size: 14px; line-height: 1.7; }
 </style>
 </head>
 <body>
@@ -156,7 +187,48 @@
     <button class="pin-key delete" onclick="pinDelete()">⌫</button>
   </div>
   <div class="pin-error" id="pin-error"></div>
+  <button id="register-open" class="register-link" type="button">ลงทะเบียนพนักงานใหม่</button>
 </div>
+
+
+<dialog id="register-dialog" class="register-dialog" aria-labelledby="register-heading">
+  <header class="registration-header">
+    <h2 id="register-heading">ลงทะเบียนพนักงานใหม่</h2>
+    <button id="register-close" class="register-button" type="button">ปิด</button>
+  </header>
+  <form id="register-form" method="post">
+    <fieldset id="register-fields" class="register-fields">
+      <label>ชื่อ <input name="first_name" autocomplete="given-name" maxlength="80" required></label>
+      <label>นามสกุล <input name="last_name" autocomplete="family-name" maxlength="80" required></label>
+      <label>ชื่อเล่น <input name="nickname" autocomplete="nickname" maxlength="80" required></label>
+      <label>ตั้ง PIN 4 หลัก <input name="pin" type="password" inputmode="numeric" autocomplete="new-password" pattern="[0-9]{4}" maxlength="4" required></label>
+      <label>ธนาคาร <input name="bank_name" maxlength="80" placeholder="เช่น กสิกรไทย" required></label>
+      <label>เลขบัญชีรับเงินเดือน <input name="bank_account" inputmode="numeric" maxlength="40" required></label>
+      <label>รูปด้านหน้าบัตรประชาชน
+        <input name="id_card" type="file" accept="image/jpeg,image/png,image/webp" required>
+        <span class="register-note">แนบรูปด้านหน้า 1 รูปที่อ่านได้ชัด กรุณาปิดข้อมูลศาสนาหรือหมู่เลือดหากปรากฏบนบัตร</span>
+      </label>
+      <details open>
+        <summary>ข้อตกลงการทำงาน</summary>
+        <ul>
+          <li>ฉันยืนยันว่าข้อมูลที่ลงทะเบียนเป็นความจริง และจะแจ้งผู้ดูแลเมื่อข้อมูลสำหรับติดต่อหรือรับค่าจ้างเปลี่ยนแปลง</li>
+          <li>ฉันจะปฏิบัติงานตามหน้าที่ กะ และสถานที่ที่ตกลงกัน บันทึกเวลาทำงานตามจริง และแจ้งผู้ดูแลโดยเร็วหากมาสาย ลางาน หรือเข้าเวรไม่ได้</li>
+          <li>ฉันจะปฏิบัติตามข้อกำหนดด้านความปลอดภัยและสุขอนามัย ดูแลอุปกรณ์และทรัพย์สินที่ได้รับมอบหมาย และรักษาข้อมูลภายในร้านและข้อมูลลูกค้า</li>
+          <li>ค่าจ้าง วันทำงาน วันหยุด วันลา และสิทธิอื่น ๆ ให้เป็นไปตามเงื่อนไขการจ้างที่ตกลงกันและกฎหมายแรงงาน</li>
+          <li><strong>หากจะลาออก ให้แจ้งผู้ดูแลเป็นลายลักษณ์อักษรล่วงหน้าอย่างน้อย 10 วันปฏิทิน</strong> ก่อนวันมีผลลาออก โดยแจ้งวันทำงานวันสุดท้ายและส่งมอบงานหรือคืนทรัพย์สินที่รับผิดชอบ ทั้งนี้ให้เป็นไปตามระยะเวลาบอกกล่าวที่กฎหมายกำหนด เว้นแต่ตกลงวันสิ้นสุดงานร่วมกันได้ตามกฎหมาย</li>
+        </ul>
+      </details>
+      <details>
+        <summary>การใช้ข้อมูลส่วนบุคคล</summary>
+        <p>หจก. คีพ อิท อีซี่ เก็บชื่อ นามสกุล ชื่อเล่น PIN ในรูปแบบแฮช รูปบัตรประชาชน ข้อมูลบัญชีธนาคาร และหลักฐานการตอบรับข้อตกลง เพื่อยืนยันตัวตน เปิดบัญชีพนักงาน และจ่ายค่าจ้าง หากกรอกไม่ครบจะส่งคำขอลงทะเบียนไม่ได้ ผู้ดูแลที่ได้รับมอบหมายเข้าถึงข้อมูลเท่าที่จำเป็น และอาจส่งข้อมูลบัญชีให้ธนาคารเพื่อจ่ายค่าจ้าง หรือส่งข้อมูลให้หน่วยงานรัฐเมื่อกฎหมายกำหนด เราเก็บข้อมูลตามระยะเวลาที่จำเป็นต่อการตรวจคำขอ การจ้างงาน การจ่ายค่าจ้าง และการเก็บหลักฐานตามกฎหมาย หากต้องการเข้าถึง แก้ไข ขอให้ลบ จำกัดหรือคัดค้านการใช้ข้อมูล ขอรับหรือโอนข้อมูล หรือร้องเรียน สามารถติดต่อผู้ดูแลผ่านช่องทางที่ใช้ประสานงานกับร้าน หรือส่งหนังสือถึง หจก. คีพ อิท อีซี่ เลขที่ 23/8 หมู่ 1 ต.นาป่า อ.เมืองชลบุรี จ.ชลบุรี 20000</p>
+      </details>
+      <label class="register-accept"><input name="agreement_accepted" type="checkbox" required> <span>ฉันอ่านและตกลงตามข้อตกลงการทำงาน และรับทราบการใช้ข้อมูลส่วนบุคคล</span></label>
+      <button class="register-button register-submit" type="submit">ส่งข้อมูลลงทะเบียน</button>
+    </fieldset>
+  </form>
+  <p id="register-status" class="register-status" role="status"></p>
+  <p id="register-success" class="register-success" hidden>ส่งข้อมูลเรียบร้อยแล้ว กรุณารอผู้ดูแลตรวจสอบและเปิดบัญชี จากนั้นจึงเข้าสู่ระบบด้วย PIN ที่ตั้งไว้</p>
+</dialog>
 
 <div class="version-tag">EASY Backoffice</div>
 
@@ -175,6 +247,62 @@
 <script>
 
 let pinBuffer = '';
+
+const registerDialog = document.getElementById('register-dialog');
+const registerForm = document.getElementById('register-form');
+const registerFields = document.getElementById('register-fields');
+const registerClose = document.getElementById('register-close');
+const registerStatus = document.getElementById('register-status');
+const registerSuccess = document.getElementById('register-success');
+let registrationId;
+
+document.getElementById('register-open').onclick = () => {
+  registerForm.reset();
+  registerForm.hidden = false;
+  registerSuccess.hidden = true;
+  registerClose.textContent = 'ปิด';
+  registerStatus.textContent = '';
+  registrationId = crypto.randomUUID().replaceAll('-', '');
+  pinBuffer = '';
+  updateDots();
+  registerDialog.showModal();
+};
+registerClose.onclick = () => registerDialog.close();
+registerDialog.addEventListener('cancel', event => {
+  if (registerFields.disabled) event.preventDefault();
+});
+registerDialog.addEventListener('close', () => registerForm.reset());
+registerForm.addEventListener('submit', async event => {
+  event.preventDefault();
+  if (registerFields.disabled) return;
+  const {id_card: file, ...fields} = Object.fromEntries(new FormData(registerForm));
+  if ((fields.first_name.trim() + ' ' + fields.last_name.trim()).length > 80) {
+    registerStatus.textContent = 'ชื่อและนามสกุลรวมกันต้องไม่เกิน 80 ตัวอักษร';
+    return;
+  }
+  registerFields.disabled = true;
+  registerClose.disabled = true;
+  registerStatus.textContent = 'กำลังส่งข้อมูล...';
+  try {
+    const image = await easyDocumentJpeg(file);
+    await easyApi('registerStaff', {
+      ...fields, image, request_id: registrationId,
+      agreement_accepted: fields.agreement_accepted === 'on', agreement_version: '2026-11-17',
+    });
+    registerForm.reset();
+    registerForm.hidden = true;
+    registerSuccess.hidden = false;
+    registerStatus.textContent = '';
+    registerClose.textContent = 'ตกลง';
+  } catch (error) {
+    registerStatus.textContent = error.message || 'ส่งข้อมูลไม่สำเร็จ กรุณาลองใหม่';
+  } finally {
+    registerFields.disabled = false;
+    registerClose.disabled = false;
+    if (!registerSuccess.hidden) registerClose.focus();
+  }
+});
+
 
 window.addEventListener('load', async () => {
   if (!easyReadToken()) return;

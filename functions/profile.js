@@ -39,10 +39,14 @@ exports.handle=async(body,user)=>{
     const doc=await ref.get();if(!doc.exists)fail('ยังไม่มีรูปเอกสาร',404);
     return {image:doc.data().image};
   }
-  // Private JPEGs only, bounded below Firestore's document limit. No public URLs.
-  if(typeof body.image!=='string'||body.image.length>700000||!/^data:image\/jpeg;base64,[A-Za-z0-9+/]+={0,2}$/.test(body.image))fail('รูปไม่ถูกต้องหรือใหญ่เกินไป กรุณาเลือกรูปใหม่');
-  const bytes=Buffer.from(body.image.split(',')[1],'base64');
-  if(bytes.length<4||bytes[0]!==255||bytes[1]!==216||bytes[bytes.length-2]!==255||bytes[bytes.length-1]!==217)fail('ไฟล์รูปไม่ถูกต้อง');
+  exports.validateDocumentImage(body.image);
   await db.runTransaction(async tx=>{const s=await tx.get(staffRef);if(!s.exists)fail('ไม่พบพนักงาน',404);tx.set(ref,{staff_id:id,kind:body.kind,image:body.image,updated_at:new Date().toISOString()});tx.set(profileRef,{documents:{[body.kind]:true}},{merge:true});});
   return {success:true};
+};
+
+exports.validateDocumentImage = image => {
+  // Private JPEGs only, bounded below Firestore's document limit. No public URLs.
+  if(typeof image!=='string'||image.length>700000||!/^data:image\/jpeg;base64,[A-Za-z0-9+/]+={0,2}$/.test(image))fail('รูปไม่ถูกต้องหรือใหญ่เกินไป กรุณาเลือกรูปใหม่');
+  const bytes=Buffer.from(image.split(',')[1],'base64');
+  if(bytes.length<4||bytes[0]!==255||bytes[1]!==216||bytes[bytes.length-2]!==255||bytes[bytes.length-1]!==217)fail('ไฟล์รูปไม่ถูกต้อง');
 };
