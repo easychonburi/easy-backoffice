@@ -138,13 +138,14 @@
   .registration-header { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-bottom: 14px; }
   .register-fields { display: grid; gap: 10px; border: 0; min-width: 0; }
   .register-fields label { display: grid; gap: 4px; font-size: 13px; }
-  .register-fields input:not([type=checkbox]) {
+  .register-fields input:not([type=checkbox]), .register-fields textarea {
     width: 100%; min-width: 0; padding: 9px 10px; border: 1px solid var(--border);
     border-radius: 10px; background: var(--soft); color: inherit; font: inherit; font-size: 16px;
   }
   .register-dialog details { padding: 10px 12px; border-radius: 10px; background: var(--soft); font-size: 13px; line-height: 1.65; }
   .register-dialog summary { cursor: pointer; font-weight: 600; }
-  .register-dialog ul { margin: 8px 0 0 18px; }
+  .register-dialog ol { margin: 8px 0 0 22px; }
+  .register-fields textarea { resize: vertical; }
   .register-dialog li + li { margin-top: 6px; }
   .register-dialog .register-accept { display: flex; align-items: flex-start; gap: 8px; padding: 4px 0; }
   .register-accept input { margin-top: 4px; accent-color: var(--red); }
@@ -201,26 +202,31 @@
       <label>ชื่อ <input name="first_name" autocomplete="given-name" maxlength="80" required></label>
       <label>นามสกุล <input name="last_name" autocomplete="family-name" maxlength="80" required></label>
       <label>ชื่อเล่น <input name="nickname" autocomplete="nickname" maxlength="80" required></label>
+      <label>เบอร์โทร <input name="phone" type="tel" autocomplete="tel" maxlength="30" required></label>
+      <label>ที่อยู่ปัจจุบัน <textarea name="address" autocomplete="street-address" rows="3" maxlength="1000" required></textarea></label>
       <label>ตั้ง PIN 4 หลัก <input name="pin" type="password" inputmode="numeric" autocomplete="new-password" pattern="[0-9]{4}" maxlength="4" required></label>
       <label>ธนาคาร <input name="bank_name" maxlength="80" placeholder="เช่น กสิกรไทย" required></label>
       <label>เลขบัญชีรับเงินเดือน <input name="bank_account" inputmode="numeric" maxlength="40" required></label>
       <label>รูปด้านหน้าบัตรประชาชน
-        <input name="id_card" type="file" accept="image/jpeg,image/png,image/webp" required>
-        <span class="register-note">แนบรูปด้านหน้า 1 รูปที่อ่านได้ชัด กรุณาปิดข้อมูลศาสนาหรือหมู่เลือดหากปรากฏบนบัตร</span>
+        <input name="id_card" type="file" accept="image/jpeg,image/png,image/webp">
+        <span class="register-note">อัปโหลดภายหลังได้ที่เมนูข้อมูลของฉันหลังเปิดบัญชี หากแนบตอนนี้ ใช้รูปด้านหน้าที่อ่านได้ชัด กรุณาปิดข้อมูลศาสนาหรือหมู่เลือดหากปรากฏบนบัตร</span>
       </label>
       <details open>
         <summary>ข้อตกลงการทำงาน</summary>
-        <ul>
-          <li>ฉันยืนยันว่าข้อมูลที่ลงทะเบียนเป็นความจริง และจะแจ้งผู้ดูแลเมื่อข้อมูลสำหรับติดต่อหรือรับค่าจ้างเปลี่ยนแปลง</li>
-          <li>ฉันจะปฏิบัติงานตามหน้าที่ กะ และสถานที่ที่ตกลงกัน บันทึกเวลาทำงานตามจริง และแจ้งผู้ดูแลโดยเร็วหากมาสาย ลางาน หรือเข้าเวรไม่ได้</li>
-          <li>ฉันจะปฏิบัติตามข้อกำหนดด้านความปลอดภัยและสุขอนามัย ดูแลอุปกรณ์และทรัพย์สินที่ได้รับมอบหมาย และรักษาข้อมูลภายในร้านและข้อมูลลูกค้า</li>
-          <li>ค่าจ้าง วันทำงาน วันหยุด วันลา และสิทธิอื่น ๆ ให้เป็นไปตามเงื่อนไขการจ้างที่ตกลงกันและกฎหมายแรงงาน</li>
-          <li><strong>หากจะลาออก ให้แจ้งผู้ดูแลเป็นลายลักษณ์อักษรล่วงหน้าอย่างน้อย 10 วันปฏิทิน</strong> ก่อนวันมีผลลาออก โดยแจ้งวันทำงานวันสุดท้ายและส่งมอบงานหรือคืนทรัพย์สินที่รับผิดชอบ ทั้งนี้ให้เป็นไปตามระยะเวลาบอกกล่าวที่กฎหมายกำหนด เว้นแต่ตกลงวันสิ้นสุดงานร่วมกันได้ตามกฎหมาย</li>
-        </ul>
+        <ol>
+          <li><strong>ข้อมูลส่วนตัว</strong><br>ฉันยืนยันว่าข้อมูลที่ลงทะเบียนเป็นความจริง และจะแจ้งผู้ดูแลร้านหากมีข้อมูลสำหรับติดต่อหรือรับค่าจ้างเปลี่ยนแปลง</li>
+          <li><strong>หน้าที่และความรับผิดชอบ</strong><br>ฉันจะรับผิดชอบงานที่ได้รับมอบหมาย ปฏิบัติตามคำแนะนำและคำสั่งของผู้ดูแลร้านที่เกี่ยวข้องกับการทำงาน ตรงต่อเวลา และให้ความร่วมมือกับเพื่อนร่วมงาน หากมาสาย ลางาน หรือไม่สามารถมาทำงานได้ จะแจ้งผู้ดูแลร้านให้เร็วที่สุด</li>
+          <li><strong>เงินและทรัพย์สินของร้าน</strong><br>เงินสดจากการขาย โทรศัพท์และแท็บเล็ตสำหรับรับออเดอร์ วัตถุดิบ อุปกรณ์ และทรัพย์สินอื่น ๆ ที่ร้านจัดเตรียมไว้ ถือเป็นทรัพย์สินของร้าน <strong>ห้ามนำไปใช้ส่วนตัว นำกลับบ้าน หรือนำออกนอกสถานที่โดยไม่ได้รับอนุญาต</strong> รวมถึงห้ามนำเงินของร้านไปใช้หรือยืมเอง หากพบการลักขโมย ยักยอก หรือการกระทำที่เข้าข่ายความผิด ร้านสามารถดำเนินการตามกฎหมายได้</li>
+          <li><strong>บุคคลภายนอก</strong><br>ห้ามพาเพื่อน ญาติ หรือบุคคลภายนอกเข้ามาในพื้นที่ทำงาน พื้นที่เก็บของ หรือพื้นที่หลังร้านโดยไม่ได้รับอนุญาตจากผู้ดูแลร้าน</li>
+          <li><strong>ความสะอาดและความปลอดภัย</strong><br>ฉันจะรักษาความสะอาดของร้าน พื้นที่ทำงาน และอุปกรณ์ที่ใช้งาน ดูแลสุขอนามัยในการเตรียมและจำหน่ายอาหาร ใช้อุปกรณ์อย่างระมัดระวัง และช่วยดูแลร้านให้อยู่ในสภาพเรียบร้อย</li>
+          <li><strong>ข้อมูลภายในร้าน</strong><br>ห้ามนำข้อมูลยอดขาย ข้อมูลลูกค้า รหัสผ่าน หรือข้อมูลภายในร้านไปเปิดเผยให้บุคคลภายนอก หรือใช้เพื่อประโยชน์ส่วนตัวโดยไม่ได้รับอนุญาต</li>
+          <li><strong>การลาออก</strong><br>หากต้องการลาออก <strong>ต้องแจ้งผู้ดูแลร้านเป็นข้อความล่วงหน้าอย่างน้อย 10 วันปฏิทิน</strong> เพื่อให้ร้านมีเวลาเตรียมคนทดแทน พร้อมส่งมอบงานและคืนเงิน อุปกรณ์ กุญแจ หรือทรัพย์สินของร้านที่อยู่ในความรับผิดชอบ ทั้งนี้เป็นไปตามข้อตกลงและกฎหมายที่เกี่ยวข้อง</li>
+          <li><strong>การปฏิบัติตามข้อตกลง</strong><br>ฉันรับทราบและตกลงปฏิบัติตามข้อตกลงข้างต้น หากไม่ปฏิบัติตาม ร้านสามารถพิจารณาตักเตือนหรือดำเนินการตามความเหมาะสมและกฎหมายที่เกี่ยวข้อง</li>
+        </ol>
       </details>
       <details>
         <summary>การใช้ข้อมูลส่วนบุคคล</summary>
-        <p>หจก. คีพ อิท อีซี่ เก็บชื่อ นามสกุล ชื่อเล่น PIN ในรูปแบบแฮช รูปบัตรประชาชน ข้อมูลบัญชีธนาคาร และหลักฐานการตอบรับข้อตกลง เพื่อยืนยันตัวตน เปิดบัญชีพนักงาน และจ่ายค่าจ้าง หากกรอกไม่ครบจะส่งคำขอลงทะเบียนไม่ได้ ผู้ดูแลที่ได้รับมอบหมายเข้าถึงข้อมูลเท่าที่จำเป็น และอาจส่งข้อมูลบัญชีให้ธนาคารเพื่อจ่ายค่าจ้าง หรือส่งข้อมูลให้หน่วยงานรัฐเมื่อกฎหมายกำหนด เราเก็บข้อมูลตามระยะเวลาที่จำเป็นต่อการตรวจคำขอ การจ้างงาน การจ่ายค่าจ้าง และการเก็บหลักฐานตามกฎหมาย หากต้องการเข้าถึง แก้ไข ขอให้ลบ จำกัดหรือคัดค้านการใช้ข้อมูล ขอรับหรือโอนข้อมูล หรือร้องเรียน สามารถติดต่อผู้ดูแลผ่านช่องทางที่ใช้ประสานงานกับร้าน หรือส่งหนังสือถึง หจก. คีพ อิท อีซี่ เลขที่ 23/8 หมู่ 1 ต.นาป่า อ.เมืองชลบุรี จ.ชลบุรี 20000</p>
+        <p>หจก. คีพ อิท อีซี่ เก็บชื่อ นามสกุล ชื่อเล่น เบอร์โทร ที่อยู่ปัจจุบัน PIN ในรูปแบบแฮช รูปบัตรประชาชน ข้อมูลบัญชีธนาคาร และหลักฐานการตอบรับข้อตกลง เพื่อยืนยันตัวตน เปิดบัญชีพนักงาน ติดต่อเรื่องงาน และจ่ายค่าจ้าง หากกรอกข้อมูลที่จำเป็นไม่ครบจะส่งคำขอลงทะเบียนไม่ได้ รูปบัตรประชาชนอัปโหลดภายหลังได้ ผู้ดูแลที่ได้รับมอบหมายเข้าถึงข้อมูลเท่าที่จำเป็น และอาจส่งข้อมูลบัญชีให้ธนาคารเพื่อจ่ายค่าจ้าง หรือส่งข้อมูลให้หน่วยงานรัฐเมื่อกฎหมายกำหนด เราเก็บข้อมูลตามระยะเวลาที่จำเป็นต่อการตรวจคำขอ การจ้างงาน การจ่ายค่าจ้าง และการเก็บหลักฐานตามกฎหมาย หากต้องการเข้าถึง แก้ไข ขอให้ลบ จำกัดหรือคัดค้านการใช้ข้อมูล ขอรับหรือโอนข้อมูล หรือร้องเรียน สามารถติดต่อผู้ดูแลผ่านช่องทางที่ใช้ประสานงานกับร้าน หรือส่งหนังสือถึง หจก. คีพ อิท อีซี่ เลขที่ 23/8 หมู่ 1 ต.นาป่า อ.เมืองชลบุรี จ.ชลบุรี 20000</p>
       </details>
       <label class="register-accept"><input name="agreement_accepted" type="checkbox" required> <span>ฉันอ่านและตกลงตามข้อตกลงการทำงาน และรับทราบการใช้ข้อมูลส่วนบุคคล</span></label>
       <button class="register-button register-submit" type="submit">ส่งข้อมูลลงทะเบียน</button>
@@ -284,10 +290,10 @@ registerForm.addEventListener('submit', async event => {
   registerClose.disabled = true;
   registerStatus.textContent = 'กำลังส่งข้อมูล...';
   try {
-    const image = await easyDocumentJpeg(file);
+    const image = file?.name ? await easyDocumentJpeg(file) : undefined;
     await easyApi('registerStaff', {
       ...fields, image, request_id: registrationId,
-      agreement_accepted: fields.agreement_accepted === 'on', agreement_version: '2026-11-17',
+      agreement_accepted: fields.agreement_accepted === 'on', agreement_version: '2026-11-17-v2',
     });
     registerForm.reset();
     registerForm.hidden = true;

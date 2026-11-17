@@ -17,15 +17,15 @@
     function lock(value){busy=value;dialog.querySelectorAll('button').forEach(b=>b.disabled=value);if(!value)dialog.querySelector('form')?.dispatchEvent(new Event('input'));}
     try{
       const data=await easyApi('getEmployeeProfile',staffId?{staff_id:staffId}:{});if(current!==epoch)return;content.replaceChildren();
-      const form=node('form');const fields=[['first_name','ชื่อ','text',80],['last_name','นามสกุล','text',80],['nickname','ชื่อเล่น','text',80],['birthday','วันเกิด','date',10],['age','อายุ','number',3],['address','ที่อยู่ปัจจุบัน','textarea',1000],['bank_name','ธนาคาร','text',80],['bank_account','เลขบัญชีธนาคาร','text',40]];
-      for(const [key,label,type,max] of fields){const l=node('label',label),input=node(type==='textarea'?'textarea':'input');input.id='profile-'+key;input.name=key;l.htmlFor=input.id;if(type!=='textarea')input.type=type;else input.rows=3;input.value=data[key]??'';input.readOnly=readOnly;input.maxLength=max;input.required=!readOnly;if(key==='birthday'){input.max=new Date().toLocaleDateString('en-CA',{timeZone:'Asia/Bangkok'});}
+      const form=node('form');const fields=[['first_name','ชื่อ','text',80],['last_name','นามสกุล','text',80],['nickname','ชื่อเล่น','text',80],['birthday','วันเกิด','date',10],['age','อายุ','number',3],['phone','เบอร์โทร','tel',30],['address','ที่อยู่ปัจจุบัน','textarea',1000],['bank_name','ธนาคาร','text',80],['bank_account','เลขบัญชีธนาคาร','text',40]];
+      for(const [key,label,type,max] of fields){const l=node('label',label),input=node(type==='textarea'?'textarea':'input');input.id='profile-'+key;input.name=key;l.htmlFor=input.id;if(type!=='textarea')input.type=type;else input.rows=3;input.value=data[key]??'';input.readOnly=readOnly;input.maxLength=max;input.required=!readOnly && key!=='phone';if(key==='birthday'){input.max=new Date().toLocaleDateString('en-CA',{timeZone:'Asia/Bangkok'});}
 if(key==='age'){input.min=1;input.max=120;input.step=1;}if(key==='bank_account'||key==='age')input.inputMode='numeric';form.append(l,input);}
       const account=form.elements.bank_account;
       let editAccount;
       const lockAccount=()=>{if(readOnly)return;account.readOnly=Boolean(account.value.trim());account.classList.toggle('profile-account-locked',account.readOnly);editAccount.hidden=!account.readOnly;};
       if(!readOnly){editAccount=node('button','แก้ไข');editAccount.type='button';editAccount.className='profile-bank-edit';account.after(editAccount);editAccount.onclick=()=>{account.readOnly=false;account.classList.remove('profile-account-locked');editAccount.hidden=true;account.focus();};lockAccount();}
       if(!readOnly){const save=node('button','บันทึกข้อมูล');save.type='submit';save.className='profile-save';form.append(save);
-        const validity=()=>{for(const input of form.querySelectorAll('input,textarea'))input.setCustomValidity(input.value.trim()?'':'กรุณากรอกข้อมูลให้ครบ');save.disabled=busy||!form.checkValidity();};form.addEventListener('input',validity);validity();
+        const validity=()=>{for(const input of form.querySelectorAll('input,textarea'))input.setCustomValidity(!input.required||input.value.trim()?'':'กรุณากรอกข้อมูลให้ครบ');save.disabled=busy||!form.checkValidity();};form.addEventListener('input',validity);validity();
         form.onsubmit=async e=>{e.preventDefault();if(!form.reportValidity())return;lock(true);saveStatus('กำลังบันทึกข้อมูล...',true);try{await easyApi('saveEmployeeProfile',Object.fromEntries(new FormData(form)));lockAccount();message.textContent='บันทึกข้อมูลแล้ว';saveStatus('บันทึกข้อมูลสำเร็จ');}catch(error){message.textContent=error.message;saveStatus('บันทึกไม่สำเร็จ: '+error.message);}finally{lock(false);}};
       }
       content.append(form);

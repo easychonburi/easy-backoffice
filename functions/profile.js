@@ -12,10 +12,12 @@ exports.handle=async(body,user)=>{
   if(body.action==='getEmployeeProfile'){
     const [s,p]=await Promise.all([staffRef.get(),profileRef.get()]);if(!s.exists)fail('ไม่พบพนักงาน',404);
     const staff=s.data(),profile=p.data()||{},parts=String(staff.name||'').trim().split(/\s+/);
-    return {staff_id:id,can_use_driver_license:staff.role==='driver',name:staff.name||'',first_name:parts[0]||'',last_name:parts.slice(1).join(' '),nickname:staff.nickname||'',age:profile.age??'',birthday:profile.birthday||'',bank_name:staff.bank_name||'',address:profile.address||'',bank_account:staff.bank_account||'',documents:profile.documents||{}};
+    return {staff_id:id,can_use_driver_license:staff.role==='driver',name:staff.name||'',first_name:parts[0]||'',last_name:parts.slice(1).join(' '),nickname:staff.nickname||'',age:profile.age??'',birthday:profile.birthday||'',bank_name:staff.bank_name||'',address:profile.address||'',phone:profile.phone||'',bank_account:staff.bank_account||'',documents:profile.documents||{}};
   }
   if(body.action==='saveEmployeeProfile'){
     const first_name=text(body.first_name,80,'ชื่อ'),last_name=text(body.last_name,80,'นามสกุล'),name=(first_name+' '+last_name).trim(),nickname=text(body.nickname,80,'ชื่อเล่น'),address=text(body.address,1000,'ที่อยู่'),bank_account=text(body.bank_account,40,'เลขบัญชี');
+    const phone = body.phone === undefined ? undefined : text(body.phone,30,'เบอร์โทร');
+    const normalizedPhone = phone ? exports.normalizePhone(phone) : undefined;
     const bank_name=body.bank_name===undefined?undefined:text(body.bank_name,80,'ธนาคาร');
     if(bank_account&&bank_name==='')fail('กรุณากรอกชื่อธนาคาร');
     const birthday=body.birthday===undefined?undefined:text(body.birthday,10,'วันเกิด');
@@ -25,7 +27,7 @@ exports.handle=async(body,user)=>{
     const age=body.age===''?null:Number(body.age);
     if(age!==null&&(!/^\d{1,3}$/.test(String(body.age))||!Number.isInteger(age)||age<1||age>120))fail('อายุไม่ถูกต้อง');
     if(bank_account&&!/^[0-9 -]{5,40}$/.test(bank_account))fail('กรุณากรอกเลขบัญชีธนาคารให้ถูกต้อง');
-    await db.runTransaction(async tx=>{const s=await tx.get(staffRef);if(!s.exists)fail('ไม่พบพนักงาน',404);tx.update(staffRef,{name,nickname,bank_account,...(bank_name!==undefined?{bank_name}:{})});tx.set(profileRef,{age,address,...(birthday!==undefined?{birthday}:{}),updated_at:new Date().toISOString()},{merge:true});});
+    await db.runTransaction(async tx=>{const s=await tx.get(staffRef);if(!s.exists)fail('ไม่พบพนักงาน',404);tx.update(staffRef,{name,nickname,bank_account,...(bank_name!==undefined?{bank_name}:{})});tx.set(profileRef,{age,address,...(normalizedPhone!==undefined?{phone:normalizedPhone}:{}),...(birthday!==undefined?{birthday}:{}),updated_at:new Date().toISOString()},{merge:true});});
     return {success:true};
   }
   if(!kinds.includes(body.kind))fail('ประเภทเอกสารไม่ถูกต้อง');
@@ -49,4 +51,10 @@ exports.validateDocumentImage = image => {
   if(typeof image!=='string'||image.length>700000||!/^data:image\/jpeg;base64,[A-Za-z0-9+/]+={0,2}$/.test(image))fail('รูปไม่ถูกต้องหรือใหญ่เกินไป กรุณาเลือกรูปใหม่');
   const bytes=Buffer.from(image.split(',')[1],'base64');
   if(bytes.length<4||bytes[0]!==255||bytes[1]!==216||bytes[bytes.length-2]!==255||bytes[bytes.length-1]!==217)fail('ไฟล์รูปไม่ถูกต้อง');
+};
+
+exports.normalizePhone = value => {
+  const normalized = value.replace(/[\s()-]/g, '');
+  if (!/^\+?\d{8,15}$/.test(normalized)) fail('กรุณากรอกเบอร์โทรให้ถูกต้อง');
+  return normalized;
 };

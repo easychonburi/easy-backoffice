@@ -73,12 +73,16 @@ async function saveStaff(body, actor, first = false, registration = null) {
       const registeredAt = new Date().toISOString();
       row.registration_pending = true;
       tx.create(db.collection('employee_profiles').doc(ref.id), {
-        documents: {id_card: true},
+        address: registration.address,
+        phone: registration.phone,
+        documents: registration.image === undefined ? {} : {id_card: true},
         registration_agreement: {version: registration.version, accepted_at: registeredAt},
       });
-      tx.create(db.collection('employee_documents').doc(ref.id + '_id_card'), {
-        staff_id: ref.id, kind: 'id_card', image: registration.image, updated_at: registeredAt,
-      });
+      if (registration.image !== undefined) {
+        tx.create(db.collection('employee_documents').doc(ref.id + '_id_card'), {
+          staff_id: ref.id, kind: 'id_card', image: registration.image, updated_at: registeredAt,
+        });
+      }
     } else if (row.status === 'active' && row.registration_pending) {
       row.registration_pending = false;
     }
@@ -120,14 +124,14 @@ async function limitPublicAction(key, max, message) {
 }
 
 async function registerStaff(body) {
-  const version = '2026-11-17';
+  const version = '2026-11-17-v2';
   if (body.agreement_accepted !== true || body.agreement_version !== version) {
     fail('กรุณาอ่านและยอมรับข้อตกลงฉบับล่าสุด');
   }
   if (typeof body.request_id !== 'string' || !/^[a-f0-9]{32}$/.test(body.request_id)) fail('คำขอลงทะเบียนไม่ถูกต้อง');
-  const requiredText = (key, label) => {
+  const requiredText = (key, label, maxLength = 80) => {
     const value = body[key];
-    if (typeof value !== 'string' || !value.trim() || value.length > 80) fail('กรุณากรอก' + label + 'ให้ถูกต้อง');
+    if (typeof value !== 'string' || !value.trim() || value.length > maxLength) fail('กรุณากรอก' + label + 'ให้ถูกต้อง');
     return value.trim();
   };
   const name = requiredText('first_name', 'ชื่อ') + ' ' + requiredText('last_name', 'นามสกุล');
@@ -135,12 +139,14 @@ async function registerStaff(body) {
   const bankName = requiredText('bank_name', 'ธนาคาร');
   const account = requiredText('bank_account', 'เลขบัญชี').replace(/[ -]/g, '');
   if (!/^\d{5,20}$/.test(account)) fail('กรุณากรอกเลขบัญชีให้ถูกต้อง');
-  profile.validateDocumentImage(body.image);
+  const phone = profile.normalizePhone(requiredText('phone', 'เบอร์โทร', 30));
+  const address = requiredText('address', 'ที่อยู่ปัจจุบัน', 1000);
+  if (body.image !== undefined) profile.validateDocumentImage(body.image);
   await limitPublicAction('registration', 5, 'มีคำขอลงทะเบียนมากเกินไป กรุณาลองใหม่ใน 1 นาที');
   await saveStaff({
     name, nickname, pin: body.pin, bank_name: bankName, bank_account: account,
     role: 'staff', status: 'inactive',
-  }, null, false, {id: 'reg_' + body.request_id, version, image: body.image});
+  }, null, false, {id: 'reg_' + body.request_id, version, phone, address, image: body.image});
   return {submitted: true};
 }
 
